@@ -1,10 +1,12 @@
 
 class Vertex:
-    def __init__(self, parent, startDistance, endDistance, visibleNeighbors):
+    def __init__(self, parent, startDistance, endDistance, visibleNeighbors, location):
         self.parent = parent
         self.startDistance = startDistance
         self.endDistance = endDistance
         self.visibleNeighbors = visibleNeighbors
+        self.location = location
+
 
     def getParent(self):
         return self.parent
@@ -32,5 +34,8 @@ class Vertex:
         
     def addNeighbor(self, vertex):
         self.visibleNeighbors.append(vertex)
+
+    def __eq__(self, vertex):
+        return self.location == vertex.location
 
 
