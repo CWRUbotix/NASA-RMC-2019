@@ -38,4 +38,7 @@ class Vertex:
     def __eq__(self, vertex):
         return self.location == vertex.location
 
+    def getLocation(self):
+        return self.location
+
 
