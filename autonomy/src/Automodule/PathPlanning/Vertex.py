@@ -6,6 +6,12 @@ class Vertex:
         self.endDistance = endDistance
         self.visibleNeighbors = visibleNeighbors
 
+    def getParent(self):
+        return self.parent
+
+    def setParent(self, parent):
+        self.parent = parent
+
     def getStartDistance(self):
         return self.startDistance
 
