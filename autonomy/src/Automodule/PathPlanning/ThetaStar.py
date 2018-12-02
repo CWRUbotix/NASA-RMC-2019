@@ -23,11 +23,25 @@ def aStar(start, end):
             return
         # add neighbors of best looking vertex if they aren't in the closed list
         for node in openList[i].getVisibleNeighbors:
+            # iterate through closed list to check if node has already been considered
             inClosed = False
             for nodeTwo in closedList:
                 if node == nodeTwo:
                     inClosed = True
-            if not inClosed:
+            tempScore = openList[bestIndex].getStartDistance() + node.getPosition().distanceTo()(openList[bestIndex].getPosition())
+            tempScore += node.getPosition().distanceTo(end.getPosition())
+            inOpen = False
+            # iterate through open list to check if node can be reached in a better way
+            for nodeTwo in openList:
+                if node == nodeTwo:
+                    inOpen = True
+                    if tempScore < nodeTwo.getStartDistance() + nodeTwo.getEndDistance():
+                        nodeTwo.setParent(openList[bestIndex])
+                        node.setStartDistance(node.getParent().getStartDistance() + node.getPosition().distanceTo(
+                            node.getParent().getPosition()))
+                        node.setEndDistance(node.getPosition().distanceTo(end.getPosition()))
+            # if node is new, add it to the open set
+            if not inClosed and not inOpen:
                 node.setParent(openList[bestIndex])
                 node.setStartDistance(node.getParent().getStartDistance() + node.getPosition().distanceTo(node.getParent().getPosition()))
                 node.setEndDistance(node.getPosition().distanceTo(end.getPosition()))
