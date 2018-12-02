@@ -22,7 +22,7 @@ def aStar(start, end):
                 node = node.getParent()
             return
         # add neighbors of best looking vertex if they aren't in the closed list
-        for node in openList[i].getVisibleNeighbors:
+        for node in openList[bestIndex].getVisibleNeighbors:
             # iterate through closed list to check if node has already been considered
             inClosed = False
             for nodeTwo in closedList:
