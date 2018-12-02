@@ -17,7 +17,7 @@ def aStar(start, end):
             # reached end, need to create path then exit
             path = deque()
             node = openList[bestIndex]
-            while node != None:
+            while node is not None:
                 path.appendleft(node.getPosition)
                 node = node.getParent()
             return
