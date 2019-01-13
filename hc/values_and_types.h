@@ -3,6 +3,7 @@
 
 #include <SPI.h>
 #include "VESC/VESC.h"
+#include "LSM6DS3.h"
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -22,6 +23,7 @@
 #define HEADER_LEN 		5
 #define CMD_BLOCK_LEN 	5
 #define RPY_BLOCK_LEN 	5
+#define RPY_BLOCK_LEN_L 9
 
 
 #define DEBUG_SELECT_PIN 		2
@@ -55,6 +57,8 @@
 #define NOP4 			"nop\n\t""nop\n\t""nop\n\t""nop\n\t"
 // should pause about 50 ns or so
 #define PAUSE_SHORT 	__asm__(NOP4 NOP4)
+
+#define ROT_ENC_RD_POS 	0x10
 ////////////////////////////////////////////////////////////////////////////////
 //  DEFINE TYPES
 ////////////////////////////////////////////////////////////////////////////////
@@ -180,6 +184,7 @@ typedef struct Device{
 	Interface interface = NONE;
 	SPISettings* spi_settings;
 	VESC* vesc;
+	LSM6DS3* imu;
 	HardwareSerial* serial;
 	uint8_t spi_cs 		= 0;
 	uint8_t id 			= 0;
@@ -189,11 +194,14 @@ typedef struct Device{
 typedef struct SensorInfo{
 	SensorType type 	= SENS_NONE;
 	Device* device;
+	char* name = "--- NO NAME ----";
 	uint8_t pin 		= 0;
 	int n_value; 	// holds any relevant integer value
 	float value; 	// holds the relevant value, updated at t_stamp
 	int t_stamp; 	// update time-stamp
 	float rots;
+	float (*get_value)(void);
+	char imu_axis;
 } SensorInfo;
 
 typedef struct MotorInfo{
@@ -231,6 +239,9 @@ VESC vesc2(&Serial2);
 VESC vesc3(&Serial3);
 VESC vesc4(&Serial4);
 
+LSM6DS3 imu0(IMU_0_CS_PIN);
+LSM6DS3 imu1(IMU_1_CS_PIN);
+
 SPISettings DAC_SPI_settings(DAC8551_SPEED, MSBFIRST, SPI_MODE1);
 SPISettings ADC_SPI_settings(ADS1120_SPEED, MSBFIRST, SPI_MODE1);
 SPISettings IMU_SPI_settings(IMU_SPEED, MSBFIRST, SPI_MODE0);
@@ -241,7 +252,7 @@ SPISettings Debug_SPI_settings(DEBUG_SPEED, MSBFIRST, SPI_MODE0);
 
 void Encoder_ISR(){
 	sensor_infos[EXC_TRANS_ENC].rots += 1;
-	sensor_infos[EXC_TRANS_ENC].value = sensor_infos[EXC_TRANS_ENC].rots * 2.0 * PI;
+	sensor_infos[EXC_TRANS_ENC].value = sensor_infos[EXC_TRANS_ENC].rots * 2.0 * PI; 	// rotation in radians
 }
 
 

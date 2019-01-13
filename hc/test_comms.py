@@ -1,6 +1,7 @@
 import serial
 from ctypes import *
 import time
+import tkinter as tk
 
 HEADER_LEN 		= 5
 CMD_SET_OUTPUTS = 0x51
@@ -8,6 +9,7 @@ CMD_READ_VALUES = 0x52
 CMD_TEST 		= 0x53
 CMD_SYNC_TIME 	= 0x54
 ITEM_LENGTH 	= 5
+ITEM_LENGTH_L 	= 9
 
 TEST_DATA 		= int(0xA5A5A5A5)
 
@@ -57,6 +59,10 @@ VALUE_LUT 		= [
 	"angular displacement, Y-axis",
 	"angular displacement, Z-axis"]
 
+sync_time = 0
+start_time = time.time()
+
+
 def float_to_bytes(f):
 	dest 	= bytes(4) 			# allocating empty memory
 	temp 	= memmove(dest, addressof(c_float(float(f))), 4)
@@ -67,6 +73,16 @@ def bytes_to_float(data):
 	temp 	= memmove(addressof(value), data, 4)
 	return value.value
 
+def bytes_to_int(data):
+	value 	= c_int(0)
+	temp 	= memmove(addressof(value), data, 4)
+	return value.value
+
+def int_to_bytes(n):
+	dest 	= bytes(4)
+	temp 	= memmove(dest, addressof(c_int(int(n))), 4)
+	return dest
+
 
 def chksum(data):
 	s = 0
@@ -75,18 +91,39 @@ def chksum(data):
 
 	return int(s)
 
+def get_time():
+	return int( (time.time()-start_time)*1000000 )
+
 def print_reply(rpy, LUT):
 	for i in range(0, len(rpy), ITEM_LENGTH):
 		item_id = rpy[i]
-		temp = bytes(4)
+		temp = bytearray(4)
 		temp[0] = rpy[i+1]
 		temp[1] = rpy[i+2]
 		temp[2] = rpy[i+3]
 		temp[3] = rpy[i+4]
-		value = bytes_to_float(temp)
-		print("{}\t{}\t{}".format(item_id, LUT[item_id], value))
+		value = bytes_to_float(bytes(temp))
+		print("{:<7}\t{:<25}\t{:<10}".format(item_id, LUT[item_id], value))
+
+def print_reply_L(rpy, LUT):
+	print("{:<7}\t{:<25}\t{:<10}\t{:<10}".format("ID", "NAME", "VALUE", "TIME STAMP"))
+	for i in range(0, len(rpy), ITEM_LENGTH_L):
+		item_id = rpy[i]
+		temp = bytearray(4)
+		temp[0] = rpy[i+1]
+		temp[1] = rpy[i+2]
+		temp[2] = rpy[i+3]
+		temp[3] = rpy[i+4]
+		value 	= bytes_to_float(bytes(temp))
+		temp[0] = rpy[i+5]
+		temp[1] = rpy[i+6]
+		temp[2] = rpy[i+7]
+		temp[3] = rpy[i+8]
+		t_stamp = bytes_to_int(bytes(temp)) - sync_time
+		print("{:<7}\t{:<25}\t{:<10}\t{:<20}".format(item_id, LUT[item_id], value, t_stamp))
 
 def main():
+
 	com_port = input("COM Port\t: ")
 
 	teensy = serial.Serial(com_port, timeout=5)
@@ -99,6 +136,7 @@ def main():
 		print("TEST COMMS\t: TEST")
 		print("SET OUTPUTS\t: SET  ID_0,val_0 ID_1,val_1 ...")
 		print("READ VALUES\t: READ ID_0 ID_1 ...")
+		print("SYNC TIME\t: SYNC")
 		line 			= input(">>> ")
 		line 			= line.strip().split(' ')
 		items 			= len(line)-1
@@ -130,15 +168,17 @@ def main():
 			packet 		= bytearray(length + HEADER_LEN)
 			data 		= bytearray(length)
 
+			j = 0
 			for i in range(1, len(line), 1):
 				temp 		= line[i].split(',')
 				item_id 	= int(temp[0]).to_bytes(1, byteorder='big')
 				item_value 	= float_to_bytes(float(temp[1]))
-				data.append(item_id)
-				data.append(item_value[0])
-				data.append(item_value[1])
-				data.append(item_value[2])
-				data.append(item_value[3])
+				data[j]   = item_id[0]
+				data[j+1] = item_value[0]
+				data[j+2] = item_value[1]
+				data[j+3] = item_value[2]
+				data[j+4] = item_value[3]
+				j = j + 5
 
 			chksum_bytes= chksum(data).to_bytes(2, byteorder='big')
 			len_bytes 	= length.to_bytes(2, byteorder='big')
@@ -161,13 +201,36 @@ def main():
 			data 		= bytearray(length)
 
 			for i in range(1, len(line), 1):
-				item_id 	= int(temp[0]).to_bytes(1, byteorder='big')
-				data.append(item_id)
+				item_id 	= int(line[i]) #.to_bytes(1, byteorder='big')
+				data[i-1] = item_id
 
 			chksum_bytes= chksum(data).to_bytes(2, byteorder='big')
 			len_bytes 	= length.to_bytes(2, byteorder='big')
 
-			packet[0] 	= CMD_SET_OUTPUTS
+			packet[0] 	= CMD_READ_VALUES
+			packet[1] 	= len_bytes[0]
+			packet[2] 	= len_bytes[1]
+			packet[3] 	= chksum_bytes[0]
+			packet[4] 	= chksum_bytes[1]
+
+			print(len(data))
+			for i in range(0,len(data)):
+				packet[HEADER_LEN + i] = data[i]
+
+			bytes_expected 	= HEADER_LEN + (items*ITEM_LENGTH_L)
+			packet_ready 	= True
+		elif cmd == 'SYNC':
+			length 	= 4
+			packet 	= bytearray(length + HEADER_LEN)
+			data 	= bytearray(length)
+
+			sync_time = get_time()
+			data 	= sync_time.to_bytes(4, byteorder='big')
+
+			chksum_bytes= chksum(data).to_bytes(2, byteorder='big')
+			len_bytes 	= length.to_bytes(2, byteorder='big')
+
+			packet[0] 	= CMD_SYNC_TIME
 			packet[1] 	= len_bytes[0]
 			packet[2] 	= len_bytes[1]
 			packet[3] 	= chksum_bytes[0]
@@ -176,9 +239,8 @@ def main():
 			for i in range(0,len(data)):
 				packet[HEADER_LEN + i] = data[i]
 
-			bytes_expected 	= HEADER_LEN + (items*5)
+			bytes_expected 	= HEADER_LEN + 4
 			packet_ready 	= True
-
 		else:
 			print("unknown command")
 
@@ -202,8 +264,9 @@ def main():
 				print_reply(rpy_body, OUTPUT_LUT)
 
 			elif rpy_type == CMD_READ_VALUES:
-				print_reply(rpy_body, VALUE_LUT)
-				
+				print_reply_L(rpy_body, VALUE_LUT)
+			elif rpy_type == CMD_SYNC_TIME:
+				print("Time sync successful")
 
 			else:
 				print("error occured: " + str(hex(rpy_type)))

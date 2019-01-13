@@ -4,8 +4,6 @@
 #include "values_and_types.h"
 #include <inttypes.h>
 
-
-
 void init_device_comms(void);
 void init_motors(void);
 void init_sensors(void);
@@ -49,8 +47,12 @@ void init_motors(){
 
 void init_sensors(){
 	// do configurations as necessary
+	SensorInfo* sensor = NULL;
+	Device* device = NULL;
 	for(int i = 0; i < NUM_SENSORS; i++){
-		SensorInfo* sensor = &sensor_infos[i];
+		sensor = &sensor_infos[i];
+		device = sensor->device;
+		debug(String(sensor->name));
 		switch(sensor->type){
 			case SENS_NONE: break;
 			case SENS_DIGITAL_INPUT:{
@@ -64,27 +66,42 @@ void init_sensors(){
 				}
 				break;}
 			case SENS_LOAD_CELL:{
-				if(!sensor->device->is_setup){
+				if(device != NULL && !device->is_setup){
 					// configure ADC
-
-					sensor->device->is_setup = true;
+					debug("load cell device not null");
+					delay(2);
+					device->is_setup = true;
 				}
 				break;}
 			case SENS_GYRO: {
-				// configure device as per this sensor
+				if(device != NULL && !device->is_setup){
+					// configure device
+					debug("begin IMU");
+					device->imu->begin();
+					delayMicroseconds(10);
+					device->is_setup = device->imu->is_ok();
+					if(device->is_setup){debug("IMU setup success");}
+					else{debug("IMU setup failed");}
+				}
 				break;}
 			case SENS_ACCEL: {
-				// configure device as per this sensor
+				if(device != NULL && !device->is_setup){
+					// configure device
+					device->imu->begin();
+					delayMicroseconds(10);
+					device->is_setup = device->imu->is_ok();
+				}
 				break;}
 			case SENS_ROT_ENC: {
 				// configure device as per this sensor
+
 				break;}
 			case SENS_BLDC_ENC: {
 				// configure device as per this sensor
 				// may be none needed
 				break;}
 			case SENS_POT_ENC:{
-				if(!sensor->device->is_setup){
+				if(device != NULL && !device->is_setup){
 					// configure ADC 
 
 					sensor->device->is_setup = true;

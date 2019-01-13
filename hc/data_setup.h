@@ -33,11 +33,13 @@ void setup_devices(){
 	device_infos[TRANS_ENCODER].spi_settings= &Encoder_SPI_settings;
 
 	// IMU 0 DEVICE SETUP
+	device_infos[IMU_0].imu 		= &imu0;
 	device_infos[IMU_0].interface 	= SPI_BUS;
 	device_infos[IMU_0].spi_cs 		= IMU_0_CS_PIN;
 	device_infos[IMU_0].spi_settings= &IMU_SPI_settings;
 
 	// IMU 1 DEVICE SETUP
+	device_infos[IMU_1].imu 		= &imu1;
 	device_infos[IMU_1].interface 	= SPI_BUS;
 	device_infos[IMU_1].spi_cs 		= IMU_1_CS_PIN;
 	device_infos[IMU_1].spi_settings= &IMU_SPI_settings;
@@ -92,118 +94,156 @@ void setup_sensors(){
 
 	// DRIVE PORT ENCODER
 	sensor 				= &(sensor_infos[DRIVE_PORT_ENC]);
+	sensor->name 		= "PORT DRIVE ENC";
 	sensor->device 		= &(device_infos[VESC_1]);
 	sensor->type 		= SENS_BLDC_ENC;
 
 	// DRIVE STBD ENC
 	sensor 				= &(sensor_infos[DRIVE_STBD_ENC]);
+	sensor->name 		= "STBD DRIVE ENC";
 	sensor->device 		= &(device_infos[VESC_2]);
 	sensor->type 		= SENS_BLDC_ENC;
 
 	// DEP WINCH ENC
 	sensor 				= &(sensor_infos[DEP_WINCH_ENC]);
+	sensor->name 		= "DEP WINCH ENC";
 	sensor->device 		= &(device_infos[VESC_3]);
 	sensor->type 		= SENS_BLDC_ENC;
 
 	// EXC BELT ENC
 	sensor 				= &(sensor_infos[EXC_BELT_ENC]);
+	sensor->name 		= "EXC BELT ENC";
 	sensor->device 		= &(device_infos[VESC_4]);
 	sensor->type 		= SENS_BLDC_ENC;
 
 	// EXC TRANSLATION ENCODER
 	sensor 				= &(sensor_infos[EXC_TRANS_ENC]);
+	sensor->name 		= "EXC TRANS ENC";
 	sensor->device 		= &(device_infos[TRANS_ENCODER]);
 	sensor->type 		= SENS_ROT_ENC;
 
 	// EXC ROTATION PORT ENCODER
 	sensor 				= &(sensor_infos[EXC_ROT_PORT_ENC]);
+	sensor->name 		= "EXC ROT ENC PORT";
 	sensor->device 		= &(device_infos[ADC_0]);
 	sensor->type 		= SENS_POT_ENC;
 
 	// EXC ROTATION STBD ENCODER
 	sensor 				= &(sensor_infos[EXC_ROT_STBD_ENC]);
+	sensor->name 		= "EXC ROT ENC STBD";
 	sensor->device 		= &(device_infos[ADC_0]);
 	sensor->type 		= SENS_POT_ENC;
 
 	// LOOKY PORT ENC
 	sensor 				= &(sensor_infos[LOOKY_PORT_ENC]);
+	sensor->name 		= "PORT LOOKY ENC";
 	sensor->device 		= &(device_infos[LOOKY_0]);
 	sensor->type 		= SENS_LOOKY_ENC;
 
 	// LOOKY STBD ENC
 	sensor 				= &(sensor_infos[LOOKY_STBD_ENC]);
+	sensor->name 		= "STBD LOOKY ENC";
 	sensor->device 		= &(device_infos[LOOKY_1]);
 	sensor->type 		= SENS_LOOKY_ENC;
 
 	// DEP PORT LOAD-CELL
 	sensor 				= &(sensor_infos[DEP_PORT_LOAD]);
+	sensor->name 		= "DEP PORT LD CELL";
 	sensor->device 		= &(device_infos[ADC_1]);
 	sensor->type 		= SENS_LOAD_CELL;
 
 	// DEP STBD LOAD-CELL
 	sensor 				= &(sensor_infos[DEP_STBD_LOAD]);
+	sensor->name 		= "DEP STBD LD CELL";
 	sensor->device 		= &(device_infos[ADC_2]);
 	sensor->type 		= SENS_LOAD_CELL;
 
 	// GYRO-0 X
 	sensor 				= &(sensor_infos[GYRO_0_X]);
+	sensor->name 		= "GYRO_0 X";
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_0]);
+	sensor->imu_axis 	= 'X';
+	// sensor->get_value 	= &(sensor->device->imu->get_gyro_x);
 
 	// GYRO-0 Y
 	sensor 				= &(sensor_infos[GYRO_0_Y]);
+	sensor->name 		= "GYRO_0 Y";
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_0]);
+	sensor->imu_axis 	= 'Y';
+	// sensor->get_value 	= &(sensor->device->imu->get_gyro_y);
 
 	// GYRO-0 Z
 	sensor 				= &(sensor_infos[GYRO_0_Z]);
+	sensor->name 		= "GYRO_0 Z";
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_0]);
+	sensor->imu_axis 	= 'Z';
+	// sensor->get_value 	= &(sensor->device->imu->get_gyro_z);
 
 	// ACCEL-0 X
 	sensor 				= &(sensor_infos[ACCEL_0_X]);
+	sensor->name 		= "ACCEL_0 X";
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_0]);
+	sensor->imu_axis 	= 'X';
 
 	// ACCEL-0 Y
 	sensor 				= &(sensor_infos[ACCEL_0_Y]);
+	sensor->name 		= "ACCEL_0 Y";
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_0]);
+	sensor->imu_axis 	= 'Y';
 
 	// ACCEL-0 Z
 	sensor 				= &(sensor_infos[ACCEL_0_Z]);
+	sensor->name 		= "ACCEL_0 Z";
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_0]);
+	sensor->imu_axis 	= 'Z';
 
 	// GYRO-1 X
 	sensor 				= &(sensor_infos[GYRO_1_X]);
+	sensor->name 		= "GYRO_1 X";
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_1]);
+	sensor->imu_axis 	= 'X';
 
 	// GYRO-1 Y
 	sensor 				= &(sensor_infos[GYRO_1_Y]);
+	sensor->name 		= "GYRO_1 Y";
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_1]);
+	sensor->imu_axis 	= 'Y';
 
 	// GYRO-1 Z
 	sensor 				= &(sensor_infos[GYRO_1_Z]);
+	sensor->name 		= "GYRO_1 Z";
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_1]);
+	sensor->imu_axis 	= 'Z';
 
 	// ACCEL-1 X
 	sensor 				= &(sensor_infos[ACCEL_1_X]);
+	sensor->name 		= "ACCEL_1 X";
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_1]);
+	sensor->imu_axis 	= 'X';
 
 	// ACCEL-1 Y
 	sensor 				= &(sensor_infos[ACCEL_1_Y]);
+	sensor->name 		= "ACCEL_1 Y";
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_1]);
+	sensor->imu_axis 	= 'Y';
 
 	// ACCEL-1 Z
 	sensor 				= &(sensor_infos[ACCEL_1_Z]);
+	sensor->name 		= "ACCEL_1 Z";
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_1]);
+	sensor->imu_axis 	= 'Z';
 
 	// DEP. LOWER LIMIT SWITCH
 	sensor 				= &(sensor_infos[DEP_LIMIT_LOWER]);

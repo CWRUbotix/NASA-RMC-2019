@@ -34,7 +34,11 @@ FAULT_T read_from_client(){
 	cmd_body_len 	= (cmd[1] << 8) + cmd[2];
 	uint16_t chksum = (cmd[3] << 8) + cmd[4];
 
-	if((cmd_type != CMD_SET_OUTPUTS) && (cmd_type != CMD_READ_VALUES) && (cmd_type != CMD_TEST)){
+	if((cmd_type != CMD_SET_OUTPUTS) && 
+		(cmd_type != CMD_READ_VALUES) && 
+		(cmd_type != CMD_TEST) &&
+		(cmd_type != CMD_T_SYNC))
+	{
 		return INVALID_CMD;
 	}else if((index - HEADER_LEN) != cmd_body_len){
 		return LEN_MISMATCH;
@@ -53,8 +57,8 @@ FAULT_T read_from_client(){
 			for(int i = 0; i < cmd_body_len; i+=CMD_BLOCK_LEN){
 				value = 0.0;
 				id = cmd_body[i];
-				memcpy(cmd_body + i+1, &value, 4); 	// copy bytes from cmd_body to value
-
+				memcpy(&value, cmd_body + i+1, 4); 	// copy bytes from cmd_body to value
+				debug("MOTOR: " + String(value, 3));
 				motor = &motor_infos[id];
 				motor->setpt = value;
 			}
@@ -77,14 +81,11 @@ FAULT_T read_from_client(){
 }
 
 void reply_to_client(FAULT_T fault){
-	if(fault != NO_FAULT){
-		switch(fault){
-			case INVALID_CMD: rpy_type = RPY_INVALID_CMD; break;
-			case LEN_MISMATCH: rpy_type = RPY_LEN_MISMATCH; break;
-			case CHKSUM_MISMATCH: rpy_type = RPY_CHKSUM_MISMATCH; break;
-		}
-	}else{
-		rpy_type = cmd_type;
+	switch(fault){
+		case NO_FAULT: 			rpy_type = cmd_type; break;
+		case INVALID_CMD: 		rpy_type = RPY_INVALID_CMD; break;
+		case LEN_MISMATCH: 		rpy_type = RPY_LEN_MISMATCH; break;
+		case CHKSUM_MISMATCH: 	rpy_type = RPY_CHKSUM_MISMATCH; break;
 	}
 
 	rpy[0] 		= rpy_type & 0xFF;
@@ -111,18 +112,22 @@ void reply_to_client(FAULT_T fault){
 			rpy[4] = (chksum) & 0xFF;
 			break;}
 		case RPY_READ_VALUES:{
-			rpy_body_len = cmd_body_len * RPY_BLOCK_LEN; 	// each 1 byte now needs 5 bytes
+			rpy_body_len = cmd_body_len * RPY_BLOCK_LEN_L; 	// each 1 byte now needs 9 bytes
 			int id = 0;
 			int rpy_ind = 0;
 			float value = 0.0;
+			int t_stamp = 0;
 			SensorInfo* sensor;
 			for(int i = 0; i < cmd_body_len; i++){
-				rpy_ind = i*RPY_BLOCK_LEN;
+				rpy_ind = i*RPY_BLOCK_LEN_L;
 				id = cmd_body[i];
 				sensor = &sensor_infos[id];
 				value = sensor->value;
+				t_stamp = sensor->t_stamp;
 				rpy_body[rpy_ind++] = id;
 				memcpy(rpy_body + rpy_ind, &value, 4);
+				rpy_ind += 4;
+				memcpy(rpy_body + rpy_ind, &t_stamp, 4);
 			}
 			uint16_t chksum = checksum(rpy_body, rpy_body_len);
 
