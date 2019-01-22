@@ -48,3 +48,45 @@ def aStar(start, end):
                 openList.append(node)
         closedList.append(openList[bestIndex])
         openList.remove(openList[bestIndex])
+
+function theta * (start, goal)
+    gScore(start): = 0
+    parent(start): = start
+    open: = {}
+    open.insert(start, gScore(start) + heuristic(start))
+    closed: = {}
+    while open is not empty
+        s: = open.pop()
+        if s = goal
+           return reconstruct_path(s)
+         closed.push(s)
+        for each neighbor of s
+            if neighbor not in closed
+                if neighbor not in open
+                    gScore(neighbor): = infinity
+             parent(neighbor): = Null
+            update_vertex(s, neighbor)
+    return Null
+
+function update_vertex(s, neighbor)
+    if line_of_sight(parent(s), neighbor)
+        if gScore(parent(s)) + c(parent(s), neighbor) < gScore(neighbor)
+        gScore(neighbor): = gScore(parent(s)) + c(parent(s), neighbor)
+        parent(neighbor): = parent(s)
+            if neighbor in open
+                open.remove(neighbor)
+            open.insert(neighbor, gScore(neighbor) + heuristic(neighbor))
+    else
+        if gScore(s) + c(s, neighbor) < gScore(neighbor)
+                gScore(neighbor): = gScore(s) + c(s, neighbor)
+            parent(neighbor): = s
+            if neighbor in open
+                open.remove(neighbor)
+            open.insert(neighbor, gScore(neighbor) + heuristic(neighbor))
+
+function reconstruct_path(s)
+    total_path = {s}
+    if parent(s) != s
+        total_path.push(reconstruct_path(parent(s)))
+    else
+        return total_path
