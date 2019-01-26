@@ -49,44 +49,47 @@ def aStar(start, end):
         closedList.append(openList[bestIndex])
         openList.remove(openList[bestIndex])
 
-function theta * (start, goal)
-    gScore(start): = 0
-    parent(start): = start
-    open: = {}
-    open.insert(start, gScore(start) + heuristic(start))
-    closed: = {}
-    while open is not empty
-        s: = open.pop()
-        if s = goal
+def thetaStar(start, goal):
+    start.setStartDistance(0)
+    start.setParent(start)
+    open = {}
+    open.insert(start, start.getStartDistance() + start.getEndDistance())
+    closed = {}
+    while open is not empty:
+        s = open.pop()
+        if s == goal:
            return reconstruct_path(s)
          closed.push(s)
-        for each neighbor of s
-            if neighbor not in closed
-                if neighbor not in open
-                    gScore(neighbor): = infinity
-             parent(neighbor): = Null
+        for each neighbor of s:
+            if neighbor not in closed:
+                if neighbor not in open:
+                    neighbor.setStartDistance(infinity)
+            neighbor.setParent(null)
             update_vertex(s, neighbor)
-    return Null
+    return null
 
-function update_vertex(s, neighbor)
-    if line_of_sight(parent(s), neighbor)
-        if gScore(parent(s)) + c(parent(s), neighbor) < gScore(neighbor)
-        gScore(neighbor): = gScore(parent(s)) + c(parent(s), neighbor)
-        parent(neighbor): = parent(s)
-            if neighbor in open
+def update_vertex(s, neighbor):
+    if line_of_sight(s.getParent(), neighbor):
+        if s.getParent().getStartDistance() + s.getParent().getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
+        neighbor.setStartDistance(s.getParent.getStartDistance() + s.getParent().getPosition().distanceTo(neighbor.getPosition()))
+        neighbor.setParent(s.getParent())
+        if neighbor in open:
+            open.remove(neighbor)
+        open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
+    else:
+        if s.getStartDistance() + s.getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
+            neighbor.setStartDistance(s.getStartDistance() + s.getPosition().distanceTo(neighbor.getPosition()))
+            neighbor.setParent(s)
+            if neighbor in open:
                 open.remove(neighbor)
-            open.insert(neighbor, gScore(neighbor) + heuristic(neighbor))
-    else
-        if gScore(s) + c(s, neighbor) < gScore(neighbor)
-                gScore(neighbor): = gScore(s) + c(s, neighbor)
-            parent(neighbor): = s
-            if neighbor in open
-                open.remove(neighbor)
-            open.insert(neighbor, gScore(neighbor) + heuristic(neighbor))
+            open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
 
-function reconstruct_path(s)
+def reconstruct_path(s):
     total_path = {s}
-    if parent(s) != s
-        total_path.push(reconstruct_path(parent(s)))
-    else
+    if s.getParent() != s:
+        total_path.push(reconstruct_path(s.getParent()))
+    else:
         return total_path
+
+def line_of_sight(vertex, vertexTwo):
+
