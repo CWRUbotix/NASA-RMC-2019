@@ -48,3 +48,48 @@ def aStar(start, end):
                 openList.append(node)
         closedList.append(openList[bestIndex])
         openList.remove(openList[bestIndex])
+
+def thetaStar(start, goal):
+    start.setStartDistance(0)
+    start.setParent(start)
+    open = {}
+    open.insert(start, start.getStartDistance() + start.getEndDistance())
+    closed = {}
+    while open is not empty:
+        s = open.pop()
+        if s == goal:
+           return reconstruct_path(s)
+         closed.push(s)
+        for each neighbor of s:
+            if neighbor not in closed:
+                if neighbor not in open:
+                    neighbor.setStartDistance(infinity)
+            neighbor.setParent(null)
+            update_vertex(s, neighbor)
+    return null
+
+def update_vertex(s, neighbor):
+    if line_of_sight(s.getParent(), neighbor):
+        if s.getParent().getStartDistance() + s.getParent().getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
+        neighbor.setStartDistance(s.getParent.getStartDistance() + s.getParent().getPosition().distanceTo(neighbor.getPosition()))
+        neighbor.setParent(s.getParent())
+        if neighbor in open:
+            open.remove(neighbor)
+        open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
+    else:
+        if s.getStartDistance() + s.getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
+            neighbor.setStartDistance(s.getStartDistance() + s.getPosition().distanceTo(neighbor.getPosition()))
+            neighbor.setParent(s)
+            if neighbor in open:
+                open.remove(neighbor)
+            open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
+
+def reconstruct_path(s):
+    total_path = {s}
+    if s.getParent() != s:
+        total_path.push(reconstruct_path(s.getParent()))
+    else:
+        return total_path
+
+def line_of_sight(vertex, vertexTwo):
+
