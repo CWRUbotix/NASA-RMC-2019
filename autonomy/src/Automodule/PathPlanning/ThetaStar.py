@@ -55,14 +55,14 @@ def thetaStar(start, goal):
     open = {}
     open.insert(start, start.getStartDistance() + start.getEndDistance())
     closed = {}
-    while open is not empty:
+    while open != 0:
         s = open.pop()
         if s == goal:
            return reconstruct_path(s)
          closed.push(s)
-        for each neighbor of s:
-            if neighbor not in closed:
-                if neighbor not in open:
+        for neighbor in s:
+            if neighbor != 0:
+                if neighbor == open:
                     neighbor.setStartDistance(infinity)
             neighbor.setParent(null)
             update_vertex(s, neighbor)
