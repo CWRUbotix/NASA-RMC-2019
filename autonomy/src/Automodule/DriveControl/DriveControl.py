@@ -29,4 +29,11 @@ class DriveModule:
 
 
 def driveTo(pos):
-	
+	pass
+
+# Given angle in radian the robot needs to turn and current angularvelocity
+# Outputs tuple of left motor output and right motor output
+def turn(angle, angularvelocity):
+	pass
+
+
