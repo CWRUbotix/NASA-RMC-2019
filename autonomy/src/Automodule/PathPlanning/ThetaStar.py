@@ -1,4 +1,5 @@
 from collections import deque
+import math
 
 def aStar(start, end):
     openList = [start]
@@ -58,24 +59,24 @@ def thetaStar(start, goal):
     while open != 0:
         s = open.pop()
         if s == goal:
-           return reconstruct_path(s)
-         closed.push(s)
-        for neighbor in s:
+            return reconstruct_path(s)
+        closed.push(s)
+        for neighbor in s.getVisibleNeighbors():
             if neighbor != 0:
                 if neighbor == open:
-                    neighbor.setStartDistance(infinity)
-            neighbor.setParent(null)
+                    neighbor.setStartDistance(math.inf)
+            neighbor.setParent(None)
             update_vertex(s, neighbor)
-    return null
+    return None
 
 def update_vertex(s, neighbor):
     if line_of_sight(s.getParent(), neighbor):
         if s.getParent().getStartDistance() + s.getParent().getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
-        neighbor.setStartDistance(s.getParent.getStartDistance() + s.getParent().getPosition().distanceTo(neighbor.getPosition()))
-        neighbor.setParent(s.getParent())
-        if neighbor in open:
-            open.remove(neighbor)
-        open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
+            neighbor.setStartDistance(s.getParent.getStartDistance() + s.getParent().getPosition().distanceTo(neighbor.getPosition()))
+            neighbor.setParent(s.getParent())
+            if neighbor in open:
+                open.remove(neighbor)
+            open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
     else:
         if s.getStartDistance() + s.getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
             neighbor.setStartDistance(s.getStartDistance() + s.getPosition().distanceTo(neighbor.getPosition()))
