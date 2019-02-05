@@ -85,10 +85,10 @@ def update_vertex(vertex, neighbor):
                 open.remove(neighbor)
             open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
 
-def reconstruct_path(s):
-    total_path = {s}
-    if s.getParent() != s:
-        total_path.push(reconstruct_path(s.getParent()))
+def reconstruct_path(vertex):
+    total_path = {vertex}
+    if vertex.getParent() != vertex:
+        total_path.push(reconstruct_path(vertex.getParent()))
     else:
         return total_path
 
