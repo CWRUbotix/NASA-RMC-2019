@@ -69,18 +69,18 @@ def thetaStar(start, goal):
             update_vertex(s, neighbor)
     return None
 
-def update_vertex(s, neighbor):
-    if line_of_sight(s.getParent(), neighbor):
-        if s.getParent().getStartDistance() + s.getParent().getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
-            neighbor.setStartDistance(s.getParent.getStartDistance() + s.getParent().getPosition().distanceTo(neighbor.getPosition()))
-            neighbor.setParent(s.getParent())
+def update_vertex(vertex, neighbor):
+    if line_of_sight(vertex.getParent(), neighbor):
+        if vertex.getParent().getStartDistance() + vertex.getParent().getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
+            neighbor.setStartDistance(vertex.getParent.getStartDistance() + vertex.getParent().getPosition().distanceTo(neighbor.getPosition()))
+            neighbor.setParent(vertex.getParent())
             if neighbor in open:
                 open.remove(neighbor)
             open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
     else:
-        if s.getStartDistance() + s.getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
-            neighbor.setStartDistance(s.getStartDistance() + s.getPosition().distanceTo(neighbor.getPosition()))
-            neighbor.setParent(s)
+        if vertex.getStartDistance() + vertex.getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
+            neighbor.setStartDistance(vertex.getStartDistance() + vertex.getPosition().distanceTo(neighbor.getPosition()))
+            neighbor.setParent(vertex)
             if neighbor in open:
                 open.remove(neighbor)
             open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
