@@ -93,4 +93,49 @@ def reconstruct_path(vertex):
         return total_path
 
 def line_of_sight(vertex, vertexTwo):
-
+    x0 = vertex.getPosition().getX_Pos()
+    x1 = vertexTwo.getPosition().getX_Pos()
+    y0 = vertex.getPosition().getY_Pos()
+    y1 = vertexTwo.getPosition().getY_Pos()
+    dy = y1 - y0
+    dx = x1 - x0
+    f = 0
+    sx = 0
+    sy = 0
+    if dy < 0:
+        dy = -dy
+        sy = -1
+    else:
+        sy = 1
+    if dx < 0:
+        dx = -dx
+        sx = -1
+    else:
+        sx = 1
+    if dx >= dy:
+        while x0 != x1:
+            f += dy
+            if f >= dx:
+                if grid:
+                    return False
+                y0 += sy
+                f -= dx
+            if f != 0 & grid:
+                return False
+            if dy == 0 & grid:
+                return False
+            x0 += sx
+    else:
+        while y0 != y1:
+            f += dx
+            if f >= dy:
+                if grid:
+                    return False
+                x0 += sx
+                f -= dy
+            if f != 0 & grid:
+                return False
+            if dx == 0 & grid:
+                return False
+            y0 += sy
+    return True
