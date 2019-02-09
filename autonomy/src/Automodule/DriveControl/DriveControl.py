@@ -12,15 +12,8 @@ class DriveModule:
 		return self.done
 
 	def run(self):
-		try:
-			rospy.init_node('Drive Control ' + str(self.destination))
-			rospy.on_shutdown(self.setDone)
-		except ROSInitException as e:
-			raise e
-
+		pass
 		
-		
-		rospy.spin()
 
 	def setDone(self):
 		self.done = True
@@ -36,4 +29,9 @@ def driveTo(pos):
 def turn(angle, angularvelocity):
 	pass
 
+# Main script for Drive Control
+def main():
+	pass
 
+
+if __name__ == "__main__": main()

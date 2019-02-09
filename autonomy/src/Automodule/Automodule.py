@@ -1,5 +1,3 @@
-from collections import deque
-
 import rospy
 from PathPlanning.PathPlanning import Position #import specific functions later
 
