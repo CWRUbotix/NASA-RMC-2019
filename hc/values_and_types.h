@@ -54,9 +54,9 @@
 
 #define DEBUG 					Serial5
 
-#define NOP4 			"nop\n\t""nop\n\t""nop\n\t""nop\n\t"
+#define NOP3 			"nop\n\t""nop\n\t""nop\n\t"
 // should pause about 50 ns or so
-#define PAUSE_SHORT 	__asm__(NOP4 NOP4)
+#define PAUSE_SHORT 	__asm__(NOP3 NOP3 NOP3)
 
 #define ROT_ENC_RD_POS 	0x10
 ////////////////////////////////////////////////////////////////////////////////
