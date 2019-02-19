@@ -17,10 +17,11 @@ class Grid:
         self.obstacles.append(obstacle)
 
     # returns true if the grid space with lower left vertex at (Xpos, Ypos) is obstructed by an obstacle
-    def gridBlocked(self, Xpos, Ypos):
+    @staticmethod
+    def gridBlocked(Xpos, Ypos, obstacles):
         xBlocked = False
         yBlocked = False
-        for obstacle in self.obstacles:
+        for obstacle in obstacles:
             if obstacle.center_x >= Xpos:
                 xBlocked = (obstacle.getCenter()[0] - obstacle.getRadius()) < Xpos + 1
             else:

@@ -1,5 +1,6 @@
 from collections import deque
 import math
+import Grid
 
 def aStar(start, end):
     openList = [start]
@@ -50,7 +51,7 @@ def aStar(start, end):
         closedList.append(openList[bestIndex])
         openList.remove(openList[bestIndex])
 
-def thetaStar(start, goal):
+def thetaStar(start, goal, obstacles):
     start.setStartDistance(0)
     start.setParent(start)
     open = {}
@@ -66,11 +67,11 @@ def thetaStar(start, goal):
                 if neighbor == open:
                     neighbor.setStartDistance(math.inf)
             neighbor.setParent(None)
-            update_vertex(s, neighbor)
+            update_vertex(s, neighbor, obstacles)
     return None
 
-def update_vertex(vertex, neighbor):
-    if line_of_sight(vertex.getParent(), neighbor):
+def update_vertex(vertex, neighbor, obstacles):
+    if line_of_sight(vertex.getParent(), neighbor, obstacles):
         if vertex.getParent().getStartDistance() + vertex.getParent().getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
             neighbor.setStartDistance(vertex.getParent.getStartDistance() + vertex.getParent().getPosition().distanceTo(neighbor.getPosition()))
             neighbor.setParent(vertex.getParent())
@@ -92,7 +93,7 @@ def reconstruct_path(vertex):
     else:
         return total_path
 
-def line_of_sight(vertex, vertexTwo):
+def line_of_sight(vertex, vertexTwo, obstacles):
     x0 = vertex.getPosition().getX_Pos()
     x1 = vertexTwo.getPosition().getX_Pos()
     y0 = vertex.getPosition().getY_Pos()
@@ -116,26 +117,26 @@ def line_of_sight(vertex, vertexTwo):
         while x0 != x1:
             f += dy
             if f >= dx:
-                if grid:
+                if Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles):
                     return False
                 y0 += sy
                 f -= dx
-            if f != 0 & grid:
+            if f != 0 & Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles):
                 return False
-            if dy == 0 & grid:
+            if dy == 0 & Grid.gridBlocked(x0+((sx-1)/2), y0, obstacles) & Grid.gridBlocked(x0+((sx-1)/2), y0-1, obstacles):
                 return False
             x0 += sx
     else:
         while y0 != y1:
             f += dx
             if f >= dy:
-                if grid:
+                if Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles):
                     return False
                 x0 += sx
                 f -= dy
-            if f != 0 & grid:
+            if f != 0 & Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles):
                 return False
-            if dx == 0 & grid:
+            if dx == 0 & Grid.gridBlocked(x0, y0+((sy-1)/2), obstacles) & Grid.gridBlocked(x0-1, y0+((sy-1)/2), obstacles):
                 return False
             y0 += sy
     return True
