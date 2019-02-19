@@ -18,16 +18,16 @@ class Grid:
 
     #returns true if the grid space with lower left vertex at (Xpos, Ypos) is obstructed by an obstacle
     def gridBlocked(self, Xpos, Ypos):
-        x = False
-        y = False
+        xBlocked = False
+        yBlocked = False
         for obstacle in self.obstacles:
             if obstacle.center_x >= Xpos:
-                x = (obstacle.getCenter()(1) - obstacle.getRadius()) < Xpos + 1
+                xBlocked = (obstacle.getCenter()[0] - obstacle.getRadius()) < Xpos + 1
             else:
-                x = (obstacle.getCenter()(1) + obstacle.getRadius()) > Xpos
+                xBlocked = (obstacle.getCenter()[0] + obstacle.getRadius()) > Xpos
             if obstacle.center_y >= Ypos:
-                y = (obstacle.getCenter()(1) - obstacle.getRadius()) < Ypos + 1
+                yBlocked = (obstacle.getCenter()[1] - obstacle.getRadius()) < Ypos + 1
             else:
-                y = (obstacle.getCenter()(1) + obstacle.getRadius()) > Ypos
-        return (x & y)
+                yBlocked = (obstacle.getCenter()[1] + obstacle.getRadius()) > Ypos
+        return (xBlocked & yBlocked)
 
