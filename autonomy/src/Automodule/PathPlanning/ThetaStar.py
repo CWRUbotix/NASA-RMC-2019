@@ -1,6 +1,7 @@
 from collections import deque
 import math
-import Grid
+from Grid import Grid
+from Path import Path
 
 def aStar(start, end):
     openList = [start]
@@ -87,11 +88,12 @@ def update_vertex(vertex, neighbor, obstacles, unitScale):
             open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
 
 def reconstruct_path(vertex):
-    total_path = {vertex}
+    total_path = [vertex]
     if vertex.getParent() != vertex:
-        total_path.push(reconstruct_path(vertex.getParent()))
+        total_path.insert(0, reconstruct_path(vertex.getParent()))
     else:
-        return total_path
+        path = Path(total_path)
+        return path
 
 def line_of_sight(vertex, vertexTwo, obstacles, unitScale):
     x0 = vertex.getPosition().getX_Pos()
