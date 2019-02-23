@@ -17,11 +17,11 @@ void update_sensors(){
 		switch(sensor->type){
 			case SENS_NONE: break;
 			case SENS_DIGITAL_INPUT:{
-				sensor->n_value = (digitalRead(sensor->pin) == HIGH ? 1 : 0);
+				sensor->value = (digitalRead(sensor->pin) == HIGH ? 1.0 : 0.0);
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_LIMIT:{
-				sensor->n_value = (digitalRead(sensor->pin) == HIGH ? 1 : 0);
+				sensor->value = (digitalRead(sensor->pin) == HIGH ? 1.0 : 0.0);
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_LOAD_CELL:{
@@ -81,7 +81,19 @@ void maintain_motors(){
 				motor->device->vesc->request_mc_values(); 	// resonse packet should be ready when we call update sensors
 				break;}
 			case MTR_SABERTOOTH:{
+
 				debug("Updating sabertooth motor");
+
+				uint8_t data[3] = {};
+				package_DAC_voltage(MOTOR_ANLG_CENTER_V, data); 	// make sure motor is stopped
+
+				SPI.beginTransaction(*(motor->device->spi_settings));
+				digitalWrite(motor->device->spi_cs, LOW);
+				PAUSE_SHORT;
+				SPI.transfer(data, 3);
+				digitalWrite(motor->device->spi_cs, HIGH);
+				SPI.endTransaction();
+
 				break;}
 			case MTR_LOOKY:{
 				debug("Updating Looky");
@@ -114,6 +126,7 @@ void package_DAC_voltage(float v, uint8_t* data){
 	data[0] &= 0x00;
 
 	uint16_t temp = (uint16_t)(((v/5.0)*65535)+0.5);
+	debug("DAC voltage: " + String(temp));
 	data[1] = (temp >> 8) & 0xFF;
 	data[2] = (temp) & 0xFF;
 }

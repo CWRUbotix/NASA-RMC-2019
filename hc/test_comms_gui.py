@@ -200,7 +200,7 @@ class Application(tk.Frame):
 		if not (self.debug == None) and not (self.debug_is_paused):
 			if self.debug.in_waiting > 0:
 				line = self.debug.read(self.debug.in_waiting)
-				line = str(line, encoding='us-ascii')
+				line = line.decode(encoding='utf-8')
 				self.debug_text_box.insert(tk.END, line, None)
 				self.debug_text_box.yview_scroll(line.count('\n'), tk.UNITS)
 				# line = self.debug_text.get() + line
