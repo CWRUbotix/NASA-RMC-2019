@@ -1,3 +1,5 @@
+#include <XYZrobotServo.h>
+
 #ifndef IO_H_
 #define IO_H_
 
@@ -54,14 +56,15 @@ void update_sensors(){
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_POT_ENC:{
-
-
+        
+        //sensor->value = sensor->device->adc->get_value();
 				// sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_LOOKY_ENC:{
-
-
-				// sensor->t_stamp = TIME_STAMP;
+        //to get status:
+        //XYZrobotServoStatus status = servo.readStatus();
+        sensor->device->servo_status = sensor->device->servo->readStatus();
+				sensor->t_stamp = TIME_STAMP;
 				break;}
 		}
 	}
@@ -81,7 +84,8 @@ void maintain_motors(){
 				motor->device->vesc->request_mc_values(); 	// resonse packet should be ready when we call update sensors
 				break;}
 			case MTR_SABERTOOTH:{
-
+				//PID controls:
+				//rot_val = dx*(target-actual) + dy*(
 				debug("Updating sabertooth motor");
 
 				uint8_t data[3] = {};
@@ -96,6 +100,8 @@ void maintain_motors(){
 
 				break;}
 			case MTR_LOOKY:{
+				//if(somevalue change direction){}
+				motor->device->servo->setPosition(int(setpt+0.5), 0);
 				debug("Updating Looky");
 				break;}
 		}

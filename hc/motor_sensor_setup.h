@@ -39,7 +39,7 @@ void init_motors(){
 				SPI.endTransaction();
 				break;}
 			case MTR_LOOKY:{
-
+        motor->device->servo->setSpeed(512, 0);  //Parameters(speed = X, playtime = 0) do not change playtime
 				break;}
 		}
 	}

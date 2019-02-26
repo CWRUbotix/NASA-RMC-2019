@@ -1,3 +1,5 @@
+
+
 #ifndef VALUES_AND_TYPES_H_
 #define VALUES_AND_TYPES_H_
 
@@ -7,7 +9,7 @@
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
-
+#include <XYZrobotServo.h>
 ////////////////////////////////////////////////////////////////////////////////
 //	PREPROCESSOR DEFINES
 ////////////////////////////////////////////////////////////////////////////////
@@ -186,6 +188,8 @@ typedef struct Device{
 	VESC* vesc;
 	LSM6DS3* imu;
 	HardwareSerial* serial;
+  XYZrobotServo* servo;
+  XYZrobotServoStatus* servo_status;
 	uint8_t spi_cs 		= 0;
 	uint8_t id 			= 0;
 	bool is_setup 		= false; // field to prevent unnecessary setup
@@ -233,6 +237,11 @@ bool estop_state_last 	= false; 	// false means off
 
 int t_micros 			= 0; 		// will be updated with micros()
 int t_offset 			= 0; 		// offset = micros() - t_sync,   t_stamp = micros() - t_offset
+
+XYZrobotServo looky_servo_port(&Serial6, 128);
+XYZrobotServo looky_servo_starboard(&Serial6, 129);
+XYZrobotServoStatus looky_servoStatus_port;
+XYZrobotServoStatus looky_servoStatus_starboard;
 
 VESC vesc1(&Serial1);
 VESC vesc2(&Serial2);
