@@ -73,9 +73,9 @@ void loop(){
 	}
 	float loop_t = (micros() - start_time)/1000;
 	if(loop_t > 0.0009){
-		String time_str = String("Loop-time in microsec: ");
-		time_str.concat(String(loop_t, 3));
-		debug(time_str);
+		// String time_str = String("Loop-time in microsec: ");
+		// time_str.concat(String(loop_t, 3));
+		// debug(time_str);
 	}
 	
 }
