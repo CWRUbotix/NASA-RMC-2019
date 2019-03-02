@@ -19,15 +19,31 @@ enum commands:uint8_t{
     com_rreg = 0b00100000; //apply OR mask to lower nibble
     com_wreg = 0b01000000; //apply OR mask to lower nibble
 };
+
+//nibble for mux
+enum adc_mux_input:uint8_t{
+    0_1_diff = 0x0;
+    2_3_diff = 0x5,
+    0_single = 0x8,
+    1_single = 0x9,
+    2_single = 0xA,
+    3_single = 0xB
+};
+
 class ADS1120{
   
   public:
+
     ADS1120(int cs_pin);
     void setup(uint8_t config);
-    uint16_t read_channel(uint8_t);
+    bool read_channel(adc_mux_input mode, uint16_t *output);
+    void set_mux_input(adc_mux_input mode);
+    void set_gain(uint8_t gain);
 
   private:
     SPISettings ADC_SPI_settings;
+    constexpr int miso_pin = 12; 
+    mux_input cur_mux_input;  
     int cs_pin;
     void _set_single_shot(void);
     void _set_continuous_conv(void);
