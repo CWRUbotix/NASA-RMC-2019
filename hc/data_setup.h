@@ -16,16 +16,19 @@ void setup_devices(){
 	device_infos[ADC_0].interface 		= SPI_BUS;
 	device_infos[ADC_0].spi_cs 			= ADC_0_CS_PIN;
 	device_infos[ADC_0].spi_settings 	= &ADC_SPI_settings;
+	device_infos[ADC_0].adc 			= &adc0;
 
 	// ADC 1
 	device_infos[ADC_1].interface 		= SPI_BUS;
 	device_infos[ADC_1].spi_cs 			= ADC_1_CS_PIN;
 	device_infos[ADC_1].spi_settings 	= &ADC_SPI_settings;
+	device_infos[ADC_1].adc 			= &adc1;
 
 	// ADC 2
-	device_infos[ADC_2].interface 	= SPI_BUS;
-	device_infos[ADC_2].spi_cs 		= ADC_2_CS_PIN;
-	device_infos[ADC_2].spi_settings= &ADC_SPI_settings;
+	device_infos[ADC_2].interface 		= SPI_BUS;
+	device_infos[ADC_2].spi_cs 			= ADC_2_CS_PIN;
+	device_infos[ADC_2].spi_settings 	= &ADC_SPI_settings;
+	device_infos[ADC_2].adc 			= &adc2;
 
 	// SPI TRANS ENCODER
 	device_infos[TRANS_ENCODER].interface 	= SPI_BUS;
@@ -82,14 +85,14 @@ void setup_devices(){
 	// LOOKY PORT
 	device_infos[LOOKY_0].interface 	= LOOKY_UART;
 	device_infos[LOOKY_0].serial 		= &Serial6;
-  device_infos[LOOKY_0].servo = looky_servo_port;
-  device_infos[LOOKY_0].servo_status;
+	device_infos[LOOKY_0].servo = looky_servo_port;
+	device_infos[LOOKY_0].servo_status;
 
 	// LOOKY STBD
 	device_infos[LOOKY_1].interface 	= LOOKY_UART;
 	device_infos[LOOKY_1].serial 		= &Serial6;
-  device_infos[LOOKY_1].servo = looky_servo_starboard;
-  device_infos[LOOKY_1].servo_status;
+	device_infos[LOOKY_1].servo = looky_servo_starboard;
+	device_infos[LOOKY_1].servo_status;
 }
 
 
@@ -299,6 +302,8 @@ void setup_motors(void){
 	// DEP VESC (VESC 3)
 	motor 				= &(motor_infos[DEP_VESC]);
 	motor->device 		= &(device_infos[VESC_3]);
+	motor->limit_1 		= &(sensor_infos[DEP_LIMIT_UPPER]);
+	motor->limit_2 		= &(sensor_infos[DEP_LIMIT_LOWER]);
 
 	// EXC VESC (VESC 4)
 	motor 				= &(motor_infos[EXC_VESC]);
@@ -308,16 +313,22 @@ void setup_motors(void){
 	motor 				= &(motor_infos[EXC_TRANS]);
 	motor->device 		= &(device_infos[DAC_0]);
 	motor->type 		= MTR_SABERTOOTH;
+	motor->limit_1 		= &(sensor_infos[EXC_CONV_LIMIT_UPPER]);
+	motor->limit_2 		= &(sensor_infos[EXC_CONV_LIMIT_LOWER]);
 
 	// Exc Rot Port (DAC 1)
 	motor 				= &(motor_infos[EXC_ROT_PORT]);
 	motor->device 		= &(device_infos[DAC_1]);
 	motor->type 		= MTR_SABERTOOTH;
+	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
+	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
 
 	// Exc Rot Starboard (DAC 2)
 	motor 				= &(motor_infos[EXC_ROT_STBD]);
 	motor->device 		= &(device_infos[DAC_2]);
 	motor->type 		= MTR_SABERTOOTH;
+	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
+	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
 }
 
 

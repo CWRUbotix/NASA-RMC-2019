@@ -6,6 +6,7 @@
 #include <SPI.h>
 #include "VESC/VESC.h"
 #include "LSM6DS3.h"
+#include "ADS1120.h"
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -48,8 +49,8 @@
 #define ESTOP_SENSE_PIN 		39
 
 #define MOTOR_ANLG_CENTER_V 	2.5
-#define DAC8551_SPEED 			1000000
-#define ADS1120_SPEED 			1000000
+#define DAC8551_SPEED 			2500000
+#define ADS1120_SPEED 			2500000
 #define IMU_SPEED 				1000000
 #define ENCODER_SPEED 			1000000
 #define DEBUG_SPEED 			1000000
@@ -185,11 +186,12 @@ typedef enum MotorType {
 typedef struct Device{
 	Interface interface = NONE;
 	SPISettings* spi_settings;
+	ADS1120* adc;
 	VESC* vesc;
 	LSM6DS3* imu;
 	HardwareSerial* serial;
-  XYZrobotServo* servo;
-  XYZrobotServoStatus* servo_status;
+	XYZrobotServo* servo;
+	XYZrobotServoStatus* servo_status;
 	uint8_t spi_cs 		= 0;
 	uint8_t id 			= 0;
 	bool is_setup 		= false; // field to prevent unnecessary setup
@@ -212,6 +214,8 @@ typedef struct MotorInfo{
 	MotorType type 		= MTR_NONE;
 	Device* device;
 	SensorInfo* sensor;
+	SensorInfo* limit_1;
+	SensorInfo* limit_2;
 	float setpt 		= 0.0; 	
 	float volts 		= MOTOR_ANLG_CENTER_V;
 	int t_stamp 		= 0; 	// time-stamp of last update
@@ -237,6 +241,10 @@ bool estop_state_last 	= false; 	// false means off
 
 int t_micros 			= 0; 		// will be updated with micros()
 int t_offset 			= 0; 		// offset = micros() - t_sync,   t_stamp = micros() - t_offset
+
+ADS1120 adc0(ADC_0_CS_PIN);
+ADS1120 adc1(ADC_1_CS_PIN);
+ADS1120 adc2(ADC_2_CS_PIN);
 
 XYZrobotServo looky_servo_port(&Serial6, 128);
 XYZrobotServo looky_servo_starboard(&Serial6, 129);
