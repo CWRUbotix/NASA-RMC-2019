@@ -4,7 +4,7 @@
 ADS1120::ADS1120(int cs){
     this->cs_pin = cs;
     this->ADC_SPI_settings = SPISettings(ADS1120_SPEED, MSBFIRST, SPI_MODE1);
-    this->cur_mode = 0_single;
+    this->cur_mux_input = single_0;
 }
 
 void ADS1120::setup(uint8_t config){
@@ -19,12 +19,12 @@ void ADS1120::setup(uint8_t config){
 
 	// CONFIG REG 1
 	data[0] = (1 << 2); 			// SET CONTINUOUS CONVERSION MODE
-	data[0] |= b01000000; 			// SET 180 SPS in TURBO MODE
-	data[0] |= b00010000; 			// SET TURBO MODE
+	data[0] |= B01000000; 			// SET 180 SPS in TURBO MODE
+	data[0] |= B00010000; 			// SET TURBO MODE
 	write_ok = this->_write_reg(1, 1, data);
 
 	// CONFIG REG 2
-	data[0] = b10000000; 			//chooses AIN0 and AIN3 as vref
+	data[0] = B10000000; 			//chooses AIN0 and AIN3 as vref
 
 	if(config == CONFIG_FOR_LOAD_CELL){
 		data[0] |= (1 << 3); 		// ENABLES LOW SIDE POWER SWITCH
@@ -34,6 +34,14 @@ void ADS1120::setup(uint8_t config){
 	// CONFIG REG 3
 	data[0] = (1 << 1); 			// sets DRDYM to 1 (useful for single shot mode)
 	write_ok = this->_write_reg(3, 1, data);
+
+	digitalWrite(this->cs_pin,LOW);
+    PAUSE_SHORT;
+    SPI.beginTransaction(this->ADC_SPI_settings);
+    SPI.transfer(com_start);
+    SPI.endTransaction();
+	digitalWrite(this->cs_pin,HIGH);
+
 }
 
 void ADS1120::_set_single_shot(){
@@ -64,31 +72,31 @@ void ADS1120::set_gain(uint8_t n){
     return; 
 }
 
-void ADS1120::set_mux_input(adc_mux_input mode){
+void ADS1120::set_mux_input(uint8_t mode){
     uint8_t config_reg = 0;
     _read_reg(0,1,&config_reg);
     config_reg &= 0b00001111;
-    config_reg |= ( ((uint8_t)input) <<4);   
+    config_reg |= ( ((uint8_t)mode) <<4);   
     _write_reg(0,1,&config_reg);
-    this->cur_mux_input = input;
+    this->cur_mux_input = mode;
     return;
 }
 
-bool ADS1120::read_channel(adc_mux_input mode, uint16_t *output){
+bool ADS1120::read_channel(uint8_t mode, uint16_t *output){
 
     //if the request matchtes the current mux mode then read out a value
     if(mode == this->cur_mux_input){
-
         digitalWrite(this->cs_pin, LOW);
         PAUSE_SHORT;
-        SPI.beginTransation(this->ADC_SPI_settings);
+        SPI.beginTransaction(this->ADC_SPI_settings);
         uint8_t data_msb = SPI.transfer(com_rdata);
+        data_msb 		 = SPI.transfer(0x00);
         uint8_t data_lsb = SPI.transfer(0x00);
         SPI.endTransaction();
         digitalWrite(this->cs_pin,HIGH);
-        uint16_t output = data_msb;
-        output = output<<8;
-        output += data_lsb;
+        *output = data_msb;
+        *output = *output << 8;
+        *output += data_lsb;
         return true;
     //if the request does not match the current mux mode then change modes and read
     }else{
@@ -111,13 +119,14 @@ bool ADS1120::read_channel(adc_mux_input mode, uint16_t *output){
 
         if(!got_data) return false;
         uint8_t data_msb = SPI.transfer(0x00);
+        data_msb 		 = SPI.transfer(0x00);
         uint8_t data_lsb = SPI.transfer(0x00);
         SPI.endTransaction();
         digitalWrite(this->cs_pin,HIGH);
-        uint16_t output = data_msb;
-        output = output<<8;
-        output += data_lsb;
-        _set_continuous_mode();
+        *output = data_msb;
+        *output = *output << 8;
+        *output += data_lsb;
+        this->_set_continuous_conv();
         set_mux_input(prev_mux_input);
         return true;
  

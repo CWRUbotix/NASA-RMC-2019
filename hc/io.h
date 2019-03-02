@@ -27,7 +27,18 @@ void update_sensors(){
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_LOAD_CELL:{
-				// read ADC among other things
+        		uint16_t temp = 0;
+        		int16_t signed_temp = 0;
+        		bool success = sensor->device->adc->read_channel(diff_1_2, &temp);
+				if(success){
+					debug("ADC read successful");
+					memcpy(&signed_temp, &temp, 2);
+					sensor->value = (signed_temp/32767.0)*5.0;
+					sensor->t_stamp = TIME_STAMP;
+					debug(String(sensor->value, 3));
+				}else{
+					sensor->value = 0.0;
+				}
 				break;}
 			case SENS_GYRO:{
 				switch(sensor->imu_axis){
@@ -56,14 +67,22 @@ void update_sensors(){
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_POT_ENC:{
-        
-        //sensor->value = sensor->device->adc->get_value();
+				uint16_t raw 		= 0;
+				int16_t signed_raw 	= 0;
+        		bool success = sensor->device->adc->read_channel(single_1, &raw);
+				if(success){
+					debug("single ended ADC read good");
+					debug(String(raw/32767.0, 3));
+				}else{
+					debug("ADC READ ERROR");
+				}
+
 				// sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_LOOKY_ENC:{
-        //to get status:
-        //XYZrobotServoStatus status = servo.readStatus();
-        sensor->device->servo_status = sensor->device->servo->readStatus();
+				//to get status:
+				//XYZrobotServoStatus status = servo.readStatus();
+				// sensor->device->servo_status = sensor->device->servo->readStatus();
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 		}
@@ -101,7 +120,7 @@ void maintain_motors(){
 				break;}
 			case MTR_LOOKY:{
 				//if(somevalue change direction){}
-				motor->device->servo->setPosition(int(setpt+0.5), 0);
+				// motor->device->servo->setPosition(int(setpt+0.5), 0);
 				debug("Updating Looky");
 				break;}
 		}

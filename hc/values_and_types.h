@@ -246,10 +246,10 @@ ADS1120 adc0(ADC_0_CS_PIN);
 ADS1120 adc1(ADC_1_CS_PIN);
 ADS1120 adc2(ADC_2_CS_PIN);
 
-XYZrobotServo looky_servo_port(&Serial6, 128);
-XYZrobotServo looky_servo_starboard(&Serial6, 129);
-XYZrobotServoStatus looky_servoStatus_port;
-XYZrobotServoStatus looky_servoStatus_starboard;
+// XYZrobotServo looky_servo_port(&Serial6, 128);
+// XYZrobotServo looky_servo_starboard(&Serial6, 129);
+// XYZrobotServoStatus looky_servoStatus_port;
+// XYZrobotServoStatus looky_servoStatus_starboard;
 
 VESC vesc1(&Serial1);
 VESC vesc2(&Serial2);

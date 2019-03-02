@@ -85,14 +85,14 @@ void setup_devices(){
 	// LOOKY PORT
 	device_infos[LOOKY_0].interface 	= LOOKY_UART;
 	device_infos[LOOKY_0].serial 		= &Serial6;
-	device_infos[LOOKY_0].servo = looky_servo_port;
-	device_infos[LOOKY_0].servo_status;
+	// device_infos[LOOKY_0].servo = looky_servo_port;
+	// device_infos[LOOKY_0].servo_status;
 
 	// LOOKY STBD
 	device_infos[LOOKY_1].interface 	= LOOKY_UART;
 	device_infos[LOOKY_1].serial 		= &Serial6;
-	device_infos[LOOKY_1].servo = looky_servo_starboard;
-	device_infos[LOOKY_1].servo_status;
+	// device_infos[LOOKY_1].servo = looky_servo_starboard;
+	// device_infos[LOOKY_1].servo_status;
 }
 
 

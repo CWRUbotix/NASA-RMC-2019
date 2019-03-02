@@ -68,8 +68,10 @@ void init_sensors(){
 			case SENS_LOAD_CELL:{
 				if(device != NULL && !device->is_setup){
 					// configure ADC
-					debug("load cell device not null");
-					delay(2);
+					debug("setting up load cell ADC");
+					device->adc->setup(CONFIG_FOR_LOAD_CELL);
+					device->adc->set_mux_input(diff_1_2);
+					device->adc->set_gain(6);
 					device->is_setup = true;
 				}
 				break;}
@@ -103,8 +105,11 @@ void init_sensors(){
 			case SENS_POT_ENC:{
 				if(device != NULL && !device->is_setup){
 					// configure ADC 
-
-					sensor->device->is_setup = true;
+					debug("setting up pot. ADC");
+					device->adc->setup(CONFIG_FOR_POT);
+					device->adc->set_mux_input(single_1);
+					device->adc->set_gain(0);
+					device->is_setup = true;
 				}
 				break;}
 		}
