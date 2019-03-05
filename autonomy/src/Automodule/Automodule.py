@@ -3,6 +3,7 @@
 import rospy
 from std_msgs.msg import String
 from PathPlanning.PathPlanning import Position #import specific functions later
+import Automodule.MotorCommand as mc
 
 """
 Main Module for Autonomy operation
@@ -95,12 +96,49 @@ Should not be taking in inputs. if you need something, make it global
 def task_1():
 	pass
 
+#Cycle 1 digging goal : 100
+def task_4():
+	driveStrength = 40
+	translationStrength = 10
+	angleStrength = 10
+	#Is there a way to know if it's fully angled down?
+	mc.bucket_angle_actuator(angleStrength)
+	rospy.sleep(15)
+	mc.bucket_angle_actuator(0)
+	mc.bucket_drive_motor(driveStrength)
+	mc.bucket_translation_motor(translationStrength)
+	rospy.sleep(60)
+	mc.bucket_drive_motor(0)
+	mc.bucket_translation_motor(-1 * translationStrength)
+	rospy.sleep(10)
+	mc.bucket_translation_motor(0)
+	mc.bucket_angular_actuator(-angleStrength)
+	rospy.sleep(15)
+	mc.bucket_angular_actuator(0)
 
+#Cycle 2 digging goal : 100
+def task_11():
+	driveStrength = 40
+	translationStrength = 10
+	angleStrength = 10
+	# Is there a way to know if it's fully angled down?
+	mc.bucket_angle_actuator(angleStrength)
+	rospy.sleep(15)
+	mc.bucket_angle_actuator(0)
+	mc.bucket_drive_motor(driveStrength)
+	mc.bucket_translation_motor(translationStrength)
+	rospy.sleep(60)
+	mc.bucket_drive_motor(0)
+	mc.bucket_translation_motor(-1 * translationStrength)
+	rospy.sleep(10)
+	mc.bucket_translation_motor(0)
+	mc.bucket_angular_actuator(-angleStrength)
+	rospy.sleep(15)
+	mc.bucket_angular_actuator(0)
 
 """
 functions for tasks END
 """
-
 
 def modifyTimes(timeLeft):
 	pass
