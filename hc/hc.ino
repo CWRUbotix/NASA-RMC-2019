@@ -4,6 +4,8 @@
 
 #include "VESC/VESC.h"
 #include "LSM6DS3.h"
+#include "ADS1120.h"
+#include "Herkulex.h"
 #include "values_and_types.h"
 #include "data_setup.h"
 #include "io.h"
@@ -34,6 +36,7 @@ void setup(){
 	
 	debug("check estop pin");
 	if(digitalRead(sensor_infos[ESTOP_SENSE_INDEX].pin) == HIGH){
+		delay(500); 		// wait for motor controllers to boot up
 		debug("init motors");
 		init_motors();
 	}else{
@@ -49,6 +52,7 @@ void loop(){
 	sensor_infos[ESTOP_SENSE_INDEX].t_stamp = TIME_STAMP;
 
 	if(estop_state==HIGH && estop_state!=estop_state_last){
+		delay(500); 			// wait for motor controllers to boot up
 		debug("init motors");
 		init_motors();
 	} estop_state_last = estop_state;

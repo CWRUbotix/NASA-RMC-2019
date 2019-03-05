@@ -12,19 +12,19 @@ void setup_devices(void);
 void setup_devices(){
 	Device* device = NULL;
 
-	// ADC 0
+	// ADC 0 (Linear actuator pots.)
 	device_infos[ADC_0].interface 		= SPI_BUS;
 	device_infos[ADC_0].spi_cs 			= ADC_0_CS_PIN;
 	device_infos[ADC_0].spi_settings 	= &ADC_SPI_settings;
 	device_infos[ADC_0].adc 			= &adc0;
 
-	// ADC 1
+	// ADC 1 (Deposition Load Cell(s))
 	device_infos[ADC_1].interface 		= SPI_BUS;
 	device_infos[ADC_1].spi_cs 			= ADC_1_CS_PIN;
 	device_infos[ADC_1].spi_settings 	= &ADC_SPI_settings;
 	device_infos[ADC_1].adc 			= &adc1;
 
-	// ADC 2
+	// ADC 2 (Excavation Load Cell(s))
 	device_infos[ADC_2].interface 		= SPI_BUS;
 	device_infos[ADC_2].spi_cs 			= ADC_2_CS_PIN;
 	device_infos[ADC_2].spi_settings 	= &ADC_SPI_settings;
@@ -129,17 +129,19 @@ void setup_sensors(){
 	sensor->device 		= &(device_infos[TRANS_ENCODER]);
 	sensor->type 		= SENS_ROT_ENC;
 
-	// EXC ROTATION PORT ENCODER
+	// EXC ROTATION PORT ENCODER (ADC AIN2)
 	sensor 				= &(sensor_infos[EXC_ROT_PORT_ENC]);
 	sensor->name 		= "EXC ROT ENC PORT";
 	sensor->device 		= &(device_infos[ADC_0]);
 	sensor->type 		= SENS_POT_ENC;
+	sensor->adc_channel_config = single_2;
 
-	// EXC ROTATION STBD ENCODER
+	// EXC ROTATION STBD ENCODER (ADC AIN1)
 	sensor 				= &(sensor_infos[EXC_ROT_STBD_ENC]);
 	sensor->name 		= "EXC ROT ENC STBD";
 	sensor->device 		= &(device_infos[ADC_0]);
 	sensor->type 		= SENS_POT_ENC;
+	sensor->adc_channel_config = single_1;
 
 	// LOOKY PORT ENC
 	sensor 				= &(sensor_infos[LOOKY_PORT_ENC]);
@@ -153,17 +155,19 @@ void setup_sensors(){
 	sensor->device 		= &(device_infos[LOOKY_1]);
 	sensor->type 		= SENS_LOOKY_ENC;
 
-	// DEP PORT LOAD-CELL
-	sensor 				= &(sensor_infos[DEP_PORT_LOAD]);
-	sensor->name 		= "DEP PORT LD CELL";
+	// DEP LOAD-CELL
+	sensor 				= &(sensor_infos[DEP_LOAD_CELL]);
+	sensor->name 		= "DEP LOAD CELL";
 	sensor->device 		= &(device_infos[ADC_1]);
 	sensor->type 		= SENS_LOAD_CELL;
+	sensor->prev_values = dep_lc_values;
 
-	// DEP STBD LOAD-CELL
-	sensor 				= &(sensor_infos[DEP_STBD_LOAD]);
-	sensor->name 		= "DEP STBD LD CELL";
+	// EXC LOAD LOAD-CELL
+	sensor 				= &(sensor_infos[EXC_LOAD_CELL]);
+	sensor->name 		= "EXC LOAD CELL";
 	sensor->device 		= &(device_infos[ADC_2]);
 	sensor->type 		= SENS_LOAD_CELL;
+	sensor->prev_values = exc_lc_values;
 
 	// GYRO-0 X
 	sensor 				= &(sensor_infos[GYRO_0_X]);
@@ -294,20 +298,32 @@ void setup_motors(void){
 	// PORT VESC (VESC 1)
 	motor 				= &(motor_infos[PORT_VESC]);
 	motor->device 		= &(device_infos[VESC_1]);
+	motor->max_setpt 	= 5000.0; 					// max RPM
+	motor->max_delta 	= 50.0; 					// final output RPM/s
+	motor->rpm_factor 	= 100.0 * 7; 				// external_reduc * pole_pairs
 
 	// STBD VESC (VESC 2)
 	motor 				= &(motor_infos[STBD_VESC]);
 	motor->device 		= &(device_infos[VESC_2]);
+	motor->max_setpt 	= 5000.0; 					// max RPM
+	motor->max_delta 	= 50.0; 					// final output RPM/s
+	motor->rpm_factor 	= 100.0 * 7; 				// external_reduc * pole_pairs
 
 	// DEP VESC (VESC 3)
 	motor 				= &(motor_infos[DEP_VESC]);
 	motor->device 		= &(device_infos[VESC_3]);
 	motor->limit_1 		= &(sensor_infos[DEP_LIMIT_UPPER]);
 	motor->limit_2 		= &(sensor_infos[DEP_LIMIT_LOWER]);
+	motor->max_setpt 	= 5000.0; 					// max RPM
+	motor->max_delta 	= 50.0; 					// final output RPM/s
+	motor->rpm_factor 	= 50.0 * 7; 				// external_reduc * pole_pairs
 
 	// EXC VESC (VESC 4)
 	motor 				= &(motor_infos[EXC_VESC]);
 	motor->device 		= &(device_infos[VESC_4]);
+	motor->max_setpt 	= 5000.0; 					// max RPM
+	motor->max_delta 	= 50.0; 					// final output RPM/s
+	motor->rpm_factor 	= 50.0 * 7; 				// external_reduc * pole_pairs
 
 	// Exc translation (DAC 0)
 	motor 				= &(motor_infos[EXC_TRANS]);
@@ -315,6 +331,7 @@ void setup_motors(void){
 	motor->type 		= MTR_SABERTOOTH;
 	motor->limit_1 		= &(sensor_infos[EXC_CONV_LIMIT_UPPER]);
 	motor->limit_2 		= &(sensor_infos[EXC_CONV_LIMIT_LOWER]);
+	motor->max_setpt 	= 1000.0; 					// max positional value (mm)
 
 	// Exc Rot Port (DAC 1)
 	motor 				= &(motor_infos[EXC_ROT_PORT]);
@@ -322,6 +339,7 @@ void setup_motors(void){
 	motor->type 		= MTR_SABERTOOTH;
 	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
 	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
+	motor->max_setpt 	= 135.0; 					// max position in degrees
 
 	// Exc Rot Starboard (DAC 2)
 	motor 				= &(motor_infos[EXC_ROT_STBD]);
@@ -329,6 +347,19 @@ void setup_motors(void){
 	motor->type 		= MTR_SABERTOOTH;
 	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
 	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
+	motor->max_setpt 	= 135.0; 					// max position in degrees
+
+	// Looky PORT SIDE
+	motor 				= &(motor_infos[LOOKY_PORT]);
+	motor->device 		= &(device_infos[LOOKY_0]);
+	motor->type 		= MTR_LOOKY;
+	motor->max_setpt 	= 150.0; 					// max position in degrees
+
+	// Looky STBD SIDE
+	motor 				= &(motor_infos[LOOKY_STBD]);
+	motor->device 		= &(device_infos[LOOKY_1]);
+	motor->type 		= MTR_LOOKY;
+	motor->max_setpt 	= 150.0; 					// max position in degrees
 }
 
 

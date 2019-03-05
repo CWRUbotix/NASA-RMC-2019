@@ -11,6 +11,7 @@ void maintain_motors(void);
 void package_DAC_voltage(float v, uint8_t* data);
 void debug(String s);
 float get_rot_encoder_value(SensorInfo* encoder);
+void Encoder_ISR(void);
 
 void update_sensors(){
 	for(int i = 0; i < NUM_SENSORS; i++){
@@ -27,57 +28,73 @@ void update_sensors(){
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_LOAD_CELL:{
-        		uint16_t temp = 0;
-        		int16_t signed_temp = 0;
-        		bool success = sensor->device->adc->read_channel(diff_1_2, &temp);
-				if(success){
-					debug("ADC read successful");
-					memcpy(&signed_temp, &temp, 2);
-					sensor->value = (signed_temp/32767.0)*5.0;
-					sensor->t_stamp = TIME_STAMP;
-					debug(String(sensor->value, 3));
-				}else{
-					sensor->value = 0.0;
+				if(sensor->device != NULL && sensor->device->is_setup){
+	        		uint16_t temp 		= 0;
+	        		int16_t signed_temp = 0;
+	        		float f_temp 		= 0;
+	        		sensor->value_good = sensor->device->adc->read_channel(diff_1_2, &temp);
+					if(sensor->value_good){
+						memcpy(&signed_temp, &temp, 2);
+						f_temp = (signed_temp/32767.0)*5.0; 					// voltage
+						sensor->value = sensor->slope*f_temp + sensor->offset;	// apply linear correction
+						sensor->t_stamp = TIME_STAMP;
+						sensor->prev_values[val_ind] = sensor->value;
+						sensor->val_ind++;
+						if(sensor->val_ind >= NUM_PREV_VALUES){
+							sensor->val_ind = 0;}
+						debug("Load cell v:\t"+String(sensor->value, 3));
+					}else{
+						debug("Load cell read ERROR");
+					}
 				}
 				break;}
 			case SENS_GYRO:{
-				switch(sensor->imu_axis){
-					case 'X': sensor->value = device->imu->get_gyro_x(); break;
-					case 'Y': sensor->value = device->imu->get_gyro_y(); break;
-					case 'Z': sensor->value = device->imu->get_gyro_z(); break;
+				if(sensor->device != NULL && sensor->device->is_setup){
+					switch(sensor->imu_axis){
+						case 'X': sensor->value = device->imu->get_gyro_x(); break;
+						case 'Y': sensor->value = device->imu->get_gyro_y(); break;
+						case 'Z': sensor->value = device->imu->get_gyro_z(); break;
+					}
 				}
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_ACCEL:{
-				switch(sensor->imu_axis){
-					case 'X': sensor->value = device->imu->get_accel_x(); break;
-					case 'Y': sensor->value = device->imu->get_accel_y(); break;
-					case 'Z': sensor->value = device->imu->get_accel_z(); break;
+				if(sensor->device != NULL && sensor->device->is_setup){
+					switch(sensor->imu_axis){
+						case 'X': sensor->value = device->imu->get_accel_x(); break;
+						case 'Y': sensor->value = device->imu->get_accel_y(); break;
+						case 'Z': sensor->value = device->imu->get_accel_z(); break;
+					}
 				}
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_ROT_ENC:{
-				float temp = get_rot_encoder_value(sensor);
-				sensor->value = 3.14159265;
-				sensor->t_stamp = TIME_STAMP;
+				if(sensor->device != NULL && sensor->device->is_setup){
+					float temp = get_rot_encoder_value(sensor);
+					sensor->value = 3.14159265;
+					sensor->t_stamp = TIME_STAMP;
+				}
 				break;}
 			case SENS_BLDC_ENC:{
-				sensor->device->vesc->update_mc_values(); 				// read the available packet
-				sensor->value = 1.0*sensor->device->vesc->get_rpm();	// get the RPM
-				sensor->t_stamp = TIME_STAMP;
+				if(sensor->device != NULL && sensor->device->is_setup){
+					// vesc->request_mc_values() should have been called during maintain motors
+					sensor->device->vesc->update_mc_values(); 				// read the available packet
+					sensor->value = 1.0*sensor->device->vesc->get_rpm();	// get the RPM
+					sensor->t_stamp = TIME_STAMP;
+				}
 				break;}
 			case SENS_POT_ENC:{
-				uint16_t raw 		= 0;
-				int16_t signed_raw 	= 0;
-        		bool success = sensor->device->adc->read_channel(single_1, &raw);
-				if(success){
-					debug("single ended ADC read good");
-					debug(String(raw/32767.0, 3));
-				}else{
-					debug("ADC READ ERROR");
+				if(sensor->device != NULL && sensor->device->is_setup){
+					uint16_t raw 		= 0;
+	        		sensor->value_good = sensor->device->adc->read_channel(sensor->adc_channel_config, &raw);
+					if(sensor->value_good){
+						sensor->t_stamp = TIME_STAMP;
+						sensor->value = signed_raw/32767.0;
+						debug("Pot frac:\t"+String(sensor->value, 3));
+					}else{
+						debug("Pot. read ERROR");
+					}
 				}
-
-				// sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_LOOKY_ENC:{
 				//to get status:
@@ -96,11 +113,18 @@ void maintain_motors(){
 		switch(motor->type){
 			case MTR_NONE: break;
 			case MTR_VESC:{
-				debug("Updating VESC");
-				int sign = motor->setpt/fabs(motor->setpt);
-				int rpm = (fabs(motor->setpt) > motor->max_setpt ? (int)sign*motor->max_setpt : (int)motor->setpt );
-				motor->device->vesc->set_rpm(rpm); 			// set the motor speed
-				motor->device->vesc->request_mc_values(); 	// resonse packet should be ready when we call update sensors
+				int dt 			= (TIME_STAMP - motor->t_stamp) * 1000000; 	// delta-T in sec
+				int sign 		= (int)(motor->setpt/fabs(motor->setpt));
+				float proposed_delta = (motor->setpt - motor->last_rpm)/dt; // calculate proposed delta-RPM
+				if(fabs(proposed) =< motor->max_delta){ 					// check if the proposed delta is allowed
+					motor->last_rpm = motor->setpt; 						// cool, it's allowed, so this will be our rpm to send
+				}else{ 														// TOO MUCH DELTA
+					motor->last_rpm += (sign * motor->max_delta * dt); 		// increment by max, and consider the sign
+				}
+				int rpm = (int)(motor->last_rpm * motor->rpm_factor); 		// convert to "eRPM" and cast to int
+				debug("Updating VESC: "+String(rpm, DEC));
+				motor->device->vesc->set_rpm(rpm); 							// actually send the rpm
+				motor->device->vesc->request_mc_values(); 					// resonse packet should be ready when we call update sensors
 				break;}
 			case MTR_SABERTOOTH:{
 				//PID controls:
@@ -119,8 +143,10 @@ void maintain_motors(){
 
 				break;}
 			case MTR_LOOKY:{
-				//if(somevalue change direction){}
-				// motor->device->servo->setPosition(int(setpt+0.5), 0);
+				if(motor->setpt != motor->last_setpt){
+					// Herkulex.moveOneAngle(servoID, angle, time_ms, iLed??)
+					Herkulex.moveOneAngle(motor->looky_id, motor->setpt, 200, 2);
+				}
 				debug("Updating Looky");
 				break;}
 		}
@@ -154,6 +180,11 @@ void package_DAC_voltage(float v, uint8_t* data){
 	debug("DAC voltage: " + String(temp));
 	data[1] = (temp >> 8) & 0xFF;
 	data[2] = (temp) & 0xFF;
+}
+
+void Encoder_ISR(){
+	sensor_infos[EXC_TRANS_ENC].rots += 1;
+	sensor_infos[EXC_TRANS_ENC].value = sensor_infos[EXC_TRANS_ENC].rots * 2.0 * PI; 	// rotation in radians
 }
 
 // @return radians of rotation

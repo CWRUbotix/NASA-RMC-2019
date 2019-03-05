@@ -7,6 +7,7 @@
 #include "VESC/VESC.h"
 #include "LSM6DS3.h"
 #include "ADS1120.h"
+#include "Herkulex.h"
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -28,6 +29,7 @@
 #define RPY_BLOCK_LEN 	5
 #define RPY_BLOCK_LEN_L 9
 
+#define NUM_PREV_VALUES 		20
 
 #define DEBUG_SELECT_PIN 		2
 #define ADC_2_CS_PIN 			14
@@ -55,6 +57,7 @@
 #define ENCODER_SPEED 			1000000
 #define DEBUG_SPEED 			1000000
 
+#define LOOKY_SERIAL 			Serial6
 #define DEBUG 					Serial5
 
 #define NOP3 			"nop\n\t""nop\n\t""nop\n\t"
@@ -93,8 +96,8 @@ enum SENSOR_INDICES {
 	EXC_ROT_STBD_ENC,
 	LOOKY_PORT_ENC,
 	LOOKY_STBD_ENC,
-	DEP_PORT_LOAD,
-	DEP_STBD_LOAD,
+	DEP_LOAD_CELL,
+	EXC_LOAD_CELL,
 	GYRO_0_X,
 	GYRO_0_Y,
 	GYRO_0_Z,
@@ -190,21 +193,26 @@ typedef struct Device{
 	VESC* vesc;
 	LSM6DS3* imu;
 	HardwareSerial* serial;
-	XYZrobotServo* servo;
-	XYZrobotServoStatus* servo_status;
 	uint8_t spi_cs 		= 0;
 	uint8_t id 			= 0;
-	bool is_setup 		= false; // field to prevent unnecessary setup
-}SensorDevice;
+	bool is_setup 		= false; // field to prevent unnecessary setup or doomed reading
+}Device;
 
 typedef struct SensorInfo{
 	SensorType type 	= SENS_NONE;
 	Device* device;
 	char* name = "--- NO NAME ----";
 	uint8_t pin 		= 0;
-	int n_value; 	// holds any relevant integer value
-	float value; 	// holds the relevant value, updated at t_stamp
-	int t_stamp; 	// update time-stamp
+	int n_value; 				// holds any relevant integer value
+	float value; 				// holds the value to be sent over USB, updated at t_stamp
+	float last_value; 			// holds the last value for whatever
+	float* prev_values; 		// points to an array of previous values, for filtering, etc.
+	uint8_t val_ind 	= 0; 	// index in this array
+	bool value_good;
+	int t_stamp; 				// update time-stamp
+	uint8_t adc_channel_config;
+	float slope 		= 1.0; 	// linear equation coefficient
+	float offset 		= 0.0; 	// linear equation offset
 	float rots;
 	float (*get_value)(void);
 	char imu_axis;
@@ -217,6 +225,9 @@ typedef struct MotorInfo{
 	SensorInfo* limit_1;
 	SensorInfo* limit_2;
 	float setpt 		= 0.0; 	
+	float last_setpt 	= 0.0;
+	float last_rpm 		= 0.0;
+	float rpm_factor 	= 1.0;
 	float volts 		= MOTOR_ANLG_CENTER_V;
 	int t_stamp 		= 0; 	// time-stamp of last update
 	float kp 			= 0.0;
@@ -224,6 +235,7 @@ typedef struct MotorInfo{
 	float max_setpt 	= 0.0;
 	float max_delta 	= 0.0;
 	float deadband 		= 0.0;
+	int looky_id 		= 0;
 } MotorInfo;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -235,6 +247,8 @@ SensorInfo 	sensor_infos 	[NUM_SENSORS] 		= {};
 MotorInfo 	motor_infos 	[NUM_MOTORS] 		= {};
 Device 		device_infos 	[NUM_DEVICES] 		= {};
 Device 		SPI_devices 	[NUM_SPI_DEVICES] 	= {};
+float 		exc_lc_values 	[NUM_PREV_VALUES] 	= {};
+float 		dep_lc_values 	[NUM_PREV_VALUES] 	= {};
 
 bool estop_state 		= false; 	// false means off
 bool estop_state_last 	= false; 	// false means off
@@ -245,6 +259,7 @@ int t_offset 			= 0; 		// offset = micros() - t_sync,   t_stamp = micros() - t_o
 ADS1120 adc0(ADC_0_CS_PIN);
 ADS1120 adc1(ADC_1_CS_PIN);
 ADS1120 adc2(ADC_2_CS_PIN);
+
 
 // XYZrobotServo looky_servo_port(&Serial6, 128);
 // XYZrobotServo looky_servo_starboard(&Serial6, 129);
@@ -266,11 +281,6 @@ SPISettings Encoder_SPI_settings(ENCODER_SPEED, MSBFIRST, SPI_MODE0);
 SPISettings Debug_SPI_settings(DEBUG_SPEED, MSBFIRST, SPI_MODE0);
 
 #define TIME_STAMP (micros() - t_offset)
-
-void Encoder_ISR(){
-	sensor_infos[EXC_TRANS_ENC].rots += 1;
-	sensor_infos[EXC_TRANS_ENC].value = sensor_infos[EXC_TRANS_ENC].rots * 2.0 * PI; 	// rotation in radians
-}
 
 
 #endif

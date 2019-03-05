@@ -16,9 +16,12 @@ void init_motors(){
 		switch(motor->type){
 			case MTR_NONE:{break;}
 			case MTR_VESC:{
-				motor->device->vesc->begin();
-				motor->device->vesc->set_rpm(0);
-				motor->device->vesc->request_mc_values();
+				if(motor->device != NULL && !motor->device->is_setup){
+					motor->device->vesc->begin();
+					motor->device->vesc->set_rpm(0);
+					motor->device->vesc->request_mc_values();
+					motor->device->is_setup = true;
+				}
 				// delay(10);
 				break;}
 			case MTR_SABERTOOTH:{
@@ -39,7 +42,11 @@ void init_motors(){
 				SPI.endTransaction();
 				break;}
 			case MTR_LOOKY:{
-        motor->device->servo->setSpeed(512, 0);  //Parameters(speed = X, playtime = 0) do not change playtime
+				if(motor->device != NULL && !motor->device->is_setup){
+					Herkulex.begin(motor->device->serial, 115200);
+					Herkulex.initialize();
+					motor->device->is_setup = true;
+				}
 				break;}
 		}
 	}
@@ -71,7 +78,7 @@ void init_sensors(){
 					debug("setting up load cell ADC");
 					device->adc->setup(CONFIG_FOR_LOAD_CELL);
 					device->adc->set_mux_input(diff_1_2);
-					device->adc->set_gain(6);
+					device->adc->set_gain(7);
 					device->is_setup = true;
 				}
 				break;}
@@ -99,15 +106,14 @@ void init_sensors(){
 
 				break;}
 			case SENS_BLDC_ENC: {
-				// configure device as per this sensor
-				// may be none needed
+				// let this get configured in init_motors
 				break;}
 			case SENS_POT_ENC:{
 				if(device != NULL && !device->is_setup){
 					// configure ADC 
 					debug("setting up pot. ADC");
 					device->adc->setup(CONFIG_FOR_POT);
-					device->adc->set_mux_input(single_1);
+					device->adc->set_mux_input(sensor->adc_channel_config);
 					device->adc->set_gain(0);
 					device->is_setup = true;
 				}

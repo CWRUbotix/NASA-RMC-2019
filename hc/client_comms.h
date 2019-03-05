@@ -60,6 +60,7 @@ FAULT_T read_from_client(){
 				memcpy(&value, cmd_body + i+1, 4); 	// copy bytes from cmd_body to value
 				debug("MOTOR: " + String(value, 3));
 				motor = &motor_infos[id];
+				motor->last_setpt = motor->setpt;
 				motor->setpt = value;
 			}
 			break;}
