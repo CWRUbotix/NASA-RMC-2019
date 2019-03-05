@@ -86,16 +86,28 @@ Takes in task ID and create list of function calls that
 def createRoutine(ID):
 	pass
 
+"""
+Functions that belong to specific tasks
+naming: task_<ID>
+Should not be taking in inputs. if you need something, make it global
+"""
+
+def task_1():
+	pass
+
+
+
+"""
+functions for tasks END
+"""
+
+
 def modifyTimes(timeLeft):
 	pass
 
 def shutdownRoutine():
 	pass
 
-#Give start position and end position to PathPlanning module to get path
-#This function returns path
-def requestPath(start, end):
-	pass
 
 #Start DriveControl subprocess with destination position.
 #Return an DriveControl object that you can call done() function that indicates when the robot is at the position
