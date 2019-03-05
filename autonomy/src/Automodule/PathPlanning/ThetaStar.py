@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from collections import deque
 
 def aStar(start, end):

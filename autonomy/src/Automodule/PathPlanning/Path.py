@@ -1,7 +1,10 @@
+#!/usr/bin/env python
+
+from collections import deque
 import collections
 
 class Path(collections.Sequence):
-    def __init__(positions):
+    def __init__(self, positions):
         self.path = deque(positions)
 
     def insert(self, newPositions):

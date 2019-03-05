@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 class Vertex:
     def __init__(self, parent, startDistance, endDistance, visibleNeighbors, position):

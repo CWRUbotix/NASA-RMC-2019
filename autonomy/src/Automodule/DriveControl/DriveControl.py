@@ -1,14 +1,15 @@
+#!/usr/bin/env python
 
-import rospy
-
-from PathPlanning.PathPlanning import Position
+import Automodule.MotorCommand as mc
 
 class DriveModule:
 	def __init__(self, destination):
 		self.destination = destination
 		self.done = False
 
-	def done(self):
+	def done(self, robotPos):
+		if robotPos == self.destination:
+			self.done = True
 		return self.done
 
 	def run(self):
@@ -19,7 +20,9 @@ class DriveModule:
 		self.done = True
 
 	def stop(self):
-
+		self.setDone()
+		mc.drive_left_motor(0)
+		mc.drive_right_motor(0)
 
 def driveTo(pos):
 	pass
@@ -29,9 +32,3 @@ def driveTo(pos):
 def turn(angle, angularvelocity):
 	pass
 
-# Main script for Drive Control
-def main():
-	pass
-
-
-if __name__ == "__main__": main()

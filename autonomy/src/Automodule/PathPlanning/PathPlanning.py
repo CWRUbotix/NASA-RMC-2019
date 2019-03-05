@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 class Position:
     def __init__(self, X_pos, Y_pos, Orientation, Error_bound):
         self.X_pos = X_pos

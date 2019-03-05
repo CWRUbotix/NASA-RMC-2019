@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 class Grid:
 
     def __init__(self, vertices):

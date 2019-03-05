@@ -1,4 +1,7 @@
+#!/usr/bin/env python
+
 import rospy
+from std_msgs.msg import String
 from PathPlanning.PathPlanning import Position #import specific functions later
 
 """
@@ -8,7 +11,10 @@ Main Module for Autonomy operation
 
 """ HARD CODED TABLES (dictionary)"""
 interruptible = [4, 8, 11, 14] #Task IDs whose time can be modified
-
+robotPos = None
+destination = None
+drive = None
+currentID = 0
 #Map from ID to time allocated.
 tasks = {
 	0: -1,
@@ -31,9 +37,11 @@ tasks = {
 }
 
 #return true if robot arrived in a position within the the time false if not.
-def goTo(pos, ID):
+def goTo(dest, ID):
+	global drive, destination, currentID
+	destination = dest
 	# First you request for the path
-	path = requestPath(getPosition(), pos)
+	path = requestPath(robotPos, destination)
 
 	# Given ID start the timer with assigned time
 	tGoal = rospy.get_time() + tasks[ID]
@@ -41,15 +49,34 @@ def goTo(pos, ID):
 	# Start loop of driveTo method calls with given path
 	for pos in path:
 		drive = driveTo(pos)
-		while not drive.done():
-			rospy.sleep(1.)
-			# Check for obstacles
-			# If obstacle is found call drive.stop()
+		while not drive.done(robotPos):
+			rospy.sleep(.1)
+
+	drive = None
+	destination = None
+	currentID += 1
 
 	if rospy.get_time() > tGoal:
 		return False
 	else:
 		return True
+
+def updatePos(pos):
+	global robotPos
+	robotPos = pos
+
+#Alerts Path Planning submodule with new obstacle found and get a new path
+def foundObstacle(obs):
+	if drive is not None:
+		drive.stop()
+		goTo(destination, currentID)
+
+"""Sensor Subscription"""
+def subscribe():
+	#todo Fill in names
+	rospy.Subscriber('', String, updatePos)
+	rospy.Subscriber('', String, foundObstacle)
+
 
 """Routine Builder Stuff"""
 
@@ -75,13 +102,10 @@ def requestPath(start, end):
 def driveTo(pos):
 	pass
 
-#Alerts Path Planning submodule with new obstacle found and get a new path
-def foundObstacle(currentPos, obs):
-	pass
-
 def main():
 	rospy.init_node("automodule")
 	rospy.on_shutdown(shutdownRoutine)
+	subscribe()
 
 	# Initialize RoutineMaker threads here
 
