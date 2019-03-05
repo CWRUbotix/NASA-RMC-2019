@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 from collections import deque
+import math
+from Grid import Grid
+from Path import Path
 
 def aStar(start, end):
     openList = [start]
@@ -51,7 +54,7 @@ def aStar(start, end):
         closedList.append(openList[bestIndex])
         openList.remove(openList[bestIndex])
 
-def thetaStar(start, goal):
+def thetaStar(start, goal, obstacles, unitScale):
     start.setStartDistance(0)
     start.setParent(start)
     open = {}
@@ -60,38 +63,84 @@ def thetaStar(start, goal):
     while open != 0:
         s = open.pop()
         if s == goal:
-           return reconstruct_path(s)
-         closed.push(s)
-        for neighbor in s:
+            return reconstruct_path(s)
+        closed.push(s)
+        for neighbor in s.getVisibleNeighbors():
             if neighbor != 0:
                 if neighbor == open:
-                    neighbor.setStartDistance(infinity)
-            neighbor.setParent(null)
-            update_vertex(s, neighbor)
-    return null
+                    neighbor.setStartDistance(math.inf)
+            neighbor.setParent(None)
+            update_vertex(s, neighbor, obstacles, unitScale)
+    return None
 
-def update_vertex(s, neighbor):
-    if line_of_sight(s.getParent(), neighbor):
-        if s.getParent().getStartDistance() + s.getParent().getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
-        neighbor.setStartDistance(s.getParent.getStartDistance() + s.getParent().getPosition().distanceTo(neighbor.getPosition()))
-        neighbor.setParent(s.getParent())
-        if neighbor in open:
-            open.remove(neighbor)
-        open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
+def update_vertex(vertex, neighbor, obstacles, unitScale):
+    if line_of_sight(vertex.getParent(), neighbor, obstacles, unitScale):
+        if vertex.getParent().getStartDistance() + vertex.getParent().getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
+            neighbor.setStartDistance(vertex.getParent.getStartDistance() + vertex.getParent().getPosition().distanceTo(neighbor.getPosition()))
+            neighbor.setParent(vertex.getParent())
+            if neighbor in open:
+                open.remove(neighbor)
+            open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
     else:
-        if s.getStartDistance() + s.getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
-            neighbor.setStartDistance(s.getStartDistance() + s.getPosition().distanceTo(neighbor.getPosition()))
-            neighbor.setParent(s)
+        if vertex.getStartDistance() + vertex.getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
+            neighbor.setStartDistance(vertex.getStartDistance() + vertex.getPosition().distanceTo(neighbor.getPosition()))
+            neighbor.setParent(vertex)
             if neighbor in open:
                 open.remove(neighbor)
             open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
 
-def reconstruct_path(s):
-    total_path = {s}
-    if s.getParent() != s:
-        total_path.push(reconstruct_path(s.getParent()))
+def reconstruct_path(vertex):
+    total_path = [vertex]
+    if vertex.getParent() != vertex:
+        total_path.insert(0, reconstruct_path(vertex.getParent()))
     else:
-        return total_path
+        path = Path(total_path)
+        return path
 
-def line_of_sight(vertex, vertexTwo):
-
+def line_of_sight(vertex, vertexTwo, obstacles, unitScale):
+    x0 = vertex.getPosition().getX_Pos()
+    x1 = vertexTwo.getPosition().getX_Pos()
+    y0 = vertex.getPosition().getY_Pos()
+    y1 = vertexTwo.getPosition().getY_Pos()
+    dy = y1 - y0
+    dx = x1 - x0
+    f = 0
+    sx = 0
+    sy = 0
+    if dy < 0:
+        dy = -dy
+        sy = -1
+    else:
+        sy = 1
+    if dx < 0:
+        dx = -dx
+        sx = -1
+    else:
+        sx = 1
+    if dx >= dy:
+        while x0 != x1:
+            f += dy
+            if f >= dx:
+                if Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles, unitScale):
+                    return False
+                y0 += sy
+                f -= dx
+            if f != 0 & Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles, unitScale):
+                return False
+            if dy == 0 & Grid.gridBlocked(x0+((sx-1)/2), y0, obstacles, unitScale) & Grid.gridBlocked(x0+((sx-1)/2), y0-1, obstacles, unitScale):
+                return False
+            x0 += sx
+    else:
+        while y0 != y1:
+            f += dx
+            if f >= dy:
+                if Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles, unitScale):
+                    return False
+                x0 += sx
+                f -= dy
+            if f != 0 & Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles, unitScale):
+                return False
+            if dx == 0 & Grid.gridBlocked(x0, y0+((sy-1)/2), obstacles, unitScale) & Grid.gridBlocked(x0-1, y0+((sy-1)/2), obstacles, unitScale):
+                return False
+            y0 += sy
+    return True
