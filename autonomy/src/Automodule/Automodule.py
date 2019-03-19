@@ -5,7 +5,7 @@ from std_msgs.msg import String
 from PathPlanning.PathPlanning import Position #import specific functions later
 import Automodule.MotorCommand as mc
 
-"""
+""" 
 Main Module for Autonomy operation
 """
 
@@ -116,6 +116,15 @@ def task_4():
 	rospy.sleep(15)
 	mc.bucket_angular_actuator(0)
 
+#Dumping (Cycle1): 15
+def task_8():
+	#Need to check the actual angle depending on the incline of the bucket
+	angleStrength = 225;
+	mc.bucket_angle_actuator(angleStrength)
+	rospy.sleep(7)
+	mc.bucket_angle_actuator(-angleStrength)
+	rospy.sleep(7)
+
 #Cycle 2 digging goal : 100
 def task_11():
 	driveStrength = 40
@@ -136,6 +145,14 @@ def task_11():
 	rospy.sleep(15)
 	mc.bucket_angular_actuator(0)
 
+#Dumping (Cycle2): 15
+def task_15():
+	angleStrength = 225;
+	mc.bucket_angle_actuator(angleStrength)
+	rospy.sleep(7)
+	mc.bucket_angle_actuator(-angleStrength)
+	rospy(7)
+	
 """
 functions for tasks END
 """
