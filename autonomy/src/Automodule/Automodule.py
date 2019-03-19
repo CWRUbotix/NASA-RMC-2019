@@ -151,8 +151,8 @@ def task_15():
 	mc.bucket_angle_actuator(angleStrength)
 	rospy.sleep(7)
 	mc.bucket_angle_actuator(-angleStrength)
-	rospy(7)
-	
+	rospy.sleep(7)
+
 """
 functions for tasks END
 """
