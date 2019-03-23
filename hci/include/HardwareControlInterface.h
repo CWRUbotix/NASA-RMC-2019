@@ -6,9 +6,11 @@
 #include <hci/sensorValue.h>
 #include <hci/motorCommand.h>
 #include <map>
+#include <string>
 
 using std::map;
 using std::vector;
+using std::string;
 
 
 
