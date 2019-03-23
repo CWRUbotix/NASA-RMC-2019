@@ -3,7 +3,7 @@
 from collections import deque
 import collections
 from collections import deque
-
+#acts as a sequence of instances of the Position class
 class Path(collections.Sequence):
     def __init__(self, positions):
         self.path = deque(positions)
@@ -13,6 +13,9 @@ class Path(collections.Sequence):
 
     def get_Position(self):
         return self.path.pop()
+
+    def __getitem__(self, item):
+        return item
 
     def __len__(self):
         return len(self.path)

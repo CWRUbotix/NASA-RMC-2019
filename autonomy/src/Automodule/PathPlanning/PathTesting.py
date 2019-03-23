@@ -1,3 +1,4 @@
+
 from graphics import *
 import collections
 from collections import deque
@@ -8,7 +9,7 @@ def drawPath(path):
     lastY = 0
     lines = deque()
     points = deque()
-    for position in path:
+    for position in path.path:
         if lastX != 0 or lastY != 0:
             l = Line(Point(lastX, lastY), Point(position.getX_pos(), position.getY_pos()))
             lines.append(l)

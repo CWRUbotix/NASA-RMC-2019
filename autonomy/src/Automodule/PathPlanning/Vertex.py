@@ -8,7 +8,6 @@ class Vertex:
         self.visibleNeighbors = visibleNeighbors
         self.position = position
 
-
     def getParent(self):
         return self.parent
 

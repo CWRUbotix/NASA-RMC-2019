@@ -5,6 +5,9 @@ import math
 from Grid import Grid
 from Path import Path
 
+open = deque()
+closed = deque()
+
 def aStar(start, end):
     openList = [start]
     start.setStartDistance(0)
@@ -57,19 +60,17 @@ def aStar(start, end):
 def thetaStar(start, goal, obstacles, unitScale):
     start.setStartDistance(0)
     start.setParent(start)
-    open = {}
-    open.insert(start, start.getStartDistance() + start.getEndDistance())
-    closed = {}
-    while open != 0:
+    open.insert(start.getStartDistance() + start.getEndDistance(), start)
+    while open.__len__() > 0:
         s = open.pop()
         if s == goal:
             return reconstruct_path(s)
-        closed.push(s)
+        closed.append(s)
         for neighbor in s.getVisibleNeighbors():
-            if neighbor != 0:
-                if neighbor == open:
+            if neighbor not in closed:
+                if neighbor not in open:
                     neighbor.setStartDistance(math.inf)
-            neighbor.setParent(None)
+                    neighbor.setParent(None)
             update_vertex(s, neighbor, obstacles, unitScale)
     return None
 
@@ -87,21 +88,23 @@ def update_vertex(vertex, neighbor, obstacles, unitScale):
             neighbor.setParent(vertex)
             if neighbor in open:
                 open.remove(neighbor)
-            open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
+            open.insert(int(neighbor.getStartDistance() + neighbor.getEndDistance()), neighbor)
 
 def reconstruct_path(vertex):
-    total_path = [vertex]
+    total_path = [vertex.getPosition()]
     if vertex.getParent() != vertex:
-        total_path.insert(0, reconstruct_path(vertex.getParent()))
+        parent = vertex.getParent()
+        total_path.insert(0, parent.getPosition())
+        return reconstruct_path(parent)
     else:
         path = Path(total_path)
         return path
 
 def line_of_sight(vertex, vertexTwo, obstacles, unitScale):
-    x0 = vertex.getPosition().getX_Pos()
-    x1 = vertexTwo.getPosition().getX_Pos()
-    y0 = vertex.getPosition().getY_Pos()
-    y1 = vertexTwo.getPosition().getY_Pos()
+    x0 = vertex.getPosition().getX_pos()
+    x1 = vertexTwo.getPosition().getX_pos()
+    y0 = vertex.getPosition().getY_pos()
+    y1 = vertexTwo.getPosition().getY_pos()
     dy = y1 - y0
     dx = x1 - x0
     f = 0
