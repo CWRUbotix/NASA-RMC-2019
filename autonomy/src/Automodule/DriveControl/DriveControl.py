@@ -29,6 +29,21 @@ def driveTo(pos):
 
 # Given angle in radian the robot needs to turn and current angularvelocity
 # Outputs tuple of left motor output and right motor output
-def turn(angle, angularvelocity):
-	pass
+# midAngle is when to start slowing down to avoid overshooting
+# maxSpeed is output when not at risk of overshooting
+# slowSpeed is output when finishing turn (at risk of overshooting)
+def turn(angle, angularvelocity, midAngle, maxSpeed, slowSpeed):
+	magAngle = angle
+	if (angle < 0):
+		magAngle *= -1
+	if (magAngle > midAngle):
+		if (angle < 0):
+			return -maxSpeed, maxSpeed
+		else:
+			return maxSpeed, -maxSpeed
+	else:
+		if (angle < 0):
+			return -slowSpeed, slowSpeed
+		else:
+			return slowSpeed, -slowSpeed
 
