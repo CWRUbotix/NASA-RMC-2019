@@ -4,6 +4,7 @@
 #define IO_H_
 
 #include "values_and_types.h"
+#include <math.h>
 #include <inttypes.h>
 
 void update_sensors(void);
@@ -38,7 +39,7 @@ void update_sensors(){
 						f_temp = (signed_temp/32767.0)*5.0; 					// voltage
 						sensor->value = sensor->slope*f_temp + sensor->offset;	// apply linear correction
 						sensor->t_stamp = TIME_STAMP;
-						sensor->prev_values[val_ind] = sensor->value;
+						sensor->prev_values[sensor->val_ind] = sensor->value;
 						sensor->val_ind++;
 						if(sensor->val_ind >= NUM_PREV_VALUES){
 							sensor->val_ind = 0;}
@@ -69,15 +70,13 @@ void update_sensors(){
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_ROT_ENC:{
-				if(sensor->device != NULL && sensor->device->is_setup){
-					float temp = get_rot_encoder_value(sensor);
-					sensor->value = 3.14159265;
-					sensor->t_stamp = TIME_STAMP;
-				}
+				float theta = get_rot_encoder_value(sensor);
+				sensor->value = sensor->offset + (sensor->rots + theta) * EXC_MM_PER_ROT;
+				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_BLDC_ENC:{
 				if(sensor->device != NULL && sensor->device->is_setup){
-					// vesc->request_mc_values() should have been called during maintain motors
+					sensor->device->vesc->request_mc_values(); 				// should have been called during maintain motors
 					sensor->device->vesc->update_mc_values(); 				// read the available packet
 					sensor->value = 1.0*sensor->device->vesc->get_rpm();	// get the RPM
 					sensor->t_stamp = TIME_STAMP;
@@ -86,11 +85,15 @@ void update_sensors(){
 			case SENS_POT_ENC:{
 				if(sensor->device != NULL && sensor->device->is_setup){
 					uint16_t raw 		= 0;
-	        		sensor->value_good = sensor->device->adc->read_channel(sensor->adc_channel_config, &raw);
+	        		sensor->value_good 	= sensor->device->adc->read_channel(sensor->adc_channel_config, &raw);
 					if(sensor->value_good){
 						sensor->t_stamp = TIME_STAMP;
-						sensor->value = signed_raw/32767.0;
-						debug("Pot frac:\t"+String(sensor->value, 3));
+						float temp 		= raw/32767.0;
+						// convert fraction of travel to angle
+						temp 			= -((float)pow(4.0*temp + 9.4132, 2) - 170.7218)/102.7197;
+						temp 			= 1.6917 - (float)acos( temp ); // angle in radians
+						sensor->value 	= temp * (180/3.14159); 		// convert to degrees
+						debug("Pot. Angle:\t"+String(sensor->value, 3));
 					}else{
 						debug("Pot. read ERROR");
 					}
@@ -113,26 +116,87 @@ void maintain_motors(){
 		switch(motor->type){
 			case MTR_NONE: break;
 			case MTR_VESC:{
-				int dt 			= (TIME_STAMP - motor->t_stamp) * 1000000; 	// delta-T in sec
-				int sign 		= (int)(motor->setpt/fabs(motor->setpt));
+				float dt 		= (TIME_STAMP - motor->t_stamp) / 1000000.0; 	// delta-T in sec
 				float proposed_delta = (motor->setpt - motor->last_rpm)/dt; // calculate proposed delta-RPM
-				if(fabs(proposed) =< motor->max_delta){ 					// check if the proposed delta is allowed
-					motor->last_rpm = motor->setpt; 						// cool, it's allowed, so this will be our rpm to send
+				int sign 		= (int)(proposed_delta/fabs(proposed_delta));
+				if(fabs(proposed_delta) > motor->max_delta){ 					// check if the proposed delta is allowed
+					motor->last_rpm += (sign * motor->max_delta * dt);
 				}else{ 														// TOO MUCH DELTA
-					motor->last_rpm += (sign * motor->max_delta * dt); 		// increment by max, and consider the sign
+					motor->last_rpm = motor->setpt; // increment by max, and consider the sign
 				}
 				int rpm = (int)(motor->last_rpm * motor->rpm_factor); 		// convert to "eRPM" and cast to int
+
+				int dir 		= get_sign(rpm);
+				if(motor->limit_1 != NULL && motor->limit_1->value > 0.0){
+					if(dir != motor->limit_1->allowed_dir){
+						rpm = 0;
+					}
+				}else if(motor->limit_2 != NULL && motor->limit_2->value > 0.0){
+					if(dir != motor->limit_2->allowed_dir){
+						rpm = 0;
+					}
+				}
+
 				debug("Updating VESC: "+String(rpm, DEC));
 				motor->device->vesc->set_rpm(rpm); 							// actually send the rpm
 				motor->device->vesc->request_mc_values(); 					// resonse packet should be ready when we call update sensors
+				motor->t_stamp = TIME_STAMP;
 				break;}
 			case MTR_SABERTOOTH:{
+				
+				float target 	= 0.0;
+				if(i == EXC_ROT_PORT){
+					MotorInfo* stbd 	= &motor_infos[EXC_ROT_STBD];
+					float diff 			= motor->sensor->value - stbd->sensor->value;
+					
+					if(diff > LIN_ACT_ERR_MARGIN){
+						stbd->kp = LIN_ACT_KP + LIN_ACT_KP_INC;
+						motor->kp = LIN_ACT_KP - LIN_ACT_KP_INC;
+					}else if(diff < -LIN_ACT_ERR_MARGIN){
+						stbd->kp = LIN_ACT_KP - LIN_ACT_KP_INC;
+						motor->kp = LIN_ACT_KP + LIN_ACT_KP_INC;
+					}else{
+						stbd->kp = LIN_ACT_KP;
+						motor->kp = LIN_ACT_KP;
+					}
+					// // Convert angular setpoint to fraction of full extension
+					// float theta 	= motor->setpt * (3.14159 / 180.0); 	// degrees to radians
+					// target 	= (float)sqrt(170.7218 - 102.7197*cos(1.6917 - theta))/4.0 - 2.3533;
+				
+				}else if(i == EXC_ROT_STBD){
+					// // Convert angular setpoint to fraction of full extension
+					// float theta 	= motor->setpt * (3.14159 / 180.0); 	// degrees to radians
+					// target 	= (float)sqrt(170.7218 - 102.7197*cos(1.6917 - theta))/4.0 - 2.3533;
+				}else{
+				}
+				
+				float err 		= motor->setpt - motor->sensor->value;
+				float dt 		= TIME_STAMP - motor->t_stamp; 		// how much time since last update
+				motor->integ 	= motor->integ + err*dt;
+				motor->integ 	= fconstrain(motor->integ, -motor->max_integ, motor->max_integ);
+				
 				//PID controls:
 				//rot_val = dx*(target-actual) + dy*(
-				debug("Updating sabertooth motor");
+				// the line below doesn't account for any deadband
+				float voltage 	= motor->kp*err + motor->ki*motor->integ + MOTOR_ANLG_CENTER_V;
+				int dir 		= get_sign(voltage - MOTOR_ANLG_CENTER_V);
+				if(motor->limit_1->value > 0.0){
+					if(dir != motor->limit_1->allowed_dir){
+						voltage = MOTOR_ANLG_CENTER_V;
+					}
+				}else if(motor->limit_2->value > 0.0){
+					if(dir != motor->limit_2->allowed_dir){
+						voltage = MOTOR_ANLG_CENTER_V;
+					}
+				}
+				// FOR DEBUGGING PURPOSES
+				voltage = motor->setpt + MOTOR_ANLG_CENTER_V;
+				// DELETE LATER
+
+				debug("Updating sabertooth: "+ String(voltage, 3));
 
 				uint8_t data[3] = {};
-				package_DAC_voltage(MOTOR_ANLG_CENTER_V, data); 	// make sure motor is stopped
+				package_DAC_voltage(voltage, data); 	
 
 				SPI.beginTransaction(*(motor->device->spi_settings));
 				digitalWrite(motor->device->spi_cs, LOW);
@@ -140,6 +204,7 @@ void maintain_motors(){
 				SPI.transfer(data, 3);
 				digitalWrite(motor->device->spi_cs, HIGH);
 				SPI.endTransaction();
+				motor->t_stamp = TIME_STAMP; 			// record the update time
 
 				break;}
 			case MTR_LOOKY:{
@@ -183,11 +248,18 @@ void package_DAC_voltage(float v, uint8_t* data){
 }
 
 void Encoder_ISR(){
-	sensor_infos[EXC_TRANS_ENC].rots += 1;
-	sensor_infos[EXC_TRANS_ENC].value = sensor_infos[EXC_TRANS_ENC].rots * 2.0 * PI; 	// rotation in radians
+	// if A is HIGH (and B is LOW), dir is CCW
+	// else, dir is CW
+	uint8_t dir = digitalRead(ENCODER_A_PIN);
+	if(dir == HIGH){
+		sensor_infos[EXC_TRANS_ENC].rots += 1; 	// increment number of rotations
+	}else{
+		sensor_infos[EXC_TRANS_ENC].rots += -1; // decrement number of rotations
+	}
+	sensor_infos[EXC_TRANS_ENC].value = sensor_infos[EXC_TRANS_ENC].offset + sensor_infos[EXC_TRANS_ENC].rots * EXC_MM_PER_ROT;
 }
 
-// @return radians of rotation
+// @return fraction of rotation
 float get_rot_encoder_value(SensorInfo* encoder){
 	int n = 0;
 	uint8_t rpy = 0;
@@ -210,7 +282,7 @@ float get_rot_encoder_value(SensorInfo* encoder){
 	digitalWrite(encoder->device->spi_cs, HIGH);
 	SPI.endTransaction();
 
-	float retval = (value/4095.0)*2.0*PI; 	// radians of rotation
+	float retval = (value/4095.0); 	// fraction of a full rotation
 	return retval;
 }
 

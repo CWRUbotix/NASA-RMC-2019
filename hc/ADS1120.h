@@ -1,3 +1,6 @@
+#ifndef _ADS1120_H_
+#define _ADS1120_H_
+
 #include <SPI.h>
 
 #define ADS1120_SPEED       2500000
@@ -99,3 +102,5 @@ class ADS1120{
         return true; 
     }
 };
+
+#endif

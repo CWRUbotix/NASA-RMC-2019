@@ -40,6 +40,8 @@
 #define DAC_0_CS_PIN 			19
 #define ENCODER_CS_PIN 			22
 #define ENCODER_INDEX_PIN 		23
+#define ENCODER_A_PIN 			40
+#define ENCODER_B_PIN 			41
 #define EXC_ROT_FORE_LIM_PIN 	24
 #define EXC_ROT_AFT_LIM_PIN 	25
 #define EXC_TRANS_LOWER_LIM_PIN	29
@@ -50,6 +52,10 @@
 #define DEP_UPPER_LIM_PIN 		37
 #define ESTOP_SENSE_PIN 		39
 
+#define LIN_ACT_ERR_MARGIN 		0.75
+#define LIN_ACT_KP				0.0
+#define LIN_ACT_KI 				0.0
+#define LIN_ACT_KP_INC 			0.0
 #define MOTOR_ANLG_CENTER_V 	2.5
 #define DAC8551_SPEED 			2500000
 #define ADS1120_SPEED 			2500000
@@ -65,6 +71,7 @@
 #define PAUSE_SHORT 	__asm__(NOP3 NOP3 NOP3)
 
 #define ROT_ENC_RD_POS 	0x10
+#define EXC_MM_PER_ROT 	60.96
 ////////////////////////////////////////////////////////////////////////////////
 //  DEFINE TYPES
 ////////////////////////////////////////////////////////////////////////////////
@@ -216,6 +223,9 @@ typedef struct SensorInfo{
 	float rots;
 	float (*get_value)(void);
 	char imu_axis;
+	float min;
+	float max;
+	int allowed_dir;
 } SensorInfo;
 
 typedef struct MotorInfo{
@@ -232,10 +242,14 @@ typedef struct MotorInfo{
 	int t_stamp 		= 0; 	// time-stamp of last update
 	float kp 			= 0.0;
 	float ki 			= 0.0;
+	float integ 		= 0.0;
+	float max_integ 	= 0.0;
 	float max_setpt 	= 0.0;
 	float max_delta 	= 0.0;
 	float deadband 		= 0.0;
 	int looky_id 		= 0;
+	float max_power 	= 0.0;
+	float min_power 	= 0.0;
 } MotorInfo;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -282,5 +296,20 @@ SPISettings Debug_SPI_settings(DEBUG_SPEED, MSBFIRST, SPI_MODE0);
 
 #define TIME_STAMP (micros() - t_offset)
 
+int get_sign(float f){
+	return (f < 0.0 ? -1 : (f > 0.0 ? 1 : 0));
+}
+float fmap(float x, float in_min, float in_max, float out_min, float out_max){
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+float fconstrain(float f, float a, float b){
+	if(f < a){
+		return a;
+	}else if(f > b){
+		return b;
+	}else{
+		return f;
+	}
+}
 
 #endif

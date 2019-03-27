@@ -65,17 +65,17 @@ void setup_devices(){
 	// VESC 1
 	device_infos[VESC_1].interface 	= VESC_UART;
 	device_infos[VESC_1].serial 	= &Serial4;
-	device_infos[VESC_1].vesc 		= &vesc4;
+	device_infos[VESC_1].vesc 		= &vesc1;
 
 	// VESC 2
 	device_infos[VESC_2].interface 	= VESC_UART;
 	device_infos[VESC_2].serial 	= &Serial4;
-	device_infos[VESC_2].vesc 		= &vesc4;
+	device_infos[VESC_2].vesc 		= &vesc2;
 
 	// VESC 3
 	device_infos[VESC_3].interface 	= VESC_UART;
 	device_infos[VESC_3].serial 	= &Serial4;
-	device_infos[VESC_3].vesc 		= &vesc4;
+	device_infos[VESC_3].vesc 		= &vesc3;
 
 	// VESC 4
 	device_infos[VESC_4].interface 	= VESC_UART;
@@ -260,31 +260,37 @@ void setup_sensors(){
 	sensor 				= &(sensor_infos[DEP_LIMIT_LOWER]);
 	sensor->type 		= SENS_LIMIT;
 	sensor->pin 		= DEP_LOWER_LIM_PIN;
+	sensor->allowed_dir = 1;
 
 	// DEP. UPPER LIMIT SWITCH
 	sensor 				= &(sensor_infos[DEP_LIMIT_UPPER]);
 	sensor->type 		= SENS_LIMIT;
 	sensor->pin 		= DEP_UPPER_LIM_PIN;
+	sensor->allowed_dir = -1;
 
 	// EXC. FORE LIMIT SWITCH
 	sensor 				= &(sensor_infos[EXC_LIMIT_FORE]);
 	sensor->type 		= SENS_LIMIT;
 	sensor->pin 		= EXC_ROT_FORE_LIM_PIN;
+	sensor->allowed_dir = -1;
 
 	// EXC. AFT LIMIT SWITCH
 	sensor 				= &(sensor_infos[EXC_LIMIT_AFT]);
 	sensor->type 		= SENS_LIMIT;
 	sensor->pin 		= EXC_ROT_AFT_LIM_PIN;
+	sensor->allowed_dir = 1;
 
 	// EXC bucket conveyor LOWER LIMIT SWITCH
 	sensor 				= &(sensor_infos[EXC_CONV_LIMIT_LOWER]);
 	sensor->type 		= SENS_LIMIT;
 	sensor->pin 		= EXC_TRANS_LOWER_LIM_PIN;
+	sensor->allowed_dir = 1;
 
 	// EXC bucket conveyor UPPER LIMIT SWITCH
 	sensor 				= &(sensor_infos[EXC_CONV_LIMIT_UPPER]);
 	sensor->type 		= SENS_LIMIT;
 	sensor->pin 		= EXC_TRANS_UPPER_LIM_PIN;
+	sensor->allowed_dir = -1;
 
 	// E-Stop
 	sensor 				= &(sensor_infos[ESTOP_SENSE_INDEX]);
@@ -298,32 +304,36 @@ void setup_motors(void){
 	// PORT VESC (VESC 1)
 	motor 				= &(motor_infos[PORT_VESC]);
 	motor->device 		= &(device_infos[VESC_1]);
-	motor->max_setpt 	= 5000.0; 					// max RPM
-	motor->max_delta 	= 50.0; 					// final output RPM/s
-	motor->rpm_factor 	= 100.0 * 7; 				// external_reduc * pole_pairs
+	motor->type 		= MTR_VESC;
+	motor->max_setpt 	= 100.0; 					// max RPM
+	motor->max_delta 	= 25.0; 					// final output RPM/s
+	motor->rpm_factor 	= 50.0 * 7; 				// external_reduc * pole_pairs
 
 	// STBD VESC (VESC 2)
 	motor 				= &(motor_infos[STBD_VESC]);
 	motor->device 		= &(device_infos[VESC_2]);
-	motor->max_setpt 	= 5000.0; 					// max RPM
-	motor->max_delta 	= 50.0; 					// final output RPM/s
-	motor->rpm_factor 	= 100.0 * 7; 				// external_reduc * pole_pairs
+	motor->type 		= MTR_VESC;
+	motor->max_setpt 	= 100.0; 					// max RPM
+	motor->max_delta 	= 25.0; 					// final output RPM/s
+	motor->rpm_factor 	= 50.0 * 7; 				// external_reduc * pole_pairs
 
 	// DEP VESC (VESC 3)
 	motor 				= &(motor_infos[DEP_VESC]);
 	motor->device 		= &(device_infos[VESC_3]);
+	motor->type 		= MTR_VESC;
 	motor->limit_1 		= &(sensor_infos[DEP_LIMIT_UPPER]);
 	motor->limit_2 		= &(sensor_infos[DEP_LIMIT_LOWER]);
-	motor->max_setpt 	= 5000.0; 					// max RPM
-	motor->max_delta 	= 50.0; 					// final output RPM/s
-	motor->rpm_factor 	= 50.0 * 7; 				// external_reduc * pole_pairs
+	motor->max_setpt 	= 100.0; 					// max RPM
+	motor->max_delta 	= 25.0; 					// final output RPM/s
+	motor->rpm_factor 	= 25.0 * 7; 				// external_reduc * pole_pairs
 
 	// EXC VESC (VESC 4)
 	motor 				= &(motor_infos[EXC_VESC]);
 	motor->device 		= &(device_infos[VESC_4]);
-	motor->max_setpt 	= 5000.0; 					// max RPM
+	motor->type 		= MTR_VESC;
+	motor->max_setpt 	= 100.0; 					// max RPM
 	motor->max_delta 	= 50.0; 					// final output RPM/s
-	motor->rpm_factor 	= 50.0 * 7; 				// external_reduc * pole_pairs
+	motor->rpm_factor 	= 25.0 * 7; 				// external_reduc * pole_pairs
 
 	// Exc translation (DAC 0)
 	motor 				= &(motor_infos[EXC_TRANS]);
@@ -331,7 +341,7 @@ void setup_motors(void){
 	motor->type 		= MTR_SABERTOOTH;
 	motor->limit_1 		= &(sensor_infos[EXC_CONV_LIMIT_UPPER]);
 	motor->limit_2 		= &(sensor_infos[EXC_CONV_LIMIT_LOWER]);
-	motor->max_setpt 	= 1000.0; 					// max positional value (mm)
+	motor->max_setpt 	= 100.0; 					// max positional value (mm)
 
 	// Exc Rot Port (DAC 1)
 	motor 				= &(motor_infos[EXC_ROT_PORT]);
@@ -339,7 +349,7 @@ void setup_motors(void){
 	motor->type 		= MTR_SABERTOOTH;
 	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
 	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
-	motor->max_setpt 	= 135.0; 					// max position in degrees
+	motor->max_setpt 	= 60.0; 					// max position in degrees
 
 	// Exc Rot Starboard (DAC 2)
 	motor 				= &(motor_infos[EXC_ROT_STBD]);
@@ -347,7 +357,7 @@ void setup_motors(void){
 	motor->type 		= MTR_SABERTOOTH;
 	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
 	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
-	motor->max_setpt 	= 135.0; 					// max position in degrees
+	motor->max_setpt 	= 60.0; 					// max position in degrees
 
 	// Looky PORT SIDE
 	motor 				= &(motor_infos[LOOKY_PORT]);

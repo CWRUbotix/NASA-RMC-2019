@@ -52,7 +52,7 @@ void loop(){
 	sensor_infos[ESTOP_SENSE_INDEX].t_stamp = TIME_STAMP;
 
 	if(estop_state==HIGH && estop_state!=estop_state_last){
-		delay(500); 			// wait for motor controllers to boot up
+		delay(3000); 			// wait for motor controllers to boot up
 		debug("init motors");
 		init_motors();
 	} estop_state_last = estop_state;

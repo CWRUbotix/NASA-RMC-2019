@@ -103,7 +103,9 @@ void init_sensors(){
 				break;}
 			case SENS_ROT_ENC: {
 				// configure device as per this sensor
-
+				if(device != NULL && !device->is_setup){
+					device->is_setup = true;
+				}
 				break;}
 			case SENS_BLDC_ENC: {
 				// let this get configured in init_motors
