@@ -40,6 +40,8 @@ void init_motors(){
 				SPI.transfer(data, 3);
 				digitalWrite(motor->device->spi_cs, HIGH);
 				SPI.endTransaction();
+
+				motor->setpt 	= motor->sensor->value; 	// make the set-point equal to the current position
 				break;}
 			case MTR_LOOKY:{
 				if(motor->device != NULL && !motor->device->is_setup){

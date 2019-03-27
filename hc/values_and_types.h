@@ -53,7 +53,7 @@
 #define ESTOP_SENSE_PIN 		39
 
 #define LIN_ACT_ERR_MARGIN 		0.75
-#define LIN_ACT_KP				0.0
+#define LIN_ACT_KP				0.2
 #define LIN_ACT_KI 				0.0
 #define LIN_ACT_KP_INC 			0.0
 #define MOTOR_ANLG_CENTER_V 	2.5
@@ -208,6 +208,7 @@ typedef struct Device{
 typedef struct SensorInfo{
 	SensorType type 	= SENS_NONE;
 	Device* device;
+	MotorInfo* motor;
 	char* name = "--- NO NAME ----";
 	uint8_t pin 		= 0;
 	int n_value; 				// holds any relevant integer value
@@ -242,6 +243,7 @@ typedef struct MotorInfo{
 	int t_stamp 		= 0; 	// time-stamp of last update
 	float kp 			= 0.0;
 	float ki 			= 0.0;
+	float err_margin 	= 0.0;
 	float integ 		= 0.0;
 	float max_integ 	= 0.0;
 	float max_setpt 	= 0.0;

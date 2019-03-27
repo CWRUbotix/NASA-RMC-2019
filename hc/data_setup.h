@@ -104,30 +104,35 @@ void setup_sensors(){
 	sensor->name 		= "PORT DRIVE ENC";
 	sensor->device 		= &(device_infos[VESC_1]);
 	sensor->type 		= SENS_BLDC_ENC;
+	sensor->motor 		= &(motor_infos[PORT_VESC]);
 
 	// DRIVE STBD ENC
 	sensor 				= &(sensor_infos[DRIVE_STBD_ENC]);
 	sensor->name 		= "STBD DRIVE ENC";
 	sensor->device 		= &(device_infos[VESC_2]);
 	sensor->type 		= SENS_BLDC_ENC;
+	sensor->motor 		= &(motor_infos[STBD_VESC]);
 
 	// DEP WINCH ENC
 	sensor 				= &(sensor_infos[DEP_WINCH_ENC]);
 	sensor->name 		= "DEP WINCH ENC";
 	sensor->device 		= &(device_infos[VESC_3]);
 	sensor->type 		= SENS_BLDC_ENC;
+	sensor->motor 		= &(motor_infos[DEP_VESC]);
 
 	// EXC BELT ENC
 	sensor 				= &(sensor_infos[EXC_BELT_ENC]);
 	sensor->name 		= "EXC BELT ENC";
 	sensor->device 		= &(device_infos[VESC_4]);
 	sensor->type 		= SENS_BLDC_ENC;
+	sensor->motor 		= &(motor_infos[EXC_VESC]);
 
 	// EXC TRANSLATION ENCODER
 	sensor 				= &(sensor_infos[EXC_TRANS_ENC]);
 	sensor->name 		= "EXC TRANS ENC";
 	sensor->device 		= &(device_infos[TRANS_ENCODER]);
 	sensor->type 		= SENS_ROT_ENC;
+	sensor->offset 		= 50.0; 		// NEED TO ACTUALLY MEASURE THIS
 
 	// EXC ROTATION PORT ENCODER (ADC AIN2)
 	sensor 				= &(sensor_infos[EXC_ROT_PORT_ENC]);
@@ -135,6 +140,8 @@ void setup_sensors(){
 	sensor->device 		= &(device_infos[ADC_0]);
 	sensor->type 		= SENS_POT_ENC;
 	sensor->adc_channel_config = single_2;
+	sensor->min 		= 0.0;
+	sensor->max 		= 32767;
 
 	// EXC ROTATION STBD ENCODER (ADC AIN1)
 	sensor 				= &(sensor_infos[EXC_ROT_STBD_ENC]);
@@ -142,6 +149,8 @@ void setup_sensors(){
 	sensor->device 		= &(device_infos[ADC_0]);
 	sensor->type 		= SENS_POT_ENC;
 	sensor->adc_channel_config = single_1;
+	sensor->min 		= 0.0;
+	sensor->max 		= 32767;
 
 	// LOOKY PORT ENC
 	sensor 				= &(sensor_infos[LOOKY_PORT_ENC]);
@@ -160,6 +169,7 @@ void setup_sensors(){
 	sensor->name 		= "DEP LOAD CELL";
 	sensor->device 		= &(device_infos[ADC_1]);
 	sensor->type 		= SENS_LOAD_CELL;
+	sensor->adc_channel_config = diff_1_2;
 	sensor->prev_values = dep_lc_values;
 
 	// EXC LOAD LOAD-CELL
@@ -167,6 +177,7 @@ void setup_sensors(){
 	sensor->name 		= "EXC LOAD CELL";
 	sensor->device 		= &(device_infos[ADC_2]);
 	sensor->type 		= SENS_LOAD_CELL;
+	sensor->adc_channel_config = diff_1_2;
 	sensor->prev_values = exc_lc_values;
 
 	// GYRO-0 X
@@ -342,6 +353,10 @@ void setup_motors(void){
 	motor->limit_1 		= &(sensor_infos[EXC_CONV_LIMIT_UPPER]);
 	motor->limit_2 		= &(sensor_infos[EXC_CONV_LIMIT_LOWER]);
 	motor->max_setpt 	= 100.0; 					// max positional value (mm)
+	motor->kp 			= 0.1;
+	motor->ki 			= 0.0;
+	motor->min_power 	= -2.5;
+	motor->max_power 	= 2.5;
 
 	// Exc Rot Port (DAC 1)
 	motor 				= &(motor_infos[EXC_ROT_PORT]);
@@ -350,6 +365,11 @@ void setup_motors(void){
 	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
 	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
 	motor->max_setpt 	= 60.0; 					// max position in degrees
+	motor->kp 			= LIN_ACT_KP;
+	motor->ki 			= LIN_ACT_KI;
+	motor->min_power 	= -2.5;
+	motor->max_power 	= 2.5;
+	motor->err_margin 	= 0.1; 		// degrees
 
 	// Exc Rot Starboard (DAC 2)
 	motor 				= &(motor_infos[EXC_ROT_STBD]);
@@ -358,6 +378,11 @@ void setup_motors(void){
 	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
 	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
 	motor->max_setpt 	= 60.0; 					// max position in degrees
+	motor->kp 			= LIN_ACT_KP;
+	motor->ki 			= LIN_ACT_KI;
+	motor->min_power 	= -2.5;
+	motor->max_power 	= 2.5;
+	motor->err_margin 	= 0.1; 		// degrees
 
 	// Looky PORT SIDE
 	motor 				= &(motor_infos[LOOKY_PORT]);

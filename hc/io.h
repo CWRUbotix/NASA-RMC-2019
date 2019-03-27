@@ -32,8 +32,8 @@ void update_sensors(){
 				if(sensor->device != NULL && sensor->device->is_setup){
 	        		uint16_t temp 		= 0;
 	        		int16_t signed_temp = 0;
-	        		float f_temp 		= 0;
-	        		sensor->value_good = sensor->device->adc->read_channel(diff_1_2, &temp);
+	        		float f_temp 		= 0.0;
+	        		sensor->value_good = sensor->device->adc->read_channel(sensor->adc_channel_config, &temp);
 					if(sensor->value_good){
 						memcpy(&signed_temp, &temp, 2);
 						f_temp = (signed_temp/32767.0)*5.0; 					// voltage
@@ -43,7 +43,7 @@ void update_sensors(){
 						sensor->val_ind++;
 						if(sensor->val_ind >= NUM_PREV_VALUES){
 							sensor->val_ind = 0;}
-						debug("Load cell v:\t"+String(sensor->value, 3));
+						debug("Load cell v:\t"+String(f_temp, 3));
 					}else{
 						debug("Load cell read ERROR");
 					}
@@ -76,9 +76,10 @@ void update_sensors(){
 				break;}
 			case SENS_BLDC_ENC:{
 				if(sensor->device != NULL && sensor->device->is_setup){
-					sensor->device->vesc->request_mc_values(); 				// should have been called during maintain motors
-					sensor->device->vesc->update_mc_values(); 				// read the available packet
-					sensor->value = 1.0*sensor->device->vesc->get_rpm();	// get the RPM
+					// sensor->device->vesc->request_mc_values(); 				// should have been called during maintain motors
+					sensor->device->vesc->update_mc_values(); 					// read the available packet
+					sensor->value = 1.0*sensor->device->vesc->get_rpm();		// get the motor RPM
+					sensor->value = sensor->value / sensor->motor->rpm_factor; 	// convert to output RPM
 					sensor->t_stamp = TIME_STAMP;
 				}
 				break;}
@@ -88,12 +89,13 @@ void update_sensors(){
 	        		sensor->value_good 	= sensor->device->adc->read_channel(sensor->adc_channel_config, &raw);
 					if(sensor->value_good){
 						sensor->t_stamp = TIME_STAMP;
-						float temp 		= raw/32767.0;
+						float temp 		= fmap(1.0*raw, sensor->min, sensor->max, 0.0, 32767.0); // map analog value between 0 and FS
+						temp 			= temp/32767.0;
 						// convert fraction of travel to angle
 						temp 			= -((float)pow(4.0*temp + 9.4132, 2) - 170.7218)/102.7197;
 						temp 			= 1.6917 - (float)acos( temp ); // angle in radians
 						sensor->value 	= temp * (180/3.14159); 		// convert to degrees
-						debug("Pot. Angle:\t"+String(sensor->value, 3));
+						debug("Pot. raw val:\t"+String(raw, DEC));
 					}else{
 						debug("Pot. read ERROR");
 					}
@@ -103,6 +105,7 @@ void update_sensors(){
 				//to get status:
 				//XYZrobotServoStatus status = servo.readStatus();
 				// sensor->device->servo_status = sensor->device->servo->readStatus();
+				sensor->value 	= Herkulex.getAngle(motor->looky_id);
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 		}
@@ -147,6 +150,7 @@ void maintain_motors(){
 				float target 	= 0.0;
 				if(i == EXC_ROT_PORT){
 					MotorInfo* stbd 	= &motor_infos[EXC_ROT_STBD];
+					stbd->setpt 		= motor->setpt;
 					float diff 			= motor->sensor->value - stbd->sensor->value;
 					
 					if(diff > LIN_ACT_ERR_MARGIN){
@@ -159,41 +163,50 @@ void maintain_motors(){
 						stbd->kp = LIN_ACT_KP;
 						motor->kp = LIN_ACT_KP;
 					}
-					// // Convert angular setpoint to fraction of full extension
-					// float theta 	= motor->setpt * (3.14159 / 180.0); 	// degrees to radians
-					// target 	= (float)sqrt(170.7218 - 102.7197*cos(1.6917 - theta))/4.0 - 2.3533;
-				
 				}else if(i == EXC_ROT_STBD){
-					// // Convert angular setpoint to fraction of full extension
-					// float theta 	= motor->setpt * (3.14159 / 180.0); 	// degrees to radians
-					// target 	= (float)sqrt(170.7218 - 102.7197*cos(1.6917 - theta))/4.0 - 2.3533;
-				}else{
-				}
+					motor_infos[EXC_ROT_PORT].setpt = motor->setpt;
+				}else{}
 				
-				float err 		= motor->setpt - motor->sensor->value;
-				float dt 		= TIME_STAMP - motor->t_stamp; 		// how much time since last update
+				float err 		= motor->setpt - motor->sensor->value; 			// error in degrees
+				float dt 		= (TIME_STAMP - motor->t_stamp) / 1000000.0; 	// how much time since last update in SECONDS
 				motor->integ 	= motor->integ + err*dt;
 				motor->integ 	= fconstrain(motor->integ, -motor->max_integ, motor->max_integ);
 				
-				//PID controls:
-				//rot_val = dx*(target-actual) + dy*(
-				// the line below doesn't account for any deadband
-				float voltage 	= motor->kp*err + motor->ki*motor->integ + MOTOR_ANLG_CENTER_V;
-				int dir 		= get_sign(voltage - MOTOR_ANLG_CENTER_V);
+				if(fabs(err) < motor->err_margin){ 	// if err_margin is set to 0.0, then we'll always do PI(D)
+					voltage = 0.0; // stop the motor
+				}else{
+					//PID controls:	
+					float voltage 	= motor->kp*err + motor->ki*motor->integ; // should range from -2.5 to +2.5 (or min_power to max_power)
+				}
+				
+				voltage = fconstrain(voltage, motor->min_power, motor->max_power);
+
+				debug(String(i, DEC) + " Sabertooth,\tError: " + String(err, 3) + " deg,\tV: "+ String(voltage, 3));
+				
+				// FOR DEBUGGING PURPOSES
+				voltage = motor->setpt;
+				// DELETE LATER TO ENABLE PI(D) CONTROL
+
+				int dir 		= get_sign(voltage);
 				if(motor->limit_1->value > 0.0){
 					if(dir != motor->limit_1->allowed_dir){
-						voltage = MOTOR_ANLG_CENTER_V;
+						voltage = 0.0;
 					}
 				}else if(motor->limit_2->value > 0.0){
 					if(dir != motor->limit_2->allowed_dir){
-						voltage = MOTOR_ANLG_CENTER_V;
+						voltage = 0.0;
 					}
 				}
-				// FOR DEBUGGING PURPOSES
-				voltage = motor->setpt + MOTOR_ANLG_CENTER_V;
-				// DELETE LATER
+				dir = get_sign(voltage); 	// in case something changed
 
-				debug("Updating sabertooth: "+ String(voltage, 3));
+				// ACCOUNT FOR DEADBAND
+				if(dir > 0){
+					voltage = fmap(voltage, 0, motor->max_power, motor->deadband, motor->max_power);
+				}else if(dir < 0){
+					voltage = fmap(voltage, motor->min_power, 0, motor->min_power, -motor->deadband);
+				}else{}
+
+				voltage = voltage + MOTOR_ANLG_CENTER_V; 	// shift bipolar voltage into the correct range
 
 				uint8_t data[3] = {};
 				package_DAC_voltage(voltage, data); 	

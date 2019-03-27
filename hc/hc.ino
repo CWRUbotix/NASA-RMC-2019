@@ -33,6 +33,26 @@ void setup(){
 	
 	debug("init sensors");
 	init_sensors(); 		// initializes the sensors, this happens as long as the re
+
+	// Initialize the DACs so the motors don't start to move when the E-Stop energizes
+	uint8_t data[3] = {};
+	SPI.beginTransaction(DAC_SPI_settings);
+	package_DAC_voltage(MOTOR_ANLG_CENTER_V, data); 	
+	digitalWrite(DAC_0_CS_PIN, LOW);
+	PAUSE_SHORT;
+	SPI.transfer(data, 3);
+	digitalWrite(motor->device->spi_cs, HIGH);
+	package_DAC_voltage(MOTOR_ANLG_CENTER_V, data); 
+	digitalWrite(DAC_1_CS_PIN, LOW);
+	PAUSE_SHORT;
+	SPI.transfer(data, 3);
+	digitalWrite(motor->device->spi_cs, HIGH);
+	package_DAC_voltage(MOTOR_ANLG_CENTER_V, data); 
+	digitalWrite(DAC_2_CS_PIN, LOW);
+	PAUSE_SHORT;
+	SPI.transfer(data, 3);
+	digitalWrite(motor->device->spi_cs, HIGH);
+	SPI.endTransaction();
 	
 	debug("check estop pin");
 	if(digitalRead(sensor_infos[ESTOP_SENSE_INDEX].pin) == HIGH){
@@ -52,7 +72,7 @@ void loop(){
 	sensor_infos[ESTOP_SENSE_INDEX].t_stamp = TIME_STAMP;
 
 	if(estop_state==HIGH && estop_state!=estop_state_last){
-		delay(3000); 			// wait for motor controllers to boot up
+		delay(500); 			// wait for motor controllers to boot up
 		debug("init motors");
 		init_motors();
 	} estop_state_last = estop_state;
