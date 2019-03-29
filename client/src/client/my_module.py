@@ -8,6 +8,21 @@ import sys
 
 #setattr(sys, 'SELECT_QT_BINDING', 'pyside')
 
+#from hci.msg import motorCommand
+
+#from hci.srv import motorCommand
+#from hci.msg import sensorValue
+
+#import client.srv.motorCommand as motorCommand
+#import sensorValue.msg as sensorValue
+#import client._generate_messages
+#from client import motorCommand
+
+#import client.msg
+#import client.srv
+
+#from client.msg import sensorValue
+
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, QTimer, Slot
@@ -43,6 +58,13 @@ class MyPlugin(Plugin):
         # ROS Publisher
         self._publisher = None
 
+        #motor_command = client.srv.motorCommand
+        #sensor_value = client.msg.sensorValue
+        #print(motor_command)
+        #print(sensor_value)
+
+        #self.ros_robot_interface = ros_robot_interface(motor_command, sensor_value)
+        
         # Create QWidget
         self._widget = QWidget()
 
@@ -52,15 +74,7 @@ class MyPlugin(Plugin):
         loadUi(ui_file, self._widget)
         # Give QObjects reasonable names
         self._widget.setObjectName('MyPluginUi')
-        # Show _widget.windowTitle on left-top of each plugin (when 
-        # it's set in _widget). This is useful when you open multiple 
-        # plugins at once. Also if you open multiple instances of your 
-        # plugin at once, these lines add number to make it easy to 
-        # tell from pane to pane.
 
-        ### I don't know what the hell I'm doing
-
-        #self._widget.button.clicked.connect(self.hello)
         print("Widget info", self._widget)
 
         print("More widget info", self._widget.speed_label.text())
@@ -131,10 +145,14 @@ class MyPlugin(Plugin):
 
     #### Sending messages
     def _on_parameter_changed(self):
-        self._send_twist(
-            int(self._widget.speed_label.text()),
-            int(self._widget.azimuth_label.text())
-        )
+        #self._send_twist(
+        #    int(self._widget.speed_label.text()),
+        #    int(self._widget.azimuth_label.text())
+        #)
+        speed = int(self._widget.speed_label.text())
+        azimuth = int(self._widget.azimuth_label.text())
+
+        self._send_motor_command(speed, speed)
 
     def _send_twist(self, x_linear, z_angular):
         if self._publisher is None:
@@ -156,6 +174,13 @@ class MyPlugin(Plugin):
             self.zero_cmd_sent = False
             print(twist)
             self._publisher.publish(twist)
+
+    # How to remember: Port is 4 characters long, so is 'Left'
+    def _send_motor_command(self, motor_id, val):
+        if self._publisher is None:
+            return
+        
+        #motorCommandPub = rospy.ServiceProxy('motorCommand', motorCommand, persistent=True)
 
 ### Specific messages to test labels
     def hello(self):
@@ -183,3 +208,22 @@ class MyPlugin(Plugin):
         # Comment in to signal that the plugin has a way to configure
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
+"""
+class ros_robot_interface():
+
+    def __init__(self, motor_command, sensor_value):
+        node_name = 'robotInterface'
+        motorCommandTopic = 'motorCommand'
+        sensorValueTopic = 'sensorValue'
+
+        motorCommand = motor_command
+        sensorValue = sensor_value
+
+        #rospy.init_node(node_name,disable_signals=True)
+
+        rospy.wait_for_service(motorCommandTopic)
+        motorCommandPub = rospy.ServiceProxy(motorCommandTopic, motorCommand, persistent=True)
+
+        rospy.Subscriber(sensorValueTopic,sensorValue,sensorValueCallback)
+
+"""
