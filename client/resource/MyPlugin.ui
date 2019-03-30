@@ -30,9 +30,9 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>180</y>
+     <y>200</y>
      <width>105</width>
-     <height>371</height>
+     <height>351</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="vertical_info_1">
@@ -91,6 +91,12 @@
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
      <widget class="QLabel" name="label_status2">
+      <property name="font">
+       <font>
+        <pointsize>14</pointsize>
+        <italic>true</italic>
+       </font>
+      </property>
       <property name="text">
        <string>Manual Control Client v0.01</string>
       </property>
@@ -99,7 +105,10 @@
     <item>
      <widget class="QLabel" name="label_status">
       <property name="text">
-       <string>Robot Status 2</string>
+       <string>Dev Build - Only Motor Commanding implemented</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
@@ -131,25 +140,12 @@
     <enum>Qt::Horizontal</enum>
    </property>
   </widget>
-  <widget class="QLineEdit" name="topic_line_edit">
-   <property name="geometry">
-    <rect>
-     <x>530</x>
-     <y>50</y>
-     <width>231</width>
-     <height>25</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>/rosout</string>
-   </property>
-  </widget>
   <widget class="QLabel" name="status_label">
    <property name="geometry">
     <rect>
      <x>90</x>
      <y>30</y>
-     <width>161</width>
+     <width>271</width>
      <height>17</height>
     </rect>
    </property>
@@ -161,26 +157,13 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>90</y>
+     <y>50</y>
      <width>231</width>
      <height>25</height>
     </rect>
    </property>
    <property name="readOnly">
     <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QLabel" name="node_name">
-   <property name="geometry">
-    <rect>
-     <x>530</x>
-     <y>20</y>
-     <width>191</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Control Node Name</string>
    </property>
   </widget>
   <widget class="QPushButton" name="emergency_stop_button">
@@ -367,6 +350,89 @@
    </property>
    <property name="text">
     <string>Status:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_6">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>170</y>
+     <width>281</width>
+     <height>231</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>35</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>NON FUNCTIONAL</string>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_7">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>30</y>
+     <width>201</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Motor Command Topic</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_8">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>80</y>
+     <width>161</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Sensor Value Topic</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="lineEdit">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>100</y>
+     <width>231</width>
+     <height>25</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_9">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>180</y>
+     <width>111</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Status: WIP</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_10">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>200</y>
+     <width>211</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Motor Control Settings</string>
    </property>
   </widget>
   <widget class="QLabel" name="label">

@@ -62,7 +62,7 @@ class MyPlugin(Plugin):
         # Service Proxy and Subscriber
         self._service_proxy = None
         self._subscriber = None
-        
+
         # Create QWidget
         self._widget = QWidget()
 
@@ -83,6 +83,7 @@ class MyPlugin(Plugin):
         self._widget.motor2_spinbox.valueChanged.connect(self.motor2_spinbox_changed)
         self._widget.motor3_spinbox.valueChanged.connect(self.motor3_spinbox_changed)
 
+        self._widget.emergency_stop_button.pressed.connect(self.estop_pressed)
 
         # ROS Connection Fields
         """
@@ -177,6 +178,18 @@ class MyPlugin(Plugin):
     def motor3_spinbox_changed(self):
         val = int(self._widget.motor3_spinbox.value())
         print("Spinbox Motor 3 val:", val)
+
+    """
+    Grouped Motor Control Functions
+    """
+    def estop_pressed(self):
+        # TODO: Implement this as a loop over some list of all known motors
+        # Check against the values reported in sensorValue
+        print("Attempting to zero all motors...")
+        self._send_motor_command(0, 0)
+        self._send_motor_command(1, 0)
+        self._send_motor_command(2, 0)
+        self._send_motor_command(3, 0)
 
     """
      Sending messages
