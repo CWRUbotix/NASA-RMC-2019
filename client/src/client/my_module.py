@@ -1,6 +1,7 @@
 import os
 
 from geometry_msgs.msg import Twist
+from std_msgs.msg import String
 
 import rospy
 import rospkg
@@ -8,21 +9,8 @@ import sys
 
 #setattr(sys, 'SELECT_QT_BINDING', 'pyside')
 
-#from hci.msg import motorCommand
-
-#from hci.srv import motorCommand
-#from hci.msg import sensorValue
-
-#import client.srv.motorCommand as motorCommand
-#import sensorValue.msg as sensorValue
-#import client._generate_messages
-#from client import motorCommand
-
-#import client.msg
-#import client.srv
-
-#from client.msg import sensorValue
-#from client.msg import sensorValue
+from client.srv import motorCommand
+from client.msg import sensorValue
 
 #import robotInterface
 
@@ -30,6 +18,10 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, QTimer, Slot
 from python_qt_binding.QtWidgets import QWidget
+
+node_name = 'robotInterface'
+motorCommandTopic = 'motorCommand'
+sensorValueTopic = 'sensorValue'
 
 # --------------------------------------------------
 #
@@ -61,12 +53,14 @@ class MyPlugin(Plugin):
         # ROS Publisher
         self._publisher = None
 
-        #motor_command = client.srv.motorCommand
+        #motor_command = motorCommand
         #sensor_value = client.msg.sensorValue
         #print(motor_command)
         #print(sensor_value)
 
-        #self.ros_robot_interface = ros_robot_interface(motor_command, sensor_value)
+        # Service Proxy and Subscriber
+        self._service_proxy = None
+        self._subscriber = None
         
         # Create QWidget
         self._widget = QWidget()
@@ -77,18 +71,16 @@ class MyPlugin(Plugin):
         loadUi(ui_file, self._widget)
         # Give QObjects reasonable names
         self._widget.setObjectName('MyPluginUi')
-
-        print("Widget info", self._widget)
-
-        print("More widget info", self._widget.speed_label.text())
         
         # Hook things up
         self._widget.vertical_add_button.pressed.connect(self.increase_linear_speed_pressed)
         self._widget.vertical_subtract_button.pressed.connect(self.decrease_linear_speed_pressed)
 
+        self._widget.motor1_spinbox.valueChanged.connect(self.motor1_spinbox_changed)
+
         # ROS Connection Fields
         self._widget.topic_line_edit.textChanged.connect(self._on_topic_changed)
-
+        self._widget.connect_button.pressed.connect(self._connect_to_topics)
         ###
 
         if context.serial_number() > 1:
@@ -125,6 +117,11 @@ class MyPlugin(Plugin):
             self._publisher.unregister()
             self._publisher = None
 
+        if self._service_proxy is not None:
+            #TODO:Doesn't actually shutdown/unregister??
+            #self._service_proxy.shutdown()
+            self._publisher = None
+
 
     #### Speed and Angle change Functions
     def speed_linear_changed(self):
@@ -143,10 +140,22 @@ class MyPlugin(Plugin):
             str(int(self._widget.speed_label.text()) - 1))
         print("Decreasing linear speed")
 
-    #def azimuth_changed(self):
-    #    self._widget.azimuth_label.setText(self._widget.)
+    """
+    Individual Motor Change Functions
+    """
 
-    #### Sending messages
+    def motor1_spinbox_changed(self):
+        val = int(self._widget.motor1_spinbox.value())
+        print("Spinbox Motor 1 val:", val)
+
+    def motor2_spinbox_changed(self):
+        val = int(self._widget.motor1_spinbox.value())
+        print("Spinbox Motor 2 val:", val)
+
+
+    """
+     Sending messages
+    """
     def _on_parameter_changed(self):
         #self._send_twist(
         #    int(self._widget.speed_label.text()),
@@ -155,42 +164,30 @@ class MyPlugin(Plugin):
         speed = int(self._widget.speed_label.text())
         azimuth = int(self._widget.azimuth_label.text())
 
-        self._send_motor_command(speed, speed)
+        #result = self._send_motor_command(0, 10)
+        #print(result)
 
-    def _send_twist(self, x_linear, z_angular):
-        if self._publisher is None:
-            return
-        twist = Twist()
-        twist.linear.x = x_linear
-        twist.linear.y = 0
-        twist.linear.z = 0
-        twist.angular.x = 0
-        twist.angular.y = 0
-        twist.angular.z = z_angular
+    def _connect_to_topics(self):
+        self._unregister_publisher()
+        print("trying topic: ", motorCommandTopic)
+        try:
+            self._service_proxy = rospy.ServiceProxy(motorCommandTopic, motorCommand, persistent=True)
+        except TypeError:
+            # TODO: Uhhh, what do we do if this breaks
+            print("Error while connecting to topic: ", motorCommandTopic)
+            #self._service_proxy = rospy.ServiceProxy()
 
-        # Only send the zero command once so other devices can take control
-        if x_linear == 0 and z_angular == 0:
-            if not self.zero_cmd_sent:
-                self.zero_cmd_sent = True
-                self._publisher.publish(twist)
-        else:
-            self.zero_cmd_sent = False
-            print(twist)
-            self._publisher.publish(twist)
-
-    # How to remember: Port is 4 characters long, so is 'Left'
+    """
+    Sends a single commanded value (0-100) to a specified motor id
+    """
     def _send_motor_command(self, motor_id, val):
-        if self._publisher is None:
+        if self._service_proxy is None:
             return
-        
-        #motorCommandPub = rospy.ServiceProxy('motorCommand', motorCommand, persistent=True)
-
-### Specific messages to test labels
-    def hello(self):
-        print("Hello world!")
-
-###
-
+        try:
+            resp = _service_proxy(motorID,value)
+        except rospy.ServiceException as exc:
+            print("motor command service didn't process request: " + str(exc))
+        return resp.success
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
