@@ -369,6 +369,27 @@
     <string>Status:</string>
    </property>
   </widget>
+  <widget class="QLabel" name="label_6">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>170</y>
+     <width>281</width>
+     <height>231</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>35</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>NON FUNCTIONAL</string>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
+   </property>
+  </widget>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>

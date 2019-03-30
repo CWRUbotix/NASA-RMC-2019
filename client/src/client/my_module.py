@@ -6,13 +6,14 @@ from std_msgs.msg import String
 import rospy
 import rospkg
 import sys
+import rosservice
 
 #setattr(sys, 'SELECT_QT_BINDING', 'pyside')
 
 from client.srv import motorCommand
 from client.msg import sensorValue
 
-#import robotInterface
+import robotInterface
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
@@ -72,15 +73,24 @@ class MyPlugin(Plugin):
         # Give QObjects reasonable names
         self._widget.setObjectName('MyPluginUi')
         
-        # Hook things up
+        # Hook Qt UI Elements up
+        """
         self._widget.vertical_add_button.pressed.connect(self.increase_linear_speed_pressed)
         self._widget.vertical_subtract_button.pressed.connect(self.decrease_linear_speed_pressed)
-
+        """
+        self._widget.motor0_spinbox.valueChanged.connect(self.motor0_spinbox_changed)
         self._widget.motor1_spinbox.valueChanged.connect(self.motor1_spinbox_changed)
+        self._widget.motor2_spinbox.valueChanged.connect(self.motor2_spinbox_changed)
+        self._widget.motor3_spinbox.valueChanged.connect(self.motor3_spinbox_changed)
+
 
         # ROS Connection Fields
+        """
         self._widget.topic_line_edit.textChanged.connect(self._on_topic_changed)
+        """
         self._widget.connect_button.pressed.connect(self._connect_to_topics)
+
+        self._widget.service_name_textbox.setText(motorCommandTopic)
         ###
 
         if context.serial_number() > 1:
@@ -99,6 +109,7 @@ class MyPlugin(Plugin):
 
 
     # ROS Connection things
+    """
     @Slot(str)
     def _on_topic_changed(self, topic):
         topic = str(topic)
@@ -110,20 +121,24 @@ class MyPlugin(Plugin):
             self._publisher = rospy.Publisher(topic, Twist, queue_size = 10)
         except TypeError:
             self._publisher = rospy.Publisher(topic, Twist)
+    """
 
-    ##### Unregister ROS publisher
+    """
+    Unregister ROS publisher
+    """
     def _unregister_publisher(self):
         if self._publisher is not None:
             self._publisher.unregister()
             self._publisher = None
 
         if self._service_proxy is not None:
-            #TODO:Doesn't actually shutdown/unregister??
-            #self._service_proxy.shutdown()
-            self._publisher = None
+            # TODO:Doesn't actually shutdown/unregister??
+            #self._service_proxy.shutdown('Shutting down service proxy...')
+            self._service_proxy = None
 
 
     #### Speed and Angle change Functions
+    """
     def speed_linear_changed(self):
         self._widget.speed_label.setText(self._widget.verticalSpeedSlider.text())
         # Publish the updated speed
@@ -139,19 +154,29 @@ class MyPlugin(Plugin):
         self._widget.speed_label.setText(
             str(int(self._widget.speed_label.text()) - 1))
         print("Decreasing linear speed")
+    """
 
     """
     Individual Motor Change Functions
     """
+
+    def motor0_spinbox_changed(self):
+        val = int(self._widget.motor0_spinbox.value())
+        print("Spinbox Motor 0 val:", val)
+        resp = self._send_motor_command(0, val)
+        print("Motor 0 did send successfully: ",  resp)
 
     def motor1_spinbox_changed(self):
         val = int(self._widget.motor1_spinbox.value())
         print("Spinbox Motor 1 val:", val)
 
     def motor2_spinbox_changed(self):
-        val = int(self._widget.motor1_spinbox.value())
+        val = int(self._widget.motor2_spinbox.value())
         print("Spinbox Motor 2 val:", val)
 
+    def motor3_spinbox_changed(self):
+        val = int(self._widget.motor3_spinbox.value())
+        print("Spinbox Motor 3 val:", val)
 
     """
      Sending messages
@@ -163,18 +188,29 @@ class MyPlugin(Plugin):
         #)
         speed = int(self._widget.speed_label.text())
         azimuth = int(self._widget.azimuth_label.text())
-
-        #result = self._send_motor_command(0, 10)
         #print(result)
 
     def _connect_to_topics(self):
         self._unregister_publisher()
-        print("trying topic: ", motorCommandTopic)
+        print("trying topic: " + motorCommandTopic)
+        alltopics = rosservice.get_service_list()
+        print("Services Reported As Published")
+        for t in alltopics :
+            print(t)
+
+        try:
+            rospy.wait_for_service(motorCommandTopic, timeout=3)
+        except (rospy.ServiceException, rospy.ROSException), e:
+            print("ERROR: Timed out while waiting for service: %s" % motorCommandTopic)
+            self._set_status_text("SERVICE TIMEOUT ERROR")
+            return
         try:
             self._service_proxy = rospy.ServiceProxy(motorCommandTopic, motorCommand, persistent=True)
+            self._set_status_text("SERVICES CONNECTED")
         except TypeError:
             # TODO: Uhhh, what do we do if this breaks
-            print("Error while connecting to topic: ", motorCommandTopic)
+            print("Error while connecting to topic: %s" % motorCommandTopic)
+            self._set_status_text("TOPIC CONNECTION ERROR")
             #self._service_proxy = rospy.ServiceProxy()
 
     """
@@ -184,10 +220,14 @@ class MyPlugin(Plugin):
         if self._service_proxy is None:
             return
         try:
-            resp = _service_proxy(motorID,value)
+            resp = self._service_proxy(motor_id, val)
+            return resp.success
         except rospy.ServiceException as exc:
             print("motor command service didn't process request: " + str(exc))
-        return resp.success
+            return False
+
+    def _set_status_text(self, text):
+        self._widget.status_label.setText(text)
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here

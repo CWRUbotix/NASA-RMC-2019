@@ -1,16 +1,14 @@
 #!/usr/bin/env python 
 import rospy
-#from hci.srv import motorCommand
-#from hci.msg import sensorValue
 
-import client.srv
-import client.msg
+from client.srv import motorCommand
+from client.msg import sensorValue
 
 node_name = 'robotInterface'
 motorCommandTopic = 'motorCommand'
 sensorValueTopic = 'sensorValue'
 
-motorCommandPub
+motorCommandPub = None
 
 sensorValueMap = {
 	(0,0),
@@ -64,10 +62,6 @@ def getSensorValue(sensorID):
 	return sensorValueMap(sensorID);
 
 def initializeRobotInterface():
-
-	motorCommand = client.srv.motorCommand
-	sensorValue = client.msg.sensorValue
-
 	rospy.init_node(node_name,disable_signals=True)
 
 	rospy.wait_for_service(motorCommandTopic)
