@@ -73,6 +73,14 @@ class MyPlugin(Plugin):
         # Give QObjects reasonable names
         self._widget.setObjectName('MyPluginUi')
         
+        ### Map motors to their respective UI elements
+        self.motor_widgets = {
+            0:self._widget.motor0_spinbox,
+            1:self._widget.motor1_spinbox,
+            2:self._widget.motor2_spinbox,
+            3:self._widget.motor3_spinbox
+        }
+        print(self.motor_widgets)
         # Hook Qt UI Elements up
         """
         self._widget.vertical_add_button.pressed.connect(self.increase_linear_speed_pressed)
@@ -101,13 +109,18 @@ class MyPlugin(Plugin):
 
         # ROS Twist Stuff
 
-        # timer to consecutively send twist messages
+        # timer to consecutively send service messages
+        """
         self._update_parameter_timer = QTimer(self)
         self._update_parameter_timer.timeout.connect(
             self._on_parameter_changed)
         self._update_parameter_timer.start(100)
         self.zero_cmd_sent = False
+        """
 
+    # Keyboard Teleop with signalling
+    #def keyPressEvent(self, event):
+    #    if event.key()
 
     # ROS Connection things
     """
@@ -170,14 +183,21 @@ class MyPlugin(Plugin):
     def motor1_spinbox_changed(self):
         val = int(self._widget.motor1_spinbox.value())
         print("Spinbox Motor 1 val:", val)
+        resp = self._send_motor_command(1, val)
+
+        #self._on_parameter_changed()
 
     def motor2_spinbox_changed(self):
         val = int(self._widget.motor2_spinbox.value())
         print("Spinbox Motor 2 val:", val)
+        resp = self._send_motor_command(2, val)
+        #self._on_parameter_changed()
 
     def motor3_spinbox_changed(self):
         val = int(self._widget.motor3_spinbox.value())
         print("Spinbox Motor 3 val:", val)
+        resp = self._send_motor_command(3, val)
+        #self._on_parameter_changed()
 
     """
     Grouped Motor Control Functions
@@ -194,14 +214,14 @@ class MyPlugin(Plugin):
     """
      Sending messages
     """
+    # Iteratively send values
     def _on_parameter_changed(self):
-        #self._send_twist(
-        #    int(self._widget.speed_label.text()),
-        #    int(self._widget.azimuth_label.text())
-        #)
-        speed = int(self._widget.speed_label.text())
-        azimuth = int(self._widget.azimuth_label.text())
-        #print(result)
+        for motor_id, ui_widget in self.motor_widgets.items():
+            # If widget is spinbox,
+            val = ui_widget.value()
+            resp = self._send_motor_command(motor_id, val)
+            print("on motor: %s" % motor_id + ", value: %s" % val + "sending result: %s" % resp)
+
 
     def _connect_to_topics(self):
         self._unregister_publisher()
@@ -244,7 +264,7 @@ class MyPlugin(Plugin):
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
-        self._update_parameter_timer.stop()
+        #self._update_parameter_timer.stop()
         self._unregister_publisher()
 
     def save_settings(self, plugin_settings, instance_settings):
