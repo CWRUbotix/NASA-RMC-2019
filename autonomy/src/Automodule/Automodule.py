@@ -3,7 +3,8 @@
 import rospy
 from std_msgs.msg import String
 from PathPlanning.PathPlanning import Position #import specific functions later
-import Automodule.MotorCommand as mc
+from DriveControl.DriveControl import DriveModule, ObstacleAlert
+import MotorCommand as mc
 
 """ 
 Main Module for Autonomy operation
@@ -16,6 +17,7 @@ robotPos = None
 destination = None
 drive = None
 currentID = 0
+obstacles = []
 #Map from ID to time allocated.
 tasks = {
 	0: -1,
@@ -38,20 +40,26 @@ tasks = {
 }
 
 #return true if robot arrived in a position within the the time false if not.
-def goTo(dest, ID):
+def goTo(dest):
 	global drive, destination, currentID
 	destination = dest
 	# First you request for the path
 	path = requestPath(robotPos, destination)
 
 	# Given ID start the timer with assigned time
-	tGoal = rospy.get_time() + tasks[ID]
+	tGoal = rospy.get_time() + tasks[currentID]
 
 	# Start loop of driveTo method calls with given path
-	for pos in path:
-		drive = driveTo(pos)
-		while not drive.done(robotPos):
-			rospy.sleep(.1)
+	try:
+		for pos in path:
+			drive = DriveModule(pos)
+			while not drive.done(robotPos):
+				motorvalues = drive.run()
+				mc.drive_left_motor(motorvalues[0])
+				mc.drive_right_motor(motorvalues[1])
+				rospy.sleep(.1)
+	except ObstacleAlert:
+		return False
 
 	drive = None
 	destination = None
@@ -68,9 +76,10 @@ def updatePos(pos):
 
 #Alerts Path Planning submodule with new obstacle found and get a new path
 def foundObstacle(obs):
+	obstacles.append(obs)
 	if drive is not None:
 		drive.stop()
-		goTo(destination, currentID)
+		goTo(destination)
 
 """Sensor Subscription"""
 def subscribe():
@@ -112,9 +121,9 @@ def task_4():
 	mc.bucket_translation_motor(-1 * translationStrength)
 	rospy.sleep(10)
 	mc.bucket_translation_motor(0)
-	mc.bucket_angular_actuator(-angleStrength)
+	mc.bucket_angle_actuator(-angleStrength)
 	rospy.sleep(15)
-	mc.bucket_angular_actuator(0)
+	mc.bucket_angle_actuator(0)
 
 #Dumping (Cycle1): 15
 def task_8():
@@ -141,13 +150,13 @@ def task_11():
 	mc.bucket_translation_motor(-1 * translationStrength)
 	rospy.sleep(10)
 	mc.bucket_translation_motor(0)
-	mc.bucket_angular_actuator(-angleStrength)
+	mc.bucket_angle_actuator(-angleStrength)
 	rospy.sleep(15)
-	mc.bucket_angular_actuator(0)
+	mc.bucket_angle_actuator(0)
 
 #Dumping (Cycle2): 15
 def task_15():
-	angleStrength = 225;
+	angleStrength = 225
 	mc.bucket_angle_actuator(angleStrength)
 	rospy.sleep(7)
 	mc.bucket_angle_actuator(-angleStrength)
@@ -161,12 +170,6 @@ def modifyTimes(timeLeft):
 	pass
 
 def shutdownRoutine():
-	pass
-
-
-#Start DriveControl subprocess with destination position.
-#Return an DriveControl object that you can call done() function that indicates when the robot is at the position
-def driveTo(pos):
 	pass
 
 def main():
