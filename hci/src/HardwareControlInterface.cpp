@@ -2,7 +2,7 @@
 
 map<uint8_t, float> motorValues;
 ros::Publisher sensorPublisher;
-ros::ServiceServer motorService;
+ros::Subscriber motorSubscriber;
 
 serial::Serial hcSerial;
 unsigned long baud = 115200; 
@@ -21,10 +21,8 @@ bool addMotorValue(int ID, float value){
     return true;
 }
 
-bool addMotorCallback(hci::motorCommand::Request &request, hci::motorCommand::Response &response){
-    addMotorValue(request.motorID, request.value);
-    response.success = true;
-    return true;
+void addMotorCallback(const hci::motorCommand& msg){
+    addMotorValue(msg.motorID, msg.value);
 }
 
 void enumeratePorts(void){
@@ -95,7 +93,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "hci");
     ros::NodeHandle n; 
     sensorPublisher = n.advertise<hci::sensorValue>("sensorValue", 1);
-    motorService = n.advertiseService("motorCommand", addMotorCallback);
+    motorSubscriber = n.subscribe("motorCommand",1,addMotorCallback); 
 
     string port = "0";
     while(port == "0"){
@@ -103,7 +101,7 @@ int main(int argc, char** argv) {
         ros::Duration(1).sleep();
     } 
     ROS_INFO("%s\n ", port.c_str());
-    
+
     while(ros::ok()){
         if(!hcSerial.isOpen()){
             while(!hcSerial.isOpen()){

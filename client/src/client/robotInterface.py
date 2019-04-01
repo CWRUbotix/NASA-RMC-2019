@@ -4,7 +4,7 @@ import rospy
 #from client.srv import motorCommand
 #from client.msg import sensorValue
 from hci.msg import sensorValue
-from hci.srv import motorCommand
+from hci.msg import motorCommand
 
 
 node_name = 'robotInterface'
@@ -51,15 +51,8 @@ sensorValueMap = {
 
 
 def sendMotorCommand(motorID, value):
-	rospy.wait_for_service(motorCommandTopic)
-	try:
-		motorCommandPub = rospy.ServiceProxy(motorCommandTopic, motorCommand, persistent=False)
-		resp = motorCommandPub(motorID,value)
-		print(resp)
-		print("motorCommand should have been sent!")
-	except rospy.ServiceException as exc:
-		print("motor command service didn't process request: " + str(exc))
-	return resp.success
+	motorCommandPub.publish(motorID, value)
+	return True
 
 def sensorValueCallback(data):
 	rospy.loginfo("Sensor %u has value %f", data.sensorID, data.value)
@@ -71,6 +64,6 @@ def getSensorValue(sensorID):
 def initializeRobotInterface():
 	#rospy.init_node(node_name,disable_signals=True)
 
-	rospy.wait_for_service(motorCommandTopic)
+	motorCommandPub = rospy.Publisher(motorCommandTopic, motorCommand, queue_size=1)
 	rospy.Subscriber(sensorValueTopic,sensorValue,sensorValueCallback)
 	#rospy.spin()

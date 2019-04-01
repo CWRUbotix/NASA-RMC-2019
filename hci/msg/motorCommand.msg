@@ -10,5 +10,4 @@ int8 bcLED = 8
 
 int8 motorID
 float64 value
----
-bool success
+
