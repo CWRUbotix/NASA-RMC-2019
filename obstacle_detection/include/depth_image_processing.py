@@ -33,6 +33,7 @@ CameraPosition = {
     "elevation": -30, # sensor's pitch angle in degrees.
 }
 
+
 def depthMatrixToPointCloudPos(z, scale=1000):
     """
     xyz_arr = depthMatrixToPointCloudPos(depth_frame)
@@ -56,6 +57,7 @@ def depthMatrixToPointCloudPos(z, scale=1000):
 
     return np.column_stack((z.ravel() / scale, R.ravel(), -C.ravel()))
 
+
 def depthToPointCloudPos(x_d, y_d, z, scale=1000):
     """
     x, y, z = (row, col, depth)
@@ -72,6 +74,7 @@ def depthToPointCloudPos(x_d, y_d, z, scale=1000):
     y = (y_d - CameraParams['cy']) * z / CameraParams['fy']
 
     return x / scale, y / scale, z / scale
+
 
 def applyCameraOrientation(pt):
     # Kinect Sensor Orientation Compensation
@@ -96,6 +99,7 @@ def applyCameraOrientation(pt):
     pt[:] += np.float_([CameraPosition['x'], CameraPosition['y'], CameraPosition['z']])
     return pt
 
+
 def applyCameraMatrixOrientation(pt):
     # Kinect Sensor Orientation Compensation
     # bacically this is a vectorized version of applyCameraOrientation()
@@ -118,7 +122,8 @@ def applyCameraMatrixOrientation(pt):
     # Apply offsets for height and linear position of the sensor (from viewport's center)
     pt[:] += np.float_([CameraPosition['x'], CameraPosition['y'], CameraPosition['z']])
     return pt
-	
+
+
 def plane_fit(points):
     """
     p, n = plane_fit(points)
@@ -136,6 +141,7 @@ def plane_fit(points):
     x = points - ctr[:,np.newaxis]
     M = np.dot(x, x.T) # Could also use np.cov(x) here.
     return ctr, svd(M)[0][:,-1]
+
 
 def get_orientation(xyz_arr, num_points, n_iter):
     """
@@ -165,4 +171,3 @@ def get_orientation(xyz_arr, num_points, n_iter):
         planes.append(P)
         centers.append(ctr)
     return np.mean(centers, axis = 0), np.mean(planes, axis = 0), np.mean(pitch)
-    

@@ -10,6 +10,7 @@ from depth_image_processing import *
 from obstacle import Obstacle
 from ros_publish import send_obstacle_data
 
+
 def get_obstacles_with_plane(depth_frame, num_planes, num_points, dist_thresh, visualize, send_data=False):
     obstacles = np.zeros(depth_frame.shape) #empty image that will store the locations of detected obstacles
     img = np.uint8(depth_frame) #some opencv functions require a byte image
@@ -23,34 +24,6 @@ def get_obstacles_with_plane(depth_frame, num_planes, num_points, dist_thresh, v
     xyz_arr = applyCameraMatrixOrientation(xyz_arr)
     plane_img = np.zeros(len(xyz_arr))
     plane_img[xyz_arr[:,2] > dist_thresh - center[2]] = 1
-    if visualize:
-        xyz_arr = xyz_arr[xyz_arr[:,2] > dist_thresh - center[2]]
-        points = pd.DataFrame(xyz_arr, columns=['x', 'y', 'z']) #convert XYZ coordinates to a DataFrame for pyntcloud
-        cloud = PyntCloud(points)
-
-        lines = [
-            {
-                # X axis
-                "color": "red",
-                "vertices": [[0, 0, 0], [10, 0, 0]]
-            },
-            {
-                # Y axis
-                "color": "green",
-                "vertices": [[0, 0, 0], [0, 10, 0]]
-            },
-            {
-                # Z axis
-                "color": "blue",
-                "vertices": [[0, 0, 0], [0, 0, 10]]
-            },
-            {
-                #Original norm of the plane
-                "color": "pink",
-                "vertices": [center.tolist(), plane.tolist()]
-            }
-        ]
-        cloud.plot(cmap="cool", polylines=lines)
 
     plane_img = np.uint8(np.reshape(plane_img,(424,512)) * 255) #reshape to match depth data and convert to uint8
     plane_img = np.uint8((np.ones((424,512)) * 255) - plane_img) #invert img so pixel value corresponds to NOT ground plane
@@ -130,6 +103,5 @@ def get_obstacles_with_plane(depth_frame, num_planes, num_points, dist_thresh, v
 
     elapsed_time = time.time() - start_time
     #print("Frame took " + str(elapsed_time) + " seconds to process")
-
 
     return obstacles
