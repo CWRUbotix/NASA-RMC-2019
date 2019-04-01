@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 
 from geometry_msgs.msg import Twist
@@ -10,8 +11,8 @@ import rosservice
 
 #setattr(sys, 'SELECT_QT_BINDING', 'pyside')
 
-from client.srv import motorCommand
-from client.msg import sensorValue
+#from client.srv import motorCommand
+#from client.msg import sensorValue
 
 import robotInterface
 
@@ -58,6 +59,8 @@ class MyPlugin(Plugin):
         #sensor_value = client.msg.sensorValue
         #print(motor_command)
         #print(sensor_value)
+
+        robotInterface.initializeRobotInterface()
 
         # Service Proxy and Subscriber
         self._service_proxy = None
@@ -177,26 +180,28 @@ class MyPlugin(Plugin):
     def motor0_spinbox_changed(self):
         val = int(self._widget.motor0_spinbox.value())
         print("Spinbox Motor 0 val:", val)
-        resp = self._send_motor_command(0, val)
+        resp = robotInterface.sendMotorCommand(0, val)
+        #resp = self._send_motor_command(0, val)
         print("Motor 0 did send successfully: ",  resp)
 
     def motor1_spinbox_changed(self):
         val = int(self._widget.motor1_spinbox.value())
         print("Spinbox Motor 1 val:", val)
-        resp = self._send_motor_command(1, val)
+        resp = robotInterface.sendMotorCommand(1, val)
+        #resp = self._send_motor_command(1, val)
 
         #self._on_parameter_changed()
 
     def motor2_spinbox_changed(self):
         val = int(self._widget.motor2_spinbox.value())
         print("Spinbox Motor 2 val:", val)
-        resp = self._send_motor_command(2, val)
+        #resp = self._send_motor_command(2, val)
         #self._on_parameter_changed()
 
     def motor3_spinbox_changed(self):
         val = int(self._widget.motor3_spinbox.value())
         print("Spinbox Motor 3 val:", val)
-        resp = self._send_motor_command(3, val)
+        #resp = self._send_motor_command(3, val)
         #self._on_parameter_changed()
 
     """
