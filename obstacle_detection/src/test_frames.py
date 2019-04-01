@@ -1,15 +1,9 @@
-# coding: utf-8
-
+#!/usr/bin/env python
 import numpy as np
-import math
 import cv2
-import pika
 import sys
-import copy
 import time
 import os
-import glob
-import messages_pb2
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
 from pylibfreenect2 import createConsoleLogger, setGlobalLogger
@@ -33,7 +27,12 @@ print("Packet pipeline:", type(pipeline).__name__)
 num_frames = 500
 frame_i = 0
 save_frames = True
-for f in files:
+frames_dir = 'test_frames/'
+try:
+    os.mkdir(frames_dir)
+except FileExistsError as e:
+    pass
+for f in os.listdir(frames_dir):
     os.remove(f)
 
 # Create and set logger
@@ -85,7 +84,7 @@ while frame_i < num_frames:
     # flip images
     img = cv2.flip(img, 1)
     imgray = cv2.flip(imgray, 1)
-    np.save("test_frames/" + str(frame_i) + ".npy", depth_frame.asarray(np.float32))
+    np.save(frames_dir + str(frame_i) + ".npy", depth_frame.asarray(np.float32))
     frame_i += 1
 
 device.stop()
