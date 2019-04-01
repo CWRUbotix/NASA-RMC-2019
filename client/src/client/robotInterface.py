@@ -51,6 +51,10 @@ sensorValueMap = {
 
 
 def sendMotorCommand(motorID, value):
+	global motorCommandPub
+	if motorCommandPub == None:
+		motorCommandPub = rospy.Publisher(motorCommandTopic, motorCommand, queue_size=10)
+		print("why are you like this")
 	motorCommandPub.publish(motorID, value)
 	return True
 

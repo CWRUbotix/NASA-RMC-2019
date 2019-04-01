@@ -96,6 +96,9 @@ class MyPlugin(Plugin):
 
         self._widget.emergency_stop_button.pressed.connect(self.estop_pressed)
 
+        #self._widget.keyPressed.connect(self.key_pressed)
+        #self._widget.Form.keyReleased.connect(self.key_released)
+
         # ROS Connection Fields
         """
         self._widget.topic_line_edit.textChanged.connect(self._on_topic_changed)
@@ -109,6 +112,8 @@ class MyPlugin(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         # Add widget to the user interface
         context.add_widget(self._widget)
+        self._widget.setFocusPolicy(0x8)
+        self._widget.setFocus()
 
         # ROS Twist Stuff
 
@@ -120,6 +125,30 @@ class MyPlugin(Plugin):
         self._update_parameter_timer.start(100)
         self.zero_cmd_sent = False
         """
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_W:
+            print("W up")
+        elif event.key() == QtCore.Qt.Key_S:
+            print("S up")
+        elif event.key() == QtCore.Qt.Key_A:
+            print("A up")
+        elif event.key() == QtCore.Qt.Key_D:
+            print("D up")
+
+        print("key pressed")
+
+
+    def keyReleaseEvent(self, event):
+        if event.key() == QtCore.Qt.Key_W:
+            print("W down")
+        elif event.key() == QtCore.Qt.Key_S:
+            print("S down")
+        elif event.key() == QtCore.Qt.Key_A:
+            print("A down")
+        elif event.key() == QtCore.Qt.Key_D:
+            print("D down")
+
 
     # Keyboard Teleop with signalling
     #def keyPressEvent(self, event):
@@ -211,11 +240,10 @@ class MyPlugin(Plugin):
         # TODO: Implement this as a loop over some list of all known motors
         # Check against the values reported in sensorValue
         print("Attempting to zero all motors...")
-        self._send_motor_command(0, 0)
-        self._send_motor_command(1, 0)
-        self._send_motor_command(2, 0)
-        self._send_motor_command(3, 0)
-
+        robotInterface.sendMotorCommand(0, 0)
+        robotInterface.sendMotorCommand(1, 0)
+        #robotInterface.sendMotorCommand(2, 0)
+        #robotInterface.sendMotorCommand(3, 0)
     """
      Sending messages
     """
