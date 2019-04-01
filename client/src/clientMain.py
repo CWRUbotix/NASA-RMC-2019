@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import robotInterface
-from hci.msg import motorCommand
+#from hci.msg import motorCommand
+from client.msg import motorCommand
 
 node_name = 'clientNode'
 
