@@ -1,23 +1,23 @@
 #include <HardwareControlInterface.h>
 
-map<int, float> motorValues;
+map<uint8_t, float> motorValues;
 ros::Publisher sensorPublisher;
 ros::ServiceServer motorService;
 
 serial::Serial hcSerial;
-unsigned long baud = 5600; //i don't remember what the actual baud rate is
-string hcDescription = "CWRUBOTIX CONTROLLER"; //change when i find out what it actually is called
+unsigned long baud = 115200; 
+string hcDescription = "Teensyduino USB Serial 4822650"; //description of the HCb
 
 uint8_t setOutputsByte = 0x51;
 uint8_t readValuesByte = 0x52;
 uint8_t testByte = 0x53;
 uint8_t syncTimeByte = 0x54;
 
-
 bool addMotorValue(int ID, float value){
     //we don't care if this overwrites an existing pair
-    motorValues.erase(ID);
-    motorValues.insert(std::pair<int,float>(ID,value));
+    uint8_t smallerID = ID;
+    motorValues.erase(smallerID);
+    motorValues.insert(std::pair<uint8_t,float>(smallerID,value));
     return true;
 }
 
@@ -54,7 +54,41 @@ string findHardwareControllerPort(void){
 }
 
 
+vector<uint8_t> generateMotorCommandMessage(void){
+    vector<uint8_t> commandMessage;
+    commandMessage.push_back(setOutputsByte);
+    uint16_t checksum = 0;
+    for(map<uint8_t,float>::iterator it = motorValues.begin(); it != motorValues.end(); it++) {
 
+        commandMessage.push_back(it->first);
+
+        char value[sizeof(float)];
+        float f = it->second;
+        memcpy(value, &f, sizeof f);    //transfer the float value into a char array
+
+        commandMessage.push_back(value[0]);
+        commandMessage.push_back(value[1]);
+        commandMessage.push_back(value[2]);
+        commandMessage.push_back(value[3]);
+
+        checksum += it->first;
+        checksum += value[0];
+        checksum += value[1];
+        checksum += value[2];
+        checksum += value[3];
+    }   
+
+    vector<uint8_t>::iterator it = commandMessage.begin();
+    it++; //now points to position 1
+    uint16_t length = commandMessage.size() - 1;
+    it = commandMessage.insert(it, checksum);
+    it = commandMessage.insert(it, checksum >> 8);
+    it = commandMessage.insert(it, length);
+    it = commandMessage.insert(it, length >> 8);
+    
+    return commandMessage;
+
+}
 
 int main(int argc, char** argv) {
 
@@ -64,34 +98,68 @@ int main(int argc, char** argv) {
     motorService = n.advertiseService("motorCommand", addMotorCallback);
 
     string port = "0";
-    while(port == "0"){
+    /*while(port == "0"){
         port = findHardwareControllerPort();
         ros::Duration(1).sleep();
     } 
+    ROS_INFO("%s\n ", port.c_str());
 
     while(ros::ok()){
         try
         {
             hcSerial.setPort(port);
-            hcSerial.setBaud(baud);
-            hcSerial.setTimeout(serial::Timeout::simpleTimeout(1000));
+            hcSerial.setBaudrate(baud);
+            serial::Timeout to = serial::Timeout::simpleTimeout(1000);
+            hcSerial.setTimeout(to);
             hcSerial.open();
         }
         catch (serial::IOException& e)
         {
             ROS_ERROR("Unable to open port ");
+            ROS_ERROR("%s", e.what());
         }
 
         if(hcSerial.isOpen()){
             ROS_INFO("Serial port opened");
             break;
         }
+        ros::Duration(0.25).sleep();
     }
 
+    */
+    while(ros::ok()){
+        /*if(!hcSerial.isOpen()){
+            while(!hcSerial.isOpen()){
+                try
+                {
+                    hcSerial.setPort(port);
+                    hcSerial.setBaudrate(baud);
+                    serial::Timeout to = serial::Timeout::simpleTimeout(1000);
+                    hcSerial.setTimeout(to);
+                    hcSerial.open();
+                }
+                catch (serial::IOException& e)
+                {
+                    ROS_ERROR("Unable to open port ");
+                    ROS_ERROR("%s", e.what());
+                }
+                ros::Duration(0.25).sleep();
+                ros::spinOnce();
+            }
+            ROS_INFO("Serial port opened");
+        }*/
+        vector<uint8_t> motorCommandMessage = generateMotorCommandMessage();
+        ROS_INFO("NEW MESSAGE");
+        for (std::vector<uint8_t>::const_iterator i = motorCommandMessage.begin(); i != motorCommandMessage.end(); ++i){
+            ROS_INFO("%u", *i);
+        }
 
+        //hcSerial.write(motorCommandMessage);
+        ros::Duration(1).sleep();
+        ros::spinOnce();
+
+    }
     
-
-    enumeratePorts();
     ros::spin();
 
     return 0;
