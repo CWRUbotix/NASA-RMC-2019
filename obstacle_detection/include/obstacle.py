@@ -7,6 +7,4 @@ class Obstacle:
         self.diameter = diameter
 
     def __str__(self):
-	print(self.x, self.y, self.z, self.diameter)
-
-    
+        print(self.x, self.y, self.z, self.diameter)
