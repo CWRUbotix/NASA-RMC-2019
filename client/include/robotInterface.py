@@ -1,13 +1,14 @@
 #!/usr/bin/env python 
 import rospy
-from hci.srv import motorCommand
-from hci.msg import sensorValue
+
+from client.srv import motorCommand
+from client.msg import sensorValue
 
 node_name = 'robotInterface'
 motorCommandTopic = 'motorCommand'
 sensorValueTopic = 'sensorValue'
 
-motorCommandPub
+motorCommandPub = None
 
 sensorValueMap = {
 	(0,0),
