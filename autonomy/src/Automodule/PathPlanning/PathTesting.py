@@ -3,7 +3,7 @@ from graphics import *
 import collections
 from collections import deque
 
-def drawPath(path):
+def drawPath(path, obstacles):
     win = GraphWin("Path", 1000, 800)
     lastX = 0
     lastY = 0
@@ -19,6 +19,11 @@ def drawPath(path):
         points.append(c)
         lastX = position.getX_pos()
         lastY = position.getY_pos()
+    for obstacle in obstacles:
+        c = Circle(Point(obstacle.center_x, obstacle.center_y), obstacle.getRadius())
+        c.setFill("red")
+        c.setOutline("red")
+        points.append(c)
     for x in lines:
         x.draw(win)
     for x in points:

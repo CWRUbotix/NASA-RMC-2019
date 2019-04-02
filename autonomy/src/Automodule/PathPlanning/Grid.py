@@ -33,5 +33,5 @@ class Grid:
                 yBlocked = (obstacle.getCenter()[1] - obstacle.getRadius()) < Ypos + unitScale
             else:
                 yBlocked = (obstacle.getCenter()[1] + obstacle.getRadius()) > Ypos
-        return xBlocked & yBlocked
+        return (xBlocked and yBlocked)
 

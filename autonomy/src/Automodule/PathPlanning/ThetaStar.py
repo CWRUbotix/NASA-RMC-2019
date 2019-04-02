@@ -77,11 +77,11 @@ def thetaStar(start, goal, obstacles, unitScale):
 def update_vertex(vertex, neighbor, obstacles, unitScale):
     if line_of_sight(vertex.getParent(), neighbor, obstacles, unitScale):
         if vertex.getParent().getStartDistance() + vertex.getParent().getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
-            neighbor.setStartDistance(vertex.getParent.getStartDistance() + vertex.getParent().getPosition().distanceTo(neighbor.getPosition()))
+            neighbor.setStartDistance(vertex.getParent().getStartDistance() + vertex.getParent().getPosition().distanceTo(neighbor.getPosition()))
             neighbor.setParent(vertex.getParent())
             if neighbor in open:
                 open.remove(neighbor)
-            open.insert(neighbor, neighbor.getStartDistance() + neighbor.getEndDistance())
+            open.insert(int(neighbor.getStartDistance() + neighbor.getEndDistance()), neighbor)
     else:
         if vertex.getStartDistance() + vertex.getPosition().distanceTo(neighbor.getPosition()) < neighbor.getStartDistance():
             neighbor.setStartDistance(vertex.getStartDistance() + vertex.getPosition().distanceTo(neighbor.getPosition()))
@@ -89,9 +89,9 @@ def update_vertex(vertex, neighbor, obstacles, unitScale):
             if neighbor in open:
                 open.remove(neighbor)
             open.insert(int(neighbor.getStartDistance() + neighbor.getEndDistance()), neighbor)
-
+total_path = []
 def reconstruct_path(vertex):
-    total_path = [vertex.getPosition()]
+    total_path.insert(0, vertex.getPosition())
     if vertex.getParent() != vertex:
         parent = vertex.getParent()
         total_path.insert(0, parent.getPosition())
@@ -128,9 +128,9 @@ def line_of_sight(vertex, vertexTwo, obstacles, unitScale):
                     return False
                 y0 += sy
                 f -= dx
-            if f != 0 & Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles, unitScale):
+            if f != 0 and Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles, unitScale):
                 return False
-            if dy == 0 & Grid.gridBlocked(x0+((sx-1)/2), y0, obstacles, unitScale) & Grid.gridBlocked(x0+((sx-1)/2), y0-1, obstacles, unitScale):
+            if dy == 0 and Grid.gridBlocked(x0+((sx-1)/2), y0, obstacles, unitScale) & Grid.gridBlocked(x0+((sx-1)/2), y0-1, obstacles, unitScale):
                 return False
             x0 += sx
     else:
@@ -141,9 +141,9 @@ def line_of_sight(vertex, vertexTwo, obstacles, unitScale):
                     return False
                 x0 += sx
                 f -= dy
-            if f != 0 & Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles, unitScale):
+            if f != 0 and Grid.gridBlocked(x0+((sx-1)/2), y0+((sy-1)/2), obstacles, unitScale):
                 return False
-            if dx == 0 & Grid.gridBlocked(x0, y0+((sy-1)/2), obstacles, unitScale) & Grid.gridBlocked(x0-1, y0+((sy-1)/2), obstacles, unitScale):
+            if dx == 0 and Grid.gridBlocked(x0, y0+((sy-1)/2), obstacles, unitScale) & Grid.gridBlocked(x0-1, y0+((sy-1)/2), obstacles, unitScale):
                 return False
             y0 += sy
     return True
