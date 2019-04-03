@@ -68,6 +68,7 @@ vector<uint8_t> generateMotorCommandMessage(void){
         commandMessage.push_back(value[1]);
         commandMessage.push_back(value[2]);
         commandMessage.push_back(value[3]);
+        ROS_INFO("%u, %u, %u, %u", value[0],value[1],value[2],value[3]);
 
         checksum += (uint16_t)(0x00ff & it->first);
         checksum += (uint16_t)(0x00ff & value[0]);
@@ -93,16 +94,16 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "hci");
     ros::NodeHandle n; 
     sensorPublisher = n.advertise<hci::sensorValue>("sensorValue", 1);
-    motorSubscriber = n.subscribe("motorCommand",1,addMotorCallback); 
+    motorSubscriber = n.subscribe("motorCommand",10,addMotorCallback); 
 
-    string port = "0";
+    /*string port = "0";
     while(port == "0"){
         port = findHardwareControllerPort();
         ros::Duration(1).sleep();
     } 
     ROS_INFO("%s\n ", port.c_str());
-
-    while(ros::ok()){
+    */
+    while(ros::ok()){/*
         if(!hcSerial.isOpen()){
             while(!hcSerial.isOpen()){
                 try
@@ -122,14 +123,14 @@ int main(int argc, char** argv) {
                 ros::spinOnce();
             }
             ROS_INFO("Serial port opened");
-        }
+        }*/
         vector<uint8_t> motorCommandMessage = generateMotorCommandMessage();
         ROS_INFO("NEW MESSAGE");
         for (std::vector<uint8_t>::const_iterator i = motorCommandMessage.begin(); i != motorCommandMessage.end(); ++i){
             ROS_INFO("%u", *i);
         }
 
-        hcSerial.write(motorCommandMessage);
+        //hcSerial.write(motorCommandMessage);
         ros::Duration(1).sleep();
         ros::spinOnce();
 

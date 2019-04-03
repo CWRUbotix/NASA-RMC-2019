@@ -33,6 +33,8 @@ sensorValueTopic = 'sensorValue'
 # Manual Control Subteam
 # ---------------------------------------------------
 
+motorValue = 0
+
 class MyPlugin(Plugin):
 
     def __init__(self, context):
@@ -95,6 +97,10 @@ class MyPlugin(Plugin):
         self._widget.motor3_spinbox.valueChanged.connect(self.motor3_spinbox_changed)
 
         self._widget.emergency_stop_button.pressed.connect(self.estop_pressed)
+        self._widget.w_button.pressed.connect(self.w_pressed)
+        self._widget.a_button.pressed.connect(self.a_pressed)
+        self._widget.s_button.pressed.connect(self.s_pressed)
+        self._widget.d_button.pressed.connect(self.d_pressed)
 
         #self._widget.keyPressed.connect(self.key_pressed)
         #self._widget.Form.keyReleased.connect(self.key_released)
@@ -126,17 +132,33 @@ class MyPlugin(Plugin):
         self.zero_cmd_sent = False
         """
 
-    def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_W:
-            print("W up")
-        elif event.key() == QtCore.Qt.Key_S:
-            print("S up")
-        elif event.key() == QtCore.Qt.Key_A:
-            print("A up")
-        elif event.key() == QtCore.Qt.Key_D:
-            print("D up")
+    def w_pressed(self):
+        robotInterface.sendMotorCommand(0, int(self._widget.motor3_spinbox.value()))
+        robotInterface.sendMotorCommand(1, int(self._widget.motor3_spinbox.value()))
+        print("w key pressed")
 
-        print("key pressed")
+    def a_pressed(self):
+        robotInterface.sendMotorCommand(0, -int(self._widget.motor3_spinbox.value()))
+        robotInterface.sendMotorCommand(1, int(self._widget.motor3_spinbox.value()))
+        print("a key pressed")
+
+    def s_pressed(self):
+        robotInterface.sendMotorCommand(0, -int(self._widget.motor3_spinbox.value()))
+        robotInterface.sendMotorCommand(1, -int(self._widget.motor3_spinbox.value()))
+        print("s key pressed")
+
+    def d_pressed(self):
+        robotInterface.sendMotorCommand(0, int(self._widget.motor3_spinbox.value()))
+        robotInterface.sendMotorCommand(1, -int(self._widget.motor3_spinbox.value()))
+        print("d key pressed")
+
+    def estop_pressed(self):
+        # TODO: Implement this as a loop over some list of all known motors
+        # Check against the values reported in sensorValue
+        print("Attempting to zero all motors...")
+        robotInterface.sendMotorCommand(0, 0)
+        robotInterface.sendMotorCommand(1, 0)
+        robotInterface.sendMotorCommand(2, 0)
 
 
     def keyReleaseEvent(self, event):
@@ -224,26 +246,20 @@ class MyPlugin(Plugin):
     def motor2_spinbox_changed(self):
         val = int(self._widget.motor2_spinbox.value())
         print("Spinbox Motor 2 val:", val)
+        resp = robotInterface.sendMotorCommand(2, val)
         #resp = self._send_motor_command(2, val)
         #self._on_parameter_changed()
 
     def motor3_spinbox_changed(self):
-        val = int(self._widget.motor3_spinbox.value())
-        print("Spinbox Motor 3 val:", val)
+        motorValue = int(self._widget.motor3_spinbox.value())
+        print("General locomotion value = " + str(motorValue))
         #resp = self._send_motor_command(3, val)
         #self._on_parameter_changed()
 
     """
     Grouped Motor Control Functions
     """
-    def estop_pressed(self):
-        # TODO: Implement this as a loop over some list of all known motors
-        # Check against the values reported in sensorValue
-        print("Attempting to zero all motors...")
-        robotInterface.sendMotorCommand(0, 0)
-        robotInterface.sendMotorCommand(1, 0)
-        #robotInterface.sendMotorCommand(2, 0)
-        #robotInterface.sendMotorCommand(3, 0)
+
     """
      Sending messages
     """
