@@ -10,6 +10,9 @@
     <height>624</height>
    </rect>
   </property>
+  <property name="focusPolicy">
+   <enum>Qt::StrongFocus</enum>
+  </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
@@ -98,14 +101,21 @@
        </font>
       </property>
       <property name="text">
-       <string>Manual Control Client v0.01</string>
+       <string>Manual Control Client 
+ v0.1.0 
+ CWRUbotix Software Team</string>
       </property>
      </widget>
     </item>
     <item>
      <widget class="QLabel" name="label_status">
       <property name="text">
-       <string>Dev Build - Only Motor Commanding implemented</string>
+       <string>Keyboard Commands: 
+ W: Forward 
+ S: Backward 
+ A: Port (Left) Turn: 
+ D: Starboard (Right) Turn 
+ E: Emergency Stop</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -175,8 +185,23 @@
      <height>91</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <family>Ubuntu</family>
+     <pointsize>15</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+     <kerning>true</kerning>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
    <property name="text">
-    <string>E-Stop</string>
+    <string>Emergency Stop</string>
+   </property>
+   <property name="flat">
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QLabel" name="label_vertical_max">
@@ -457,7 +482,8 @@
     </rect>
    </property>
    <property name="text">
-    <string>Motor 0 Port</string>
+    <string>Motor 0 
+ Port</string>
    </property>
    <property name="wordWrap">
     <bool>true</bool>
@@ -466,8 +492,8 @@
   <widget class="QLabel" name="label_3">
    <property name="geometry">
     <rect>
-     <x>330</x>
-     <y>250</y>
+     <x>320</x>
+     <y>230</y>
      <width>55</width>
      <height>17</height>
     </rect>
@@ -498,14 +524,15 @@
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>250</x>
-     <y>230</y>
+     <x>240</x>
+     <y>220</y>
      <width>71</width>
      <height>61</height>
     </rect>
    </property>
    <property name="text">
-    <string>Motor 1 Starboard</string>
+    <string>Motor 1 
+ Starboard</string>
    </property>
    <property name="wordWrap">
     <bool>true</bool>
@@ -514,8 +541,8 @@
   <widget class="QPushButton" name="w_button">
    <property name="geometry">
     <rect>
-     <x>270</x>
-     <y>450</y>
+     <x>250</x>
+     <y>530</y>
      <width>89</width>
      <height>25</height>
     </rect>
@@ -527,8 +554,8 @@
   <widget class="QPushButton" name="a_button">
    <property name="geometry">
     <rect>
-     <x>180</x>
-     <y>480</y>
+     <x>160</x>
+     <y>560</y>
      <width>89</width>
      <height>25</height>
     </rect>
@@ -540,8 +567,8 @@
   <widget class="QPushButton" name="s_button">
    <property name="geometry">
     <rect>
-     <x>270</x>
-     <y>480</y>
+     <x>250</x>
+     <y>560</y>
      <width>89</width>
      <height>25</height>
     </rect>
@@ -553,14 +580,27 @@
   <widget class="QPushButton" name="d_button">
    <property name="geometry">
     <rect>
-     <x>360</x>
-     <y>480</y>
+     <x>340</x>
+     <y>560</y>
      <width>89</width>
      <height>25</height>
     </rect>
    </property>
    <property name="text">
     <string>D</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_11">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>500</y>
+     <width>121</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Virtual Keyboard</string>
    </property>
   </widget>
  </widget>

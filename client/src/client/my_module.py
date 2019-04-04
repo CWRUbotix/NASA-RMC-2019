@@ -1,18 +1,10 @@
 #!/usr/bin/env python
 import os
 
-from geometry_msgs.msg import Twist
-from std_msgs.msg import String
-
 import rospy
 import rospkg
 import sys
 import rosservice
-
-#setattr(sys, 'SELECT_QT_BINDING', 'pyside')
-
-#from client.srv import motorCommand
-#from client.msg import sensorValue
 
 import robotInterface
 
@@ -32,8 +24,6 @@ sensorValueTopic = 'sensorValue'
 #
 # Manual Control Subteam
 # ---------------------------------------------------
-
-motorValue = 0
 
 class MyPlugin(Plugin):
 
@@ -109,7 +99,7 @@ class MyPlugin(Plugin):
         """
         self._widget.topic_line_edit.textChanged.connect(self._on_topic_changed)
         """
-        self._widget.connect_button.pressed.connect(self._connect_to_topics)
+        #self._widget.connect_button.pressed.connect(self._connect_to_topics)
 
         self._widget.service_name_textbox.setText(motorCommandTopic)
         ###
@@ -121,7 +111,8 @@ class MyPlugin(Plugin):
         self._widget.setFocusPolicy(0x8)
         self._widget.setFocus()
 
-        # ROS Twist Stuff
+        ### Keyboard teleop setup
+        self._widget.keyPressEvent = self.keyPressEvent
 
         # timer to consecutively send service messages
         """
@@ -131,6 +122,24 @@ class MyPlugin(Plugin):
         self._update_parameter_timer.start(100)
         self.zero_cmd_sent = False
         """
+
+    # Keyboard Teleop with signalling
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_W:
+            print("W down")
+            self.w_pressed
+        elif event.key() == Qt.Key_S:
+            print("S down")
+            self.s_pressed
+        elif event.key() == Qt.Key_A:
+            print("A down")
+            self.a_pressed
+        elif event.key() == Qt.Key_D:
+            print("D down")
+            self.d_pressed
+        elif event.key() == Qt.Key_E:
+            print("Emergency Stopping")
+            self.estop_pressed
 
     def w_pressed(self):
         robotInterface.sendMotorCommand(0, int(self._widget.motor3_spinbox.value()))
@@ -160,22 +169,6 @@ class MyPlugin(Plugin):
         robotInterface.sendMotorCommand(1, 0)
         robotInterface.sendMotorCommand(2, 0)
 
-
-    def keyReleaseEvent(self, event):
-        if event.key() == QtCore.Qt.Key_W:
-            print("W down")
-        elif event.key() == QtCore.Qt.Key_S:
-            print("S down")
-        elif event.key() == QtCore.Qt.Key_A:
-            print("A down")
-        elif event.key() == QtCore.Qt.Key_D:
-            print("D down")
-
-
-    # Keyboard Teleop with signalling
-    #def keyPressEvent(self, event):
-    #    if event.key()
-
     # ROS Connection things
     """
     @Slot(str)
@@ -203,6 +196,9 @@ class MyPlugin(Plugin):
             # TODO:Doesn't actually shutdown/unregister??
             #self._service_proxy.shutdown('Shutting down service proxy...')
             self._service_proxy = None
+
+        #if robotInterface is not None:
+        #    robotInterface.motorCommandPub.unregister()
 
 
     #### Speed and Angle change Functions
@@ -271,42 +267,15 @@ class MyPlugin(Plugin):
             resp = self._send_motor_command(motor_id, val)
             print("on motor: %s" % motor_id + ", value: %s" % val + "sending result: %s" % resp)
 
-
-    def _connect_to_topics(self):
-        self._unregister_publisher()
-        print("trying topic: " + motorCommandTopic)
-        alltopics = rosservice.get_service_list()
-        print("Services Reported As Published")
-        for t in alltopics :
-            print(t)
-
-        try:
-            rospy.wait_for_service(motorCommandTopic, timeout=3)
-        except (rospy.ServiceException, rospy.ROSException), e:
-            print("ERROR: Timed out while waiting for service: %s" % motorCommandTopic)
-            self._set_status_text("SERVICE TIMEOUT ERROR")
-            return
-        try:
-            self._service_proxy = rospy.ServiceProxy(motorCommandTopic, motorCommand, persistent=True)
-            self._set_status_text("SERVICES CONNECTED")
-        except TypeError:
-            # TODO: Uhhh, what do we do if this breaks
-            print("Error while connecting to topic: %s" % motorCommandTopic)
-            self._set_status_text("TOPIC CONNECTION ERROR")
-            #self._service_proxy = rospy.ServiceProxy()
-
     """
     Sends a single commanded value (0-100) to a specified motor id
     """
     def _send_motor_command(self, motor_id, val):
-        if self._service_proxy is None:
-            return
         try:
-            resp = self._service_proxy(motor_id, val)
-            return resp.success
-        except rospy.ServiceException as exc:
-            print("motor command service didn't process request: " + str(exc))
-            return False
+            robotInterface.sendMotorCommand(motor_id, val)
+            print("Sent motor command for motor: %s" % motor_id + " with value: %s" % val)
+        except Exception as exc:
+            print("There was a problem sending the motor command: " + str(exc))
 
     def _set_status_text(self, text):
         self._widget.status_label.setText(text)
@@ -330,22 +299,3 @@ class MyPlugin(Plugin):
         # Comment in to signal that the plugin has a way to configure
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
-"""
-class ros_robot_interface():
-
-    def __init__(self, motor_command, sensor_value):
-        node_name = 'robotInterface'
-        motorCommandTopic = 'motorCommand'
-        sensorValueTopic = 'sensorValue'
-
-        motorCommand = motor_command
-        sensorValue = sensor_value
-
-        #rospy.init_node(node_name,disable_signals=True)
-
-        rospy.wait_for_service(motorCommandTopic)
-        motorCommandPub = rospy.ServiceProxy(motorCommandTopic, motorCommand, persistent=True)
-
-        rospy.Subscriber(sensorValueTopic,sensorValue,sensorValueCallback)
-
-"""
