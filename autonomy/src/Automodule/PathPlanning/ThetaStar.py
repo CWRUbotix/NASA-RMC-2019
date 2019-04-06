@@ -89,13 +89,15 @@ def update_vertex(vertex, neighbor, obstacles, unitScale):
             if neighbor in open:
                 open.remove(neighbor)
             open.insert(int(neighbor.getStartDistance() + neighbor.getEndDistance()), neighbor)
+
 total_path = []
 def reconstruct_path(vertex):
 
     if vertex.getParent() != vertex:
         total_path.insert(0, vertex.getPosition())
         parent = vertex.getParent()
-        total_path.insert(0, parent.getPosition())
+        if(vertex.getParent().getParent() == vertex.getParent()):
+            total_path.insert(0, parent.getPosition())
         return reconstruct_path(parent)
     else:
         path = Path(total_path)
