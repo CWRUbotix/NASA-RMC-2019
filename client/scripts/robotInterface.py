@@ -51,8 +51,6 @@ sensorValueMap = {
 
 
 def sendMotorCommand(motorID, value):
-	if motorCommandPub is None:
-		return
 	try:
 		resp = motorCommandPub(motorID,value)
 	except rospy.ServiceException as exc:
@@ -67,7 +65,7 @@ def getSensorValue(sensorID):
 	return sensorValueMap(sensorID);
 
 def initializeRobotInterface():
-	#rospy.init_node(node_name,disable_signals=True)
+	rospy.init_node(node_name,disable_signals=True)
 
 	rospy.wait_for_service(motorCommandTopic)
 	motorCommandPub = rospy.ServiceProxy(motorCommandTopic, motorCommand, persistent=True)
