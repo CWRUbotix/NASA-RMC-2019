@@ -4,6 +4,8 @@
 
 #include "VESC/VESC.h"
 #include "LSM6DS3.h"
+#include "ADS1120.h"
+#include "Herkulex.h"
 #include "values_and_types.h"
 #include "data_setup.h"
 #include "io.h"
@@ -13,7 +15,11 @@
 void setup(){
 	DEBUG.begin(115200);
 	SPI.begin();
-	attachInterrupt(digitalPinToInterrupt(ENCODER_INDEX_PIN), Encoder_ISR, RISING);
+	analogWriteResolution(12);
+	analogWriteFrequency(ENCODER_CS_PIN, 14648);
+	analogWriteFrequency(DAC_2_CS_PIN, 14648);
+	analogWrite(ENCODER_CS_PIN, 2048);
+	analogWrite(DAC_2_CS_PIN, 2048);
 	
 	debug("CWRUbotix Hardware Controller");
 	
@@ -31,15 +37,45 @@ void setup(){
 	
 	debug("init sensors");
 	init_sensors(); 		// initializes the sensors, this happens as long as the re
+
+	attachInterrupt(ENCODER_INDEX_PIN, Encoder_index_ISR, RISING);
+	attachInterrupt(ENCODER_A_PIN, Encoder_A_ISR, RISING);
+	
+	// Initialize the DACs so the motors don't start to move when the E-Stop energizes
+	// uint8_t data[3] = {};
+	// SPI.beginTransaction(DAC_SPI_settings);
+	// package_DAC_voltage(MOTOR_ANLG_CENTER_V, data); 	
+	// digitalWrite(DAC_0_CS_PIN, LOW);
+	// PAUSE_SHORT;
+	// SPI.transfer(data, 3);
+	// digitalWrite(DAC_0_CS_PIN, HIGH);
+	// package_DAC_voltage(MOTOR_ANLG_CENTER_V, data); 
+	// digitalWrite(DAC_1_CS_PIN, LOW);
+	// PAUSE_SHORT;
+	// SPI.transfer(data, 3);
+	// digitalWrite(DAC_1_CS_PIN, HIGH);
+	// package_DAC_voltage(MOTOR_ANLG_CENTER_V, data); 
+	// digitalWrite(DAC_2_CS_PIN, LOW);
+	// PAUSE_SHORT;
+	// SPI.transfer(data, 3);
+	// digitalWrite(DAC_2_CS_PIN, HIGH);
+	// SPI.endTransaction();
 	
 	debug("check estop pin");
 	if(digitalRead(sensor_infos[ESTOP_SENSE_INDEX].pin) == HIGH){
+		// delay(500); 		// wait for motor controllers to boot up
 		debug("init motors");
 		init_motors();
 	}else{
 		debug("wait to init motors");
 	}
 	// wait on initializing motors
+	// for(int i = 0; i<254; i++){
+	// 	if( i != 0x01){
+	// 		Herkulex.set_ID(i, 0x02);
+	// 	}
+	// }
+	
 	debug("setup complete");
 }
 
@@ -49,6 +85,7 @@ void loop(){
 	sensor_infos[ESTOP_SENSE_INDEX].t_stamp = TIME_STAMP;
 
 	if(estop_state==HIGH && estop_state!=estop_state_last){
+		// delay(500); 			// wait for motor controllers to boot up
 		debug("init motors");
 		init_motors();
 	} estop_state_last = estop_state;
@@ -73,9 +110,9 @@ void loop(){
 	}
 	float loop_t = (micros() - start_time)/1000;
 	if(loop_t > 0.0009){
-		String time_str = String("Loop-time in microsec: ");
-		time_str.concat(String(loop_t, 3));
-		debug(time_str);
+		// String time_str = String("Loop-time in microsec: ");
+		// time_str.concat(String(loop_t, 3));
+		// debug(time_str);
 	}
 	
 }

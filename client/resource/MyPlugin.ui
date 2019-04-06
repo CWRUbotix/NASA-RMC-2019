@@ -292,6 +292,9 @@
      <height>26</height>
     </rect>
    </property>
+   <property name="minimum">
+    <number>-99</number>
+   </property>
   </widget>
   <widget class="QSpinBox" name="motor1_spinbox">
    <property name="geometry">
@@ -301,6 +304,9 @@
      <width>48</width>
      <height>26</height>
     </rect>
+   </property>
+   <property name="minimum">
+    <number>-99</number>
    </property>
   </widget>
   <widget class="QSpinBox" name="motor2_spinbox">
@@ -312,6 +318,9 @@
      <height>26</height>
     </rect>
    </property>
+   <property name="minimum">
+    <number>-99</number>
+   </property>
   </widget>
   <widget class="QSpinBox" name="motor3_spinbox">
    <property name="geometry">
@@ -321,6 +330,9 @@
      <width>48</width>
      <height>26</height>
     </rect>
+   </property>
+   <property name="minimum">
+    <number>-99</number>
    </property>
   </widget>
   <widget class="QPushButton" name="send_motor_command_button">
@@ -497,6 +509,58 @@
    </property>
    <property name="wordWrap">
     <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="w_button">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>450</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>W</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="a_button">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>480</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>A</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="s_button">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>480</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>S</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="d_button">
+   <property name="geometry">
+    <rect>
+     <x>360</x>
+     <y>480</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>D</string>
    </property>
   </widget>
  </widget>

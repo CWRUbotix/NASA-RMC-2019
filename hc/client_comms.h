@@ -60,7 +60,13 @@ FAULT_T read_from_client(){
 				memcpy(&value, cmd_body + i+1, 4); 	// copy bytes from cmd_body to value
 				debug("MOTOR: " + String(value, 3));
 				motor = &motor_infos[id];
+				motor->last_setpt = motor->setpt;
 				motor->setpt = value;
+				if(id == EXC_ROT_PORT){
+					motor_infos[EXC_ROT_STBD].setpt = motor->setpt;
+				}else if(id == EXC_ROT_STBD){
+					motor->setpt = motor_infos[EXC_ROT_PORT].setpt;
+				}
 			}
 			break;}
 		case CMD_READ_VALUES:{

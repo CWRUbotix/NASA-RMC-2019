@@ -51,6 +51,10 @@ sensorValueMap = {
 
 
 def sendMotorCommand(motorID, value):
+	global motorCommandPub
+	if motorCommandPub == None:
+		motorCommandPub = rospy.Publisher(motorCommandTopic, motorCommand, queue_size=10)
+		print("why are you like this")
 	motorCommandPub.publish(motorID, value)
 	return True
 
@@ -64,6 +68,6 @@ def getSensorValue(sensorID):
 def initializeRobotInterface():
 	#rospy.init_node(node_name,disable_signals=True)
 
-	motorCommandPub = rospy.Publisher(motorCommandTopic, motorCommand, queue_size=1)
+	motorCommandPub = rospy.Publisher(motorCommandTopic, motorCommand, queue_size=10)
 	rospy.Subscriber(sensorValueTopic,sensorValue,sensorValueCallback)
 	#rospy.spin()

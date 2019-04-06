@@ -6,6 +6,8 @@
 #include <SPI.h>
 #include "VESC/VESC.h"
 #include "LSM6DS3.h"
+#include "ADS1120.h"
+#include "Herkulex.h"
 #include <inttypes.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -27,6 +29,7 @@
 #define RPY_BLOCK_LEN 	5
 #define RPY_BLOCK_LEN_L 9
 
+#define NUM_PREV_VALUES 		20
 
 #define DEBUG_SELECT_PIN 		2
 #define ADC_2_CS_PIN 			14
@@ -37,6 +40,8 @@
 #define DAC_0_CS_PIN 			19
 #define ENCODER_CS_PIN 			22
 #define ENCODER_INDEX_PIN 		23
+#define ENCODER_A_PIN 			40
+#define ENCODER_B_PIN 			41
 #define EXC_ROT_FORE_LIM_PIN 	24
 #define EXC_ROT_AFT_LIM_PIN 	25
 #define EXC_TRANS_LOWER_LIM_PIN	29
@@ -47,20 +52,28 @@
 #define DEP_UPPER_LIM_PIN 		37
 #define ESTOP_SENSE_PIN 		39
 
+#define LIN_ACT_ERR_MARGIN 		0.5
+#define LIN_ACT_KP				400.0
+#define LIN_ACT_KI 				0.0
+#define LIN_ACT_KP_INC 			75.0
 #define MOTOR_ANLG_CENTER_V 	2.5
-#define DAC8551_SPEED 			10000000
-#define ADS1120_SPEED 			1000000
+#define DAC8551_SPEED 			2500000
+#define ADS1120_SPEED 			2500000
 #define IMU_SPEED 				1000000
 #define ENCODER_SPEED 			1000000
 #define DEBUG_SPEED 			1000000
 
+#define LOOKY_SERIAL 			Serial6
 #define DEBUG 					Serial5
 
-#define NOP4 			"nop\n\t""nop\n\t""nop\n\t""nop\n\t"
+#define NOP3 			"nop\n\t""nop\n\t""nop\n\t"
 // should pause about 50 ns or so
-#define PAUSE_SHORT 	__asm__(NOP4 NOP4)
+#define PAUSE_SHORT 	__asm__(NOP3 NOP3 NOP3)
 
-#define ROT_ENC_RD_POS 	0x10
+#define ROT_ENC_PPR 			2048.0
+#define ROT_ENC_DEG_PER_PULSE 	360.0/ROT_ENC_PPR
+#define ROT_ENC_RD_POS 			0x10
+#define EXC_MM_PER_ROT 			60.96
 ////////////////////////////////////////////////////////////////////////////////
 //  DEFINE TYPES
 ////////////////////////////////////////////////////////////////////////////////
@@ -92,8 +105,8 @@ enum SENSOR_INDICES {
 	EXC_ROT_STBD_ENC,
 	LOOKY_PORT_ENC,
 	LOOKY_STBD_ENC,
-	DEP_PORT_LOAD,
-	DEP_STBD_LOAD,
+	DEP_LOAD_CELL,
+	EXC_LOAD_CELL,
 	GYRO_0_X,
 	GYRO_0_Y,
 	GYRO_0_Z,
@@ -179,48 +192,74 @@ typedef enum MotorType {
 	MTR_NONE,
 	MTR_VESC,
 	MTR_SABERTOOTH,
+	MTR_SABERTOOTH_RC,
 	MTR_LOOKY
 } MotorType;
 
 typedef struct Device{
 	Interface interface = NONE;
 	SPISettings* spi_settings;
+	ADS1120* adc;
 	VESC* vesc;
 	LSM6DS3* imu;
 	HardwareSerial* serial;
-  XYZrobotServo* servo;
-  XYZrobotServoStatus* servo_status;
 	uint8_t spi_cs 		= 0;
 	uint8_t id 			= 0;
-	bool is_setup 		= false; // field to prevent unnecessary setup
-}SensorDevice;
+	bool is_setup 		= false; // field to prevent unnecessary setup or doomed reading
+}Device;
 
-typedef struct SensorInfo{
+typedef struct SensorInfo SensorInfo;
+typedef struct MotorInfo MotorInfo;
+
+struct SensorInfo{
 	SensorType type 	= SENS_NONE;
 	Device* device;
+	MotorInfo* motor;
 	char* name = "--- NO NAME ----";
 	uint8_t pin 		= 0;
-	int n_value; 	// holds any relevant integer value
-	float value; 	// holds the relevant value, updated at t_stamp
-	int t_stamp; 	// update time-stamp
+	int n_value; 				// holds any relevant integer value
+	float value; 				// holds the value to be sent over USB, updated at t_stamp
+	float last_value; 			// holds the last value for whatever
+	float* prev_values; 		// points to an array of previous values, for filtering, etc.
+	uint8_t val_ind 	= 0; 	// index in this array
+	bool value_good;
+	int t_stamp; 				// update time-stamp
+	uint8_t adc_channel_config;
+	float slope 		= 1.0; 	// linear equation coefficient
+	float offset 		= 0.0; 	// linear equation offset
 	float rots;
 	float (*get_value)(void);
 	char imu_axis;
-} SensorInfo;
+	float min;
+	float max;
+	int allowed_dir;
+};
 
-typedef struct MotorInfo{
+struct MotorInfo{
 	MotorType type 		= MTR_NONE;
 	Device* device;
 	SensorInfo* sensor;
+	SensorInfo* limit_1;
+	SensorInfo* limit_2;
 	float setpt 		= 0.0; 	
+	float last_setpt 	= 0.0;
+	float last_rpm 		= 0.0;
+	float rpm_factor 	= 1.0;
 	float volts 		= MOTOR_ANLG_CENTER_V;
 	int t_stamp 		= 0; 	// time-stamp of last update
 	float kp 			= 0.0;
 	float ki 			= 0.0;
+	float err_margin 	= 0.0;
+	float integ 		= 0.0;
+	float max_integ 	= 0.0;
 	float max_setpt 	= 0.0;
+	float min_setpt 	= 0.0;
 	float max_delta 	= 0.0;
 	float deadband 		= 0.0;
-} MotorInfo;
+	int looky_id 		= 0;
+	float max_power 	= 0.0;
+	float min_power 	= 0.0;
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -231,6 +270,11 @@ SensorInfo 	sensor_infos 	[NUM_SENSORS] 		= {};
 MotorInfo 	motor_infos 	[NUM_MOTORS] 		= {};
 Device 		device_infos 	[NUM_DEVICES] 		= {};
 Device 		SPI_devices 	[NUM_SPI_DEVICES] 	= {};
+float 		exc_lc_values 	[NUM_PREV_VALUES] 	= {};
+float 		dep_lc_values 	[NUM_PREV_VALUES] 	= {};
+
+volatile int encoder_rots = 0;
+volatile int encoder_A_pulses = 0;
 
 bool estop_state 		= false; 	// false means off
 bool estop_state_last 	= false; 	// false means off
@@ -238,10 +282,15 @@ bool estop_state_last 	= false; 	// false means off
 int t_micros 			= 0; 		// will be updated with micros()
 int t_offset 			= 0; 		// offset = micros() - t_sync,   t_stamp = micros() - t_offset
 
-XYZrobotServo looky_servo_port(&Serial6, 128);
-XYZrobotServo looky_servo_starboard(&Serial6, 129);
-XYZrobotServoStatus looky_servoStatus_port;
-XYZrobotServoStatus looky_servoStatus_starboard;
+ADS1120 adc0(ADC_0_CS_PIN);
+ADS1120 adc1(ADC_1_CS_PIN);
+ADS1120 adc2(ADC_2_CS_PIN);
+
+
+// XYZrobotServo looky_servo_port(&Serial6, 128);
+// XYZrobotServo looky_servo_starboard(&Serial6, 129);
+// XYZrobotServoStatus looky_servoStatus_port;
+// XYZrobotServoStatus looky_servoStatus_starboard;
 
 VESC vesc1(&Serial1);
 VESC vesc2(&Serial2);
@@ -259,10 +308,20 @@ SPISettings Debug_SPI_settings(DEBUG_SPEED, MSBFIRST, SPI_MODE0);
 
 #define TIME_STAMP (micros() - t_offset)
 
-void Encoder_ISR(){
-	sensor_infos[EXC_TRANS_ENC].rots += 1;
-	sensor_infos[EXC_TRANS_ENC].value = sensor_infos[EXC_TRANS_ENC].rots * 2.0 * PI; 	// rotation in radians
+int get_sign(float f){
+	return (f < 0.0 ? -1 : (f > 0.0 ? 1 : 0));
 }
-
+float fmap(float x, float in_min, float in_max, float out_min, float out_max){
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+float fconstrain(float f, float a, float b){
+	if(f < a){
+		return a;
+	}else if(f > b){
+		return b;
+	}else{
+		return f;
+	}
+}
 
 #endif

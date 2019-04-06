@@ -38,8 +38,8 @@ VALUE_LUT 		= [
 	"bucket conveyor attitude pot starboard",
 	"port-side looky encoder",
 	"starboard-side looky encoder",
-	"deposition port-side load-cell",
-	"deposition starboard-side load-cell",
+	"deposition load-cell",
+	"excavation load-cell",
 	"gyroscope_0, X axis",
 	"gyroscope_0, Y axis",
 	"gyroscope_0, Z axis",
@@ -200,7 +200,7 @@ class Application(tk.Frame):
 		if not (self.debug == None) and not (self.debug_is_paused):
 			if self.debug.in_waiting > 0:
 				line = self.debug.read(self.debug.in_waiting)
-				line = str(line, encoding='us-ascii')
+				line = line.decode(encoding='utf-8')
 				self.debug_text_box.insert(tk.END, line, None)
 				self.debug_text_box.yview_scroll(line.count('\n'), tk.UNITS)
 				# line = self.debug_text.get() + line
@@ -440,6 +440,9 @@ def send_cmd(cmd, line, teensy):
 
 			bytes_expected 	= len(packet) 	# true for now, may not be later on
 			packet_ready 	= True
+
+			for b in packet:
+				print(int(b))
 
 	elif cmd == 'READ':
 		length 		= items 	# 1 byte per item
