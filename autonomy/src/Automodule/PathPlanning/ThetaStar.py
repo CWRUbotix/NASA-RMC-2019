@@ -60,7 +60,7 @@ def aStar(start, end):
 def thetaStar(start, goal, obstacles, unitScale):
     start.setStartDistance(0)
     start.setParent(start)
-    open.insert(start.getStartDistance() + start.getEndDistance(), start)
+    open.insert(int(start.getStartDistance() + start.getEndDistance()), start)
     while open.__len__() > 0:
         s = open.pop()
         if s == goal:
@@ -91,8 +91,9 @@ def update_vertex(vertex, neighbor, obstacles, unitScale):
             open.insert(int(neighbor.getStartDistance() + neighbor.getEndDistance()), neighbor)
 total_path = []
 def reconstruct_path(vertex):
-    total_path.insert(0, vertex.getPosition())
+
     if vertex.getParent() != vertex:
+        total_path.insert(0, vertex.getPosition())
         parent = vertex.getParent()
         total_path.insert(0, parent.getPosition())
         return reconstruct_path(parent)
