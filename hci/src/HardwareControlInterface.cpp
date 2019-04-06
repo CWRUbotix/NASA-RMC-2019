@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "hci");
     ros::NodeHandle n; 
     sensorPublisher = n.advertise<hci::sensorValue>("sensorValue", 1);
-    motorSubscriber = n.subscribe("motorCommand",1,addMotorCallback); 
+    motorSubscriber = n.subscribe("motorCommand",10,addMotorCallback); 
 
     string port = "0";
     while(port == "0"){

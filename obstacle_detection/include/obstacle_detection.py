@@ -6,9 +6,9 @@ import os, os.path
 import sys
 import time
 import pandas as pd
-from obstacle_detection.include.depth_image_processing import *
-from obstacle_detection.include.obstacle import Obstacle
-from obstacle_detection.include.ros_publish import send_obstacle_data
+from depth_image_processing import *
+from obstacle import Obstacle
+from ros_publish import send_obstacle_data
 
 
 def get_obstacles_with_plane(depth_frame, num_planes, num_points, dist_thresh, visualize, send_data=False):

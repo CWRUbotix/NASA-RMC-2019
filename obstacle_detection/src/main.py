@@ -74,3 +74,9 @@ while True:
                                       dist_thresh=0.1,
                                       visualize=False,
                                       send_data=True)
+    listener.release(frames)
+
+device.stop()
+device.close()
+
+sys.exit(0)

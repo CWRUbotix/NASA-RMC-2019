@@ -24,16 +24,17 @@ except:
         pipeline = CpuPacketPipeline()
 print("Packet pipeline:", type(pipeline).__name__)
 
+num_seconds = 600 
 num_frames = 500
 frame_i = 0
 save_frames = True
 frames_dir = 'test_frames/'
 try:
     os.mkdir(frames_dir)
-except FileExistsError as e:
+except Exception as e:
     pass
 for f in os.listdir(frames_dir):
-    os.remove(f)
+    os.remove(frames_dir + f)
 
 # Create and set logger
 logger = createConsoleLogger(LoggerLevel.Debug)
@@ -69,9 +70,11 @@ principal_y = device.getIrCameraParams().cy  # principal point y
 undistorted = Frame(h, w, 4)
 registered = Frame(h, w, 4)
 
-time.sleep(30)
+time.sleep(60)
 
-while frame_i < num_frames:
+start_time = time.time()
+
+while time.time() - start_time < num_seconds:
     frames = listener.waitForNewFrame()
     depth_frame = frames["depth"]
     color = frames["color"]
@@ -84,8 +87,17 @@ while frame_i < num_frames:
     # flip images
     img = cv2.flip(img, 1)
     imgray = cv2.flip(imgray, 1)
+    
+    print(str(time.time() - start_time) + ' ' + frames_dir + str(frame_i) + ".npy")
     np.save(frames_dir + str(frame_i) + ".npy", depth_frame.asarray(np.float32))
+
     frame_i += 1
+
+    listener.release(frames)
+
+    
+    
+        
 
 device.stop()
 device.close()
