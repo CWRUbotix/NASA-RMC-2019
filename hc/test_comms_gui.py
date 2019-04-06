@@ -441,6 +441,9 @@ def send_cmd(cmd, line, teensy):
 			bytes_expected 	= len(packet) 	# true for now, may not be later on
 			packet_ready 	= True
 
+			for b in packet:
+				print(int(b))
+
 	elif cmd == 'READ':
 		length 		= items 	# 1 byte per item
 		packet 		= bytearray(length + HEADER_LEN)

@@ -32,7 +32,7 @@ void setup_devices(){
 
 	// SPI TRANS ENCODER
 	device_infos[TRANS_ENCODER].interface 	= SPI_BUS;
-	device_infos[TRANS_ENCODER].spi_cs 		= ENCODER_CS_PIN;
+	device_infos[TRANS_ENCODER].spi_cs 		= 0;//ENCODER_CS_PIN;
 	device_infos[TRANS_ENCODER].spi_settings= &Encoder_SPI_settings;
 
 	// IMU 0 DEVICE SETUP
@@ -48,17 +48,17 @@ void setup_devices(){
 	device_infos[IMU_1].spi_settings= &IMU_SPI_settings;
 
 	// DAC 0
-	device_infos[DAC_0].interface 	= SPI_BUS;
+	device_infos[DAC_0].interface 	= DIGITAL_IO; //SPI_BUS;
 	device_infos[DAC_0].spi_cs 		= DAC_0_CS_PIN;
 	device_infos[DAC_0].spi_settings= &DAC_SPI_settings;
 
 	// DAC 1
-	device_infos[DAC_1].interface 	= SPI_BUS;
-	device_infos[DAC_1].spi_cs 		= DAC_1_CS_PIN;
+	device_infos[DAC_1].interface 	= DIGITAL_IO;
+	device_infos[DAC_1].spi_cs 		= ENCODER_CS_PIN; // DAC_1_CS_PIN is not PWM capable
 	device_infos[DAC_1].spi_settings= &DAC_SPI_settings;
 
 	// DAC 2
-	device_infos[DAC_2].interface 	= SPI_BUS;
+	device_infos[DAC_2].interface 	= DIGITAL_IO;
 	device_infos[DAC_2].spi_cs 		= DAC_2_CS_PIN;
 	device_infos[DAC_2].spi_settings= &DAC_SPI_settings;
 
@@ -85,12 +85,14 @@ void setup_devices(){
 	// LOOKY PORT
 	device_infos[LOOKY_0].interface 	= LOOKY_UART;
 	device_infos[LOOKY_0].serial 		= &Serial6;
+	device_infos[LOOKY_0].id 			= 0x02;
 	// device_infos[LOOKY_0].servo = looky_servo_port;
 	// device_infos[LOOKY_0].servo_status;
 
 	// LOOKY STBD
 	device_infos[LOOKY_1].interface 	= LOOKY_UART;
 	device_infos[LOOKY_1].serial 		= &Serial6;
+	device_infos[LOOKY_1].id 			= 0x01;
 	// device_infos[LOOKY_1].servo = looky_servo_starboard;
 	// device_infos[LOOKY_1].servo_status;
 }
@@ -140,8 +142,8 @@ void setup_sensors(){
 	sensor->device 		= &(device_infos[ADC_0]);
 	sensor->type 		= SENS_POT_ENC;
 	sensor->adc_channel_config = single_2;
-	sensor->min 		= 0.0;
-	sensor->max 		= 32767;
+	sensor->min 		= 8600.0;
+	sensor->max 		= 24200.0;
 
 	// EXC ROTATION STBD ENCODER (ADC AIN1)
 	sensor 				= &(sensor_infos[EXC_ROT_STBD_ENC]);
@@ -149,8 +151,8 @@ void setup_sensors(){
 	sensor->device 		= &(device_infos[ADC_0]);
 	sensor->type 		= SENS_POT_ENC;
 	sensor->adc_channel_config = single_1;
-	sensor->min 		= 0.0;
-	sensor->max 		= 32767;
+	sensor->min 		= 8500.0;
+	sensor->max 		= 24350.0;
 
 	// LOOKY PORT ENC
 	sensor 				= &(sensor_infos[LOOKY_PORT_ENC]);
@@ -296,12 +298,14 @@ void setup_sensors(){
 	sensor->type 		= SENS_LIMIT;
 	sensor->pin 		= EXC_TRANS_LOWER_LIM_PIN;
 	sensor->allowed_dir = 1;
+	sensor->offset 		= 0.0; // used to indicate position at this limit
 
 	// EXC bucket conveyor UPPER LIMIT SWITCH
 	sensor 				= &(sensor_infos[EXC_CONV_LIMIT_UPPER]);
 	sensor->type 		= SENS_LIMIT;
 	sensor->pin 		= EXC_TRANS_UPPER_LIM_PIN;
 	sensor->allowed_dir = -1;
+	sensor->offset 		= 780.0; // used to indicate position at this limit
 
 	// E-Stop
 	sensor 				= &(sensor_infos[ESTOP_SENSE_INDEX]);
@@ -348,53 +352,68 @@ void setup_motors(void){
 
 	// Exc translation (DAC 0)
 	motor 				= &(motor_infos[EXC_TRANS]);
-	motor->device 		= &(device_infos[DAC_0]);
-	motor->type 		= MTR_SABERTOOTH;
+	motor->device 		= &(device_infos[DAC_0]); 	// DAC 0 is dead, but we'll use the CS pin for RC style control
+	motor->sensor 		= &(sensor_infos[EXC_TRANS_ENC]);
+	motor->type 		= MTR_SABERTOOTH_RC;
 	motor->limit_1 		= &(sensor_infos[EXC_CONV_LIMIT_UPPER]);
 	motor->limit_2 		= &(sensor_infos[EXC_CONV_LIMIT_LOWER]);
-	motor->max_setpt 	= 100.0; 					// max positional value (mm)
-	motor->kp 			= 0.1;
+	motor->max_setpt 	= 780.0; 					// max positional value (mm)
+	motor->setpt 		= 0.0; 		// FOR TESTING
+	motor->kp 			= 5.0;
 	motor->ki 			= 0.0;
-	motor->min_power 	= -2.5;
-	motor->max_power 	= 2.5;
+	motor->deadband 	= 75.0; 	// at least
+	motor->min_power 	= -500.0;
+	motor->max_power 	= 500.0;
 
-	// Exc Rot Port (DAC 1)
+	// Exc Rot Port (DAC 2)
 	motor 				= &(motor_infos[EXC_ROT_PORT]);
-	motor->device 		= &(device_infos[DAC_1]);
-	motor->type 		= MTR_SABERTOOTH;
-	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
-	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
-	motor->max_setpt 	= 60.0; 					// max position in degrees
-	motor->kp 			= LIN_ACT_KP;
-	motor->ki 			= LIN_ACT_KI;
-	motor->min_power 	= -2.5;
-	motor->max_power 	= 2.5;
-	motor->err_margin 	= 0.1; 		// degrees
-
-	// Exc Rot Starboard (DAC 2)
-	motor 				= &(motor_infos[EXC_ROT_STBD]);
+	motor->sensor 		= &(sensor_infos[EXC_ROT_PORT_ENC]);
 	motor->device 		= &(device_infos[DAC_2]);
 	motor->type 		= MTR_SABERTOOTH;
 	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
 	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
+	motor->min_setpt 	= 10.0;
 	motor->max_setpt 	= 60.0; 					// max position in degrees
 	motor->kp 			= LIN_ACT_KP;
 	motor->ki 			= LIN_ACT_KI;
-	motor->min_power 	= -2.5;
-	motor->max_power 	= 2.5;
-	motor->err_margin 	= 0.1; 		// degrees
+	motor->max_integ 	= 1.0; 		// CHANGE LATER
+	motor->min_power 	= -2048.0;//-2.5;
+	motor->max_power 	= 2047.0;//2.5;
+	motor->deadband 	= 180;
+	motor->err_margin 	= 0.5; 		// degrees
+
+	// Exc Rot Starboard (DAC 1)
+	motor 				= &(motor_infos[EXC_ROT_STBD]);
+	motor->sensor 		= &(sensor_infos[EXC_ROT_STBD_ENC]);
+	motor->device 		= &(device_infos[DAC_1]);
+	motor->type 		= MTR_SABERTOOTH;
+	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
+	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
+	motor->min_setpt 	= 10.0;
+	motor->max_setpt 	= 60.0; 					// max position in degrees
+	motor->kp 			= LIN_ACT_KP;
+	motor->ki 			= LIN_ACT_KI;
+	motor->max_integ 	= 1.0; 		// CHANGE LATER
+	motor->min_power 	= -2048.0;//-2.5;
+	motor->max_power 	= 2047.0;//2.5;
+	motor->deadband 	= 180;
+	motor->err_margin 	= 0.5; 		// degrees
 
 	// Looky PORT SIDE
 	motor 				= &(motor_infos[LOOKY_PORT]);
 	motor->device 		= &(device_infos[LOOKY_0]);
 	motor->type 		= MTR_LOOKY;
 	motor->max_setpt 	= 150.0; 					// max position in degrees
+	motor->min_setpt 	= -150.0;
+	motor->max_power 	= 120.0; 	// degrees per second
 
 	// Looky STBD SIDE
 	motor 				= &(motor_infos[LOOKY_STBD]);
 	motor->device 		= &(device_infos[LOOKY_1]);
 	motor->type 		= MTR_LOOKY;
 	motor->max_setpt 	= 150.0; 					// max position in degrees
+	motor->min_setpt 	= -150.0;
+	motor->max_power 	= 120.0; 	// degrees per second
 }
 
 

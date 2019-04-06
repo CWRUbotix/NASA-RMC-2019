@@ -115,11 +115,12 @@ bool ADS1120::read_channel(uint8_t mode, uint16_t *output){
         while(count<500 && !got_data){
             count++;
             got_data = !digitalRead(miso_pin);
+            delayMicroseconds(12);
         }
 
         if(!got_data) return false;
         uint8_t data_msb = SPI.transfer(0x00);
-        data_msb 		 = SPI.transfer(0x00);
+        // data_msb 		 = SPI.transfer(0x00);
         uint8_t data_lsb = SPI.transfer(0x00);
         SPI.endTransaction();
         digitalWrite(this->cs_pin,HIGH);

@@ -44,7 +44,7 @@
 #define HSerial1     1 		// Write in Serial 1 port Arduino Mega - Pin 19(rx) - 18 (tx) 
 #define HSerial2     2   	// Write in Serial 2 port Arduino Mega - Pin 17(rx) - 16 (tx) 
 #define HSerial3     3   	// Write in Serial 3 port Arduino Mega - Pin 15(rx) - 14 (tx)
-// #define SSerial      4   	// Write in SoftSerial Arduino with 328p or Mega
+#define SSerial      4   	// Write in SoftSerial Arduino with 328p or Mega
  
 // extern SoftwareSerial SwSerial(0, 1);
 
@@ -52,10 +52,11 @@
 void HerkulexClass::begin(HardwareSerial* serial, long baud)
 {
 	serial->begin(baud);
+	HwSerial = serial;
 	// SwSerial.setRX(rx);
 	// SwSerial.setTX(tx);
 	// SwSerial.begin(baud);
-	// port = SSerial;
+	port = SSerial;
 }
 
 // #if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega128__) || defined (__AVR_ATmega2560__)
@@ -875,10 +876,10 @@ void HerkulexClass::sendData(byte* buffer, int lenght)
 		clearBuffer(); 		//clear the serialport buffer - try to do it!
         switch (port)
 		{
-			// case SSerial:
-			// 			SwSerial.write(buffer, lenght);
-			// 			delay(1);
-			// 			break;
+			case SSerial:
+				HwSerial->write(buffer, lenght);
+				delay(1);
+				break;
 			// #if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega128__) || defined (__AVR_ATmega2560__)
 			case HSerial1:
 				Serial1.write(buffer, lenght);

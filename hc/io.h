@@ -12,7 +12,8 @@ void maintain_motors(void);
 void package_DAC_voltage(float v, uint8_t* data);
 void debug(String s);
 float get_rot_encoder_value(SensorInfo* encoder);
-void Encoder_ISR(void);
+void Encoder_index_ISR(void);
+void Encoder_A_ISR(void);
 
 void update_sensors(){
 	for(int i = 0; i < NUM_SENSORS; i++){
@@ -70,9 +71,11 @@ void update_sensors(){
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_ROT_ENC:{
-				float theta = get_rot_encoder_value(sensor);
-				sensor->value = sensor->offset + (sensor->rots + theta) * EXC_MM_PER_ROT;
-				sensor->t_stamp = TIME_STAMP;
+				float delta = (encoder_A_pulses/ROT_ENC_PPR) * EXC_MM_PER_ROT;  // how much have we moved in this loop
+				sensor_infos[EXC_TRANS_ENC].value += delta; 					// change value by this much
+				sensor_infos[EXC_TRANS_ENC].t_stamp = TIME_STAMP;
+				encoder_A_pulses = 0; // reset this
+				
 				break;}
 			case SENS_BLDC_ENC:{
 				if(sensor->device != NULL && sensor->device->is_setup){
@@ -105,7 +108,7 @@ void update_sensors(){
 				//to get status:
 				//XYZrobotServoStatus status = servo.readStatus();
 				// sensor->device->servo_status = sensor->device->servo->readStatus();
-				sensor->value 	= Herkulex.getAngle(motor->looky_id);
+				sensor->value 	= Herkulex.getAngle(sensor->device->id);
 				sensor->t_stamp = TIME_STAMP;
 				break;}
 		}
@@ -140,14 +143,13 @@ void maintain_motors(){
 					}
 				}
 
-				debug("Updating VESC: "+String(rpm, DEC));
+				// debug("Updating VESC: "+String(rpm, DEC));
 				motor->device->vesc->set_rpm(rpm); 							// actually send the rpm
 				motor->device->vesc->request_mc_values(); 					// resonse packet should be ready when we call update sensors
 				motor->t_stamp = TIME_STAMP;
 				break;}
 			case MTR_SABERTOOTH:{
 				
-				float target 	= 0.0;
 				if(i == EXC_ROT_PORT){
 					MotorInfo* stbd 	= &motor_infos[EXC_ROT_STBD];
 					stbd->setpt 		= motor->setpt;
@@ -164,27 +166,28 @@ void maintain_motors(){
 						motor->kp = LIN_ACT_KP;
 					}
 				}else if(i == EXC_ROT_STBD){
-					motor_infos[EXC_ROT_PORT].setpt = motor->setpt;
-				}else{}
+					// motor_infos[EXC_ROT_PORT].setpt = motor->setpt;
+				}
 				
 				float err 		= motor->setpt - motor->sensor->value; 			// error in degrees
-				float dt 		= (TIME_STAMP - motor->t_stamp) / 1000000.0; 	// how much time since last update in SECONDS
-				motor->integ 	= motor->integ + err*dt;
-				motor->integ 	= fconstrain(motor->integ, -motor->max_integ, motor->max_integ);
-				
+				// float dt 		= (TIME_STAMP - motor->t_stamp) / 1000000.0; // how much time since last update in SECONDS
+				// motor->integ 	+= err*dt;
+				// if(motor->integ != motor->integ){
+				// 	motor->integ = 0.0;
+				// }
+				// motor->integ 	= fconstrain(motor->integ, -motor->max_integ, motor->max_integ);
+				// debug(String(motor->integ));
+				float voltage 	= 0.0;
 				if(fabs(err) < motor->err_margin){ 	// if err_margin is set to 0.0, then we'll always do PI(D)
 					voltage = 0.0; // stop the motor
 				}else{
 					//PID controls:	
-					float voltage 	= motor->kp*err + motor->ki*motor->integ; // should range from -2.5 to +2.5 (or min_power to max_power)
+					voltage = motor->kp*err; // + motor->ki*motor->integ; // should range from -2.5 to +2.5 (or min_power to max_power)
 				}
-				
 				voltage = fconstrain(voltage, motor->min_power, motor->max_power);
 
-				debug(String(i, DEC) + " Sabertooth,\tError: " + String(err, 3) + " deg,\tV: "+ String(voltage, 3));
-				
 				// FOR DEBUGGING PURPOSES
-				voltage = motor->setpt;
+				// voltage = motor->setpt;
 				// DELETE LATER TO ENABLE PI(D) CONTROL
 
 				int dir 		= get_sign(voltage);
@@ -206,26 +209,80 @@ void maintain_motors(){
 					voltage = fmap(voltage, motor->min_power, 0, motor->min_power, -motor->deadband);
 				}else{}
 
-				voltage = voltage + MOTOR_ANLG_CENTER_V; 	// shift bipolar voltage into the correct range
 
-				uint8_t data[3] = {};
-				package_DAC_voltage(voltage, data); 	
+				debug(String(i, DEC) + " Sabertooth,\tError: " + String(err, 3) + " deg,\tV: "+ String(voltage, 3));
+				
+				if(motor->device->interface == DIGITAL_IO){
+					int pwm = (int)(voltage + 4095.0/2 + 0.5);
+					debug("PIN: " + String(motor->device->spi_cs));
+					debug("pwm: " + String(pwm, DEC));
+					analogWrite(motor->device->spi_cs, pwm);
+				}else{
+					// voltage = voltage + MOTOR_ANLG_CENTER_V; 	// shift bipolar voltage into the correct range
+					// uint8_t data[3] = {};
+					// package_DAC_voltage(voltage, data); 	// for debugging
 
-				SPI.beginTransaction(*(motor->device->spi_settings));
-				digitalWrite(motor->device->spi_cs, LOW);
-				PAUSE_SHORT;
-				SPI.transfer(data, 3);
-				digitalWrite(motor->device->spi_cs, HIGH);
-				SPI.endTransaction();
+					// SPI.beginTransaction(*(motor->device->spi_settings));
+					// digitalWrite(motor->device->spi_cs, LOW);
+					// PAUSE_SHORT;
+					// SPI.transfer(data, 3);
+					// digitalWrite(motor->device->spi_cs, HIGH);
+					// SPI.endTransaction();
+				}
 				motor->t_stamp = TIME_STAMP; 			// record the update time
 
+				break;}
+			case MTR_SABERTOOTH_RC:{
+				float power 	= 0.0;//motor->setpt; // FOR DEBUGGING
+				float dt 		= (TIME_STAMP - motor->t_stamp) / 1000000.0;
+				float err 		= motor->setpt - motor->sensor->value; 	// error in mm
+				motor->integ 	+= err*dt;
+				if(motor->integ != motor->integ){
+					motor->integ = 0.0;
+				}
+				motor->integ = fconstrain(motor->integ, -motor->max_integ, motor->max_integ);
+
+				if(fabs(err) > motor->err_margin){
+					power = motor->kp*err + motor->ki*motor->integ;
+				}else{
+					power = 0.0; 	// stop the fucker
+				}
+				// ACCOUNT FOR DEADBAND
+				int dir = get_sign(power); 	// in case something changed
+				if(dir > 0){
+					power = fmap(power, 0, motor->max_power, motor->deadband, motor->max_power);
+				}else if(dir < 0){
+					power = fmap(power, motor->min_power, 0, motor->min_power, -motor->deadband);
+				}else{}
+
+				power = fconstrain(power, motor->min_power, motor->max_power);
+
+				dir 		= get_sign(power);
+				if(motor->limit_1->value > 0.0){
+					if(dir != motor->limit_1->allowed_dir){
+						power = 0.0;
+					}
+					motor->sensor->value = motor->limit_1->offset;  // what is the position at this limit
+				}else if(motor->limit_2->value > 0.0){
+					if(dir != motor->limit_2->allowed_dir){
+						power = 0.0;
+					}
+					motor->sensor->value = motor->limit_2->offset;  // what is the position at this limit
+				}
+
+				int pulse_width = power + 1500.0 + 0.5;
+				digitalWrite(motor->device->spi_cs, HIGH);
+				delayMicroseconds(pulse_width);
+				digitalWrite(motor->device->spi_cs, LOW);
+				motor->t_stamp = TIME_STAMP;
 				break;}
 			case MTR_LOOKY:{
 				if(motor->setpt != motor->last_setpt){
 					// Herkulex.moveOneAngle(servoID, angle, time_ms, iLed??)
-					Herkulex.moveOneAngle(motor->looky_id, motor->setpt, 200, 2);
+					int span = (int)(1000.0*fabs(motor->sensor->value - motor->setpt)/motor->max_power); 	// 1000*degs / (degs-per-sec) = ms
+					Herkulex.moveOneAngle(motor->device->id, motor->setpt, span, 2);
 				}
-				debug("Updating Looky");
+				// debug("Updating Looky");
 				break;}
 		}
 	}
@@ -260,16 +317,33 @@ void package_DAC_voltage(float v, uint8_t* data){
 	data[2] = (temp) & 0xFF;
 }
 
-void Encoder_ISR(){
+void Encoder_index_ISR(){
 	// if A is HIGH (and B is LOW), dir is CCW
 	// else, dir is CW
 	uint8_t dir = digitalRead(ENCODER_A_PIN);
 	if(dir == HIGH){
-		sensor_infos[EXC_TRANS_ENC].rots += 1; 	// increment number of rotations
+		encoder_rots += 1; 	// increment number of rotations
 	}else{
-		sensor_infos[EXC_TRANS_ENC].rots += -1; // decrement number of rotations
+		encoder_rots += -1; // decrement number of rotations
 	}
-	sensor_infos[EXC_TRANS_ENC].value = sensor_infos[EXC_TRANS_ENC].offset + sensor_infos[EXC_TRANS_ENC].rots * EXC_MM_PER_ROT;
+	// sensor_infos[EXC_TRANS_ENC].value = sensor_infos[EXC_TRANS_ENC].offset + sensor_infos[EXC_TRANS_ENC].rots * EXC_MM_PER_ROT;
+	// sensor_infos[EXC_TRANS_ENC].t_stamp = TIME_STAMP;
+}
+
+// detect rising edge of the A Quadrature signal
+void Encoder_A_ISR(){
+	// if A is HIGH (and B is LOW), dir is CCW (+)
+	// else, dir is CW (-)
+	int b_state = digitalRead(ENCODER_B_PIN);
+	// float delta = (1.0/ROT_ENC_PPR) * EXC_MM_PER_ROT; 			// how much change in distance due to this pulse
+	if(b_state == LOW){
+		encoder_A_pulses += 1;
+		// sensor_infos[EXC_TRANS_ENC].value += delta; // CCW rotation
+	}else{
+		encoder_A_pulses += -1;
+		// sensor_infos[EXC_TRANS_ENC].value -= delta; // CW rotation
+	}
+	// sensor_infos[EXC_TRANS_ENC].t_stamp = TIME_STAMP;
 }
 
 // @return fraction of rotation

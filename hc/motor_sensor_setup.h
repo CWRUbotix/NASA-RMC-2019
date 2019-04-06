@@ -25,28 +25,38 @@ void init_motors(){
 				// delay(10);
 				break;}
 			case MTR_SABERTOOTH:{
-				if(motor->device->spi_cs != 0){
+				if(motor->device->interface == SPI_BUS && motor->device->spi_cs != 0){
 					pinMode(motor->device->spi_cs, OUTPUT);
 					digitalWrite(motor->device->spi_cs, HIGH);
-				}
-				// set the motor to not move
-				// remember that 0V makes the motor go full speed in reverse
-				uint8_t data[3] = {};
-				package_DAC_voltage(MOTOR_ANLG_CENTER_V, data); 	// make sure motor is stopped
+				
+					// set the motor to not move
+					// remember that 0V makes the motor go full speed in reverse
+					uint8_t data[3] = {};
+					package_DAC_voltage(MOTOR_ANLG_CENTER_V, data); 	// make sure motor is stopped
 
-				SPI.beginTransaction(*(motor->device->spi_settings));
-				digitalWrite(motor->device->spi_cs, LOW);
-				PAUSE_SHORT;
-				SPI.transfer(data, 3);
-				digitalWrite(motor->device->spi_cs, HIGH);
-				SPI.endTransaction();
+					SPI.beginTransaction(*(motor->device->spi_settings));
+					digitalWrite(motor->device->spi_cs, LOW);
+					PAUSE_SHORT;
+					SPI.transfer(data, 3);
+					digitalWrite(motor->device->spi_cs, HIGH);
+					SPI.endTransaction();
+				}else if(motor->device->interface == DIGITAL_IO){
+					pinMode(motor->device->spi_cs, OUTPUT);
+					analogWrite(motor->device->spi_cs, 2048); 	// center value
+				}
 
 				motor->setpt 	= motor->sensor->value; 	// make the set-point equal to the current position
 				break;}
+			case MTR_SABERTOOTH_RC:{
+				pinMode(motor->device->spi_cs, OUTPUT);
+				motor->setpt = motor->sensor->value;
+				digitalWrite(motor->device->spi_cs, HIGH);
+				delayMicroseconds(1500);
+				digitalWrite(motor->device->spi_cs, LOW);
+				break;}
 			case MTR_LOOKY:{
 				if(motor->device != NULL && !motor->device->is_setup){
-					Herkulex.begin(motor->device->serial, 115200);
-					Herkulex.initialize();
+					Herkulex.moveOneAngle(motor->device->id, 0.0, 1000, 2);
 					motor->device->is_setup = true;
 				}
 				break;}
@@ -108,6 +118,10 @@ void init_sensors(){
 				if(device != NULL && !device->is_setup){
 					device->is_setup = true;
 				}
+				sensor->value = sensor->offset; 	// assumed initial position
+				pinMode(ENCODER_A_PIN, INPUT);
+				pinMode(ENCODER_B_PIN, INPUT);
+				pinMode(ENCODER_INDEX_PIN, INPUT);
 				break;}
 			case SENS_BLDC_ENC: {
 				// let this get configured in init_motors
@@ -139,8 +153,9 @@ void init_device_comms(){
 			case VESC_UART: { 
 				device->vesc->begin();
 				break;}
-			case LOOKY_UART: { 
-				device->serial->begin(115200);
+			case LOOKY_UART: {
+				Herkulex.begin(device->serial, 115200);
+				Herkulex.initialize();
 				break;}
 			case SPI_BUS: {
 				if(device->spi_cs != 0){

@@ -126,6 +126,7 @@ public:
   
 // private area  
 private:
+  HardwareSerial* HwSerial;
   void sendData(byte* buffer, int lenght);
   void readData(int size);
   void addData(int GoalLSB, int GoalMSB, int set, int servoID);

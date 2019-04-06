@@ -52,10 +52,10 @@
 #define DEP_UPPER_LIM_PIN 		37
 #define ESTOP_SENSE_PIN 		39
 
-#define LIN_ACT_ERR_MARGIN 		0.75
-#define LIN_ACT_KP				0.2
+#define LIN_ACT_ERR_MARGIN 		0.5
+#define LIN_ACT_KP				400.0
 #define LIN_ACT_KI 				0.0
-#define LIN_ACT_KP_INC 			0.0
+#define LIN_ACT_KP_INC 			75.0
 #define MOTOR_ANLG_CENTER_V 	2.5
 #define DAC8551_SPEED 			2500000
 #define ADS1120_SPEED 			2500000
@@ -70,8 +70,10 @@
 // should pause about 50 ns or so
 #define PAUSE_SHORT 	__asm__(NOP3 NOP3 NOP3)
 
-#define ROT_ENC_RD_POS 	0x10
-#define EXC_MM_PER_ROT 	60.96
+#define ROT_ENC_PPR 			2048.0
+#define ROT_ENC_DEG_PER_PULSE 	360.0/ROT_ENC_PPR
+#define ROT_ENC_RD_POS 			0x10
+#define EXC_MM_PER_ROT 			60.96
 ////////////////////////////////////////////////////////////////////////////////
 //  DEFINE TYPES
 ////////////////////////////////////////////////////////////////////////////////
@@ -190,6 +192,7 @@ typedef enum MotorType {
 	MTR_NONE,
 	MTR_VESC,
 	MTR_SABERTOOTH,
+	MTR_SABERTOOTH_RC,
 	MTR_LOOKY
 } MotorType;
 
@@ -205,7 +208,10 @@ typedef struct Device{
 	bool is_setup 		= false; // field to prevent unnecessary setup or doomed reading
 }Device;
 
-typedef struct SensorInfo{
+typedef struct SensorInfo SensorInfo;
+typedef struct MotorInfo MotorInfo;
+
+struct SensorInfo{
 	SensorType type 	= SENS_NONE;
 	Device* device;
 	MotorInfo* motor;
@@ -227,9 +233,9 @@ typedef struct SensorInfo{
 	float min;
 	float max;
 	int allowed_dir;
-} SensorInfo;
+};
 
-typedef struct MotorInfo{
+struct MotorInfo{
 	MotorType type 		= MTR_NONE;
 	Device* device;
 	SensorInfo* sensor;
@@ -247,12 +253,13 @@ typedef struct MotorInfo{
 	float integ 		= 0.0;
 	float max_integ 	= 0.0;
 	float max_setpt 	= 0.0;
+	float min_setpt 	= 0.0;
 	float max_delta 	= 0.0;
 	float deadband 		= 0.0;
 	int looky_id 		= 0;
 	float max_power 	= 0.0;
 	float min_power 	= 0.0;
-} MotorInfo;
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -265,6 +272,9 @@ Device 		device_infos 	[NUM_DEVICES] 		= {};
 Device 		SPI_devices 	[NUM_SPI_DEVICES] 	= {};
 float 		exc_lc_values 	[NUM_PREV_VALUES] 	= {};
 float 		dep_lc_values 	[NUM_PREV_VALUES] 	= {};
+
+volatile int encoder_rots = 0;
+volatile int encoder_A_pulses = 0;
 
 bool estop_state 		= false; 	// false means off
 bool estop_state_last 	= false; 	// false means off

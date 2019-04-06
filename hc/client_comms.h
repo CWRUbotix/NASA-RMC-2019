@@ -62,6 +62,11 @@ FAULT_T read_from_client(){
 				motor = &motor_infos[id];
 				motor->last_setpt = motor->setpt;
 				motor->setpt = value;
+				if(id == EXC_ROT_PORT){
+					motor_infos[EXC_ROT_STBD].setpt = motor->setpt;
+				}else if(id == EXC_ROT_STBD){
+					motor->setpt = motor_infos[EXC_ROT_PORT].setpt;
+				}
 			}
 			break;}
 		case CMD_READ_VALUES:{
