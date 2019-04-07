@@ -189,18 +189,18 @@ def get_obstacles_with_plane(depth_frame,
                 print(e)
                 pass
 
-            if save_frames:
-                try:
-                    os.mkdir(saved_dir)
-                except Exception as e:
-                    print(e)
-                    pass
-                plt.imsave(saved_dir + '%d.png' % len(os.listdir(saved_dir)), color)
+        if save_frames:
+            try:
+                os.mkdir(saved_dir)
+            except Exception as e:
+                pass
+            rgb = cv2.cvtColor(color, cv2.COLOR_BGR2RGB)
+            plt.imsave(saved_dir + '%d.png' % len(os.listdir(saved_dir)), rgb)
 
         if visualize:
             cv2.imshow('detected_obstacles', color)
-            cv2.imshow('plane', plane_img)
-            cv2.imshow('roi', np.uint8(ground_plane_roi / 4500. * 255.))
+            #cv2.imshow('plane', plane_img)
+            #cv2.imshow('roi', np.uint8(ground_plane_roi / 4500. * 255.))
 
         for obstacle in obstacle_list:
             obstacle.lifetime -= 1
@@ -208,7 +208,7 @@ def get_obstacles_with_plane(depth_frame,
                 obstacle_list.remove(obstacle)
             print(obstacle)
     except AssertionError as e:
-        print(e)
+        #print(e)
         print('Not enough points to estimate the ground plane, trying again...')
         pass
 

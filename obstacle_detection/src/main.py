@@ -67,8 +67,10 @@ phis = np.array([])
 obstacle_list = []
 obstacle_id = 0
 
-visualize = True
+visualize = False
 save_frames = True
+
+print(os.getcwd())
 
 while True:
     frames = listener.waitForNewFrame()
