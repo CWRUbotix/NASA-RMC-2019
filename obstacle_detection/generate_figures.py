@@ -25,12 +25,12 @@ img = np.uint8(depth_frame) #some opencv functions require a byte image
 
 xyz_arr = depthMatrixToPointCloudPos(depth_frame) #convert depth data to XYZ coordinates
 print(xyz_arr.shape)
-center, plane, theta = get_orientation(xyz_arr, xyz_arr.shape[0] // 1, 1)
+center, plane, theta = get_orientation(xyz_arr, xyz_arr.shape[0] // 32, 1)
 print(center, plane, theta)
 CameraPosition['elevation'] = -theta
-center = applyCameraOrientation(center)
-plane = applyCameraOrientation(plane)
-xyz_arr = applyCameraMatrixOrientation(xyz_arr)
+center = applyCameraOrientation(center, CameraPosition)
+plane = applyCameraOrientation(plane, CameraPosition)
+xyz_arr = applyCameraMatrixOrientation(xyz_arr, CameraPosition)
 
 plane_img = np.zeros(len(xyz_arr))
 plane_img[xyz_arr[:,2] > 0.1 - center[2]] = 1
