@@ -45,9 +45,9 @@ class Position:
 class Grid:
 
     def __init__(self, vertices, obstacles, unitScale):
-       self.vertices = vertices
-       self.obstacles = obstacles
-       self.unitScale = unitScale
+        self.vertices = vertices
+        self.obstacles = obstacles
+        self.unitScale = unitScale
 
     def getVertices(self):
         return self.vertices
@@ -68,14 +68,14 @@ class Grid:
         yBlocked = False
         for obstacle in obstacles:
             if obstacle.center_x >= Xpos:
-                xBlocked = (obstacle.getCenter()[0] - obstacle.getRadius()) < Xpos + unitScale
+                xBlocked = (obstacle.getCenter()[0] - obstacle.getRadius()) < (Xpos + unitScale)
             else:
                 xBlocked = (obstacle.getCenter()[0] + obstacle.getRadius()) > Xpos
             if obstacle.center_y >= Ypos:
-                yBlocked = (obstacle.getCenter()[1] - obstacle.getRadius()) < Ypos + unitScale
+                yBlocked = (obstacle.getCenter()[1] - obstacle.getRadius()) < (Ypos + unitScale)
             else:
-                yBlocked = (obstacle.getCenter()[1] + obstacle.getRadius()) > Ypos
-        return xBlocked & yBlocked
+                yBlocked = (obstacle.getCenter()[1] + obstacle.getRadius()) > (Ypos)
+        return (xBlocked and yBlocked)
 
 class Obstacle:
     def __init__(self, center_x, center_y, radius):
@@ -106,6 +106,7 @@ class Obstacle:
             self.center_y = (self.center_y + other.center_y) / 2
             self.radius = distance / 2
 
+#acts as a sequence of instances of the Position class
 class Path(collections.Sequence):
     def __init__(self, positions):
         self.path = deque(positions)
@@ -116,11 +117,11 @@ class Path(collections.Sequence):
     def get_Position(self):
         return self.path.pop()
 
+    def __getitem__(self, item):
+        return item
+
     def __len__(self):
         return len(self.path)
-
-    def __getitem__(self, item):
-        return self.path.__getitem__(item)
 
     def delete(self, position):
         return self.path.remove(position)
@@ -131,13 +132,13 @@ class Path(collections.Sequence):
             print ("Y: %s" %(position.getY_pos()))
             print ("Orientation: %s\n" %(position.getOrientation()))
 
-class Vertex(Position):
-    def __init__(self, x_pos, y_pos, orientation, parent, startDistance, endDistance, visibleNeighbors):
-        super(Vertex, self).__init__(x_pos, y_pos, orientation)
+class Vertex:
+    def __init__(self, parent, startDistance, endDistance, visibleNeighbors, position):
         self.parent = parent
         self.startDistance = startDistance
         self.endDistance = endDistance
         self.visibleNeighbors = visibleNeighbors
+        self.position = position
 
     def getParent(self):
         return self.parent
@@ -165,3 +166,11 @@ class Vertex(Position):
 
     def addNeighbor(self, vertex):
         self.visibleNeighbors.append(vertex)
+
+    def __eq__(self, vertex):
+        return self.position == vertex.position
+
+    def getPosition(self):
+        return self.position
+
+
