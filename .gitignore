@@ -1,6 +1,7 @@
 .idea
 venv/
 __pycache__
+*.pyc
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json

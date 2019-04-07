@@ -5,7 +5,7 @@ import collections
 from collections import deque
 
 #Global Variables
-Error_bound = 0.05
+Error_bound = 0.10
 
 
 class Position:

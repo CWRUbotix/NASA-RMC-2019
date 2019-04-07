@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-
-import Automodule.MotorCommand as mc
+import MotorCommand as mc
 
 class DriveModule:
 	def __init__(self, destination):
