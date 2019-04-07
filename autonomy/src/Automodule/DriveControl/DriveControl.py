@@ -35,6 +35,7 @@ class ObstacleAlert(Exception):
 		return 'Obstacle found exception not dealt with'
 
 def driveTo(currentPos, pos):
+
 	pass
 
 # Given angle in radian the robot needs to turn and current angularvelocity
@@ -44,15 +45,15 @@ def driveTo(currentPos, pos):
 # slowSpeed is output when finishing turn (at risk of overshooting)
 def turn(angle, angularvelocity, midAngle, maxSpeed, slowSpeed):
 	magAngle = angle
-	if (angle < 0):
+	if angle < 0:
 		magAngle *= -1
-	if (magAngle > midAngle):
-		if (angle < 0):
+	if magAngle > midAngle:
+		if angle < 0:
 			return -maxSpeed, maxSpeed
 		else:
 			return maxSpeed, -maxSpeed
 	else:
-		if (angle < 0):
+		if angle < 0:
 			return -slowSpeed, slowSpeed
 		else:
 			return slowSpeed, -slowSpeed

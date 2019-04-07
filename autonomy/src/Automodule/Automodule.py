@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
+import math
 from std_msgs.msg import String
 from PathPlanning.PathPlanning import Position #import specific functions later
 from DriveControl.DriveControl import DriveModule, ObstacleAlert
@@ -12,6 +13,8 @@ Main Module for Autonomy operation
 
 
 """ HARD CODED TABLES (dictionary)"""
+#The alignment location
+COLLECTION_BIN = Position(1.23, 0.825, math.pi)
 interruptible = [4, 8, 11, 14] #Task IDs whose time can be modified
 robotPos = None
 destination = None
