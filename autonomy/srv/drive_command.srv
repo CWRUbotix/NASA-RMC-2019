@@ -1,0 +1,14 @@
+# Service that DriveControl provides.
+# Takes in the single position to go and return address 
+# to subscribe the request to feedback messages
+# Idea is that Automodule will request drive service
+# and using feedback messages from DriveControl coming at a rate
+# Automodule will check whether drive is done.
+# ASSUMING ZERO POINT TURN
+
+float64 x_des_pos
+float64 y_des_pos
+string return_topic
+---
+bool confirm
+
