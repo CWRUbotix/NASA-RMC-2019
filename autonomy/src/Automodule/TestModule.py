@@ -2,11 +2,13 @@
 
 import rospy
 import sys
+import time
 import math
-from Automodule import shutdownRoutine
 import PathPlanning.PathPlanning as pp
+import DriveControl.MotorCommand as mc
+
 from geometry_msgs.msg import Pose2D
-from hci.msg import sensorValue
+from hci.msg import sensorValue, motorCommand
 from obstacle_detection.msg import Obstacle
 
 
@@ -121,36 +123,217 @@ class Robot_state:
 
 #Current position of the robot
 currentState = Robot_state()
+logfile = None
+motor_pub = rospy.Publisher('motorCommand', motorCommand, queue_size=100)
+ROBOT_SPEED = 0.0
+
+def logData(drive, direction, value):
+    log = ""
+    if drive:
+        if direction:
+            log = 'Drive, Forward, Value: ' + str(value)
+        else:
+            log = 'Drive, Backward, Value: ' + str(value)
+    else:
+        if direction:
+            log = 'Turn, Counter, Value: ' + str(value)
+        else:
+            log = 'Turn, Clockwise, Value: ' + str(value)
+
+    log += ' Gyro_x: ' + str(currentState.getGyroX()) + 'Gyro_y:' + str(currentState.getGyroY()) + 'Gyro_z' + str(currentState.getGyroZ())
+    logfile.write(log + '\n')
+
+def conservative_drive(dest, forward):
+    global motor_pub
+    done = False
+    initPos = currentState.getCurrentPos()
+    while not done:
+        print 'current pos ' + str(currentState.getCurrentPos())
+        print 'distance to destination ' + str(currentState.getCurrentPos().distanceTo(dest))
+        if currentState.getCurrentPos() == dest:
+            done = True
+        elif math.fabs(initPos.distanceTo(currentState.getCurrentPos()) - initPos.distanceTo(dest)) < 0.05:
+            print 'Did not arrive at destination, but moved far enough'
+            print 'deviation: ' + str(dest.distanceTo(currentState.getCurrentPos()))
+            done = True
+            exit(-1)
+        else:
+            speed = ROBOT_SPEED
+            if dest.distanceTo(currentState.getCurrentPos()) < 0.2:
+                speed = 0.5 * speed
+
+            if forward:
+                mc.drive_left_motor(motor_pub, speed)
+                mc.drive_right_motor(motor_pub, speed)
+                logData(True, True, speed)
+            else:
+                mc.drive_left_motor(motor_pub, -speed)
+                mc.drive_right_motor(motor_pub, -speed)
+                logData(True, False, speed)
+            print 'sent motorCommand'
+        rospy.sleep(0.005)
+    mc.drive_right_motor(motor_pub, 0)
+    mc.drive_left_motor(motor_pub, 0)
+
+def conservative_turn(dest, clockwise):
+    global motor_pub
+    done = False
+    while not done:
+        print 'current angle in degrees: ' + str((currentState.getCurrentPos().getOrientation())/math.pi*180)
+        print 'turns left in degrees: ' + str((currentState.getCurrentPos().angleToFace(dest))/math.pi*180)
+
+        if currentState.getCurrentPos().angleToFace(dest) < math.pi/ 180 * 5: #5 degrees within
+            done = True
+        else:
+            speed = ROBOT_SPEED
+
+            #when within 25 degrees, slow down a bit
+            if currentState.getCurrentPos().angleToFace(dest) < math.pi / 180 * 25:
+                speed = 0.5 * speed
+            if clockwise:
+                mc.drive_left_motor(motor_pub, speed)
+                mc.drive_right_motor(motor_pub, -speed)
+                logData(False, False, speed)
+            else:
+                mc.drive_left_motor(motor_pub, -speed)
+                mc.drive_right_motor(motor_pub, speed)
+                logData(False, True, speed)
+        rospy.sleep(0.005)
+    mc.drive_right_motor(motor_pub, 0)
+    mc.drive_left_motor(motor_pub, 0)
 
 def simple_drive_test1():
-    pass
+    print 'This test routine attempts to drive 1.5 meter straight from is current position'
+
+    while True:
+        print 'current position: ' + str(currentState.getCurrentPos())
+        answer = raw_input('Make sure that robot is in a place okay to drive 1 meter forward. Start testing?  y/n ')
+        if answer == 'y':
+            break
+
+    currentPos = currentState.getCurrentPos()
+    destination = pp.Position(currentPos.getX_pos() + 1.5 * math.cos(currentPos.getOrientation()),
+                              currentPos.getY_pos() + 1.5 * math.sin(currentPos.getOrientation()),
+                              currentPos.getOrientation())
+
+    conservative_drive(destination, True)
+    print 'testing successful'
+    exit(0)
 
 def simple_drive_test2():
-    pass
+    print 'This test routine attempts to drive 1.5 meter backward from is current position'
+
+    while True:
+        print 'current position: ' + str(currentState.getCurrentPos())
+        answer = raw_input('Make sure that robot is in a place okay to drive 1 meter forward. Start testing?  y/n ')
+        if answer == 'y':
+            break
+
+    currentPos = currentState.getCurrentPos()
+    destination = pp.Position(currentPos.getX_pos() - 1.5 * math.cos(currentPos.getOrientation()),
+                              currentPos.getY_pos() - 1.5 * math.sin(currentPos.getOrientation()),
+                              currentPos.getOrientation())
+
+    conservative_drive(destination, False)
+    print 'testing successful'
+    exit(0)
 
 def simple_drive_test3():
-    pass
+    print 'This test routine attempts to drive 1.5 meter forward and backward from is current position'
+
+    while True:
+        print 'current position: ' + str(currentState.getCurrentPos())
+        answer = raw_input('Make sure that robot is in a place okay to drive 1 meter forward. Start testing?  y/n ')
+        if answer == 'y':
+            break
+
+    currentPos = currentState.getCurrentPos()
+    destination = pp.Position(currentPos.getX_pos() + 1.5 * math.cos(currentPos.getOrientation()),
+                              currentPos.getY_pos() + 1.5 * math.sin(currentPos.getOrientation()),
+                              currentPos.getOrientation())
+
+    conservative_drive(destination, True)
+    currentPos = currentState.getCurrentPos()
+    destination = pp.Position(currentPos.getX_pos() - 1.5 *math.cos(currentPos.getOrientation()),
+                              currentPos.getY_pos() - 1.5 * math.sin(currentPos.getOrientation()),
+                              currentPos.getOrientation())
+    conservative_drive(destination, False)
+    print 'testing successful'
+    exit(0)
 
 def simple_turn_test1():
-    pass
+    print 'This test routine attempts to turn in place given degrees counter-clockwise'
+    while True:
+        print 'current position: ' + str(currentState.getCurrentPos())
+        answer = raw_input('Start testing?  y/n ')
+        if answer == 'y':
+            break
+    goal = float(raw_input('Enter how much to turn in degrees. input should be less than 360'))
+    goal = goal * math.pi / 180.0
+    currentPos = currentState.getCurrentPos()
+    destination = pp.Position(currentPos.getX_pos(), currentPos.getY_pos(),
+                              (currentPos.getOrientation() + goal) % (2 * math.pi))
+    conservative_turn(destination, False)
+    print 'testing succesful'
+    exit(0)
 
 def simple_turn_test2():
-    pass
+    print 'This test routine attempts to turn in place given degrees clockwise'
+    while True:
+        print 'current position: ' + str(currentState.getCurrentPos())
+        answer = raw_input('Start testing?  y/n ')
+        if answer == 'y':
+            break
+    goal = float(raw_input('Enter how much to turn in degrees. input should be less than 360'))
+    goal = goal * math.pi / 180.0
+    currentPos = currentState.getCurrentPos()
+    destination = pp.Position(currentPos.getX_pos(), currentPos.getY_pos(),
+                              (currentPos.getOrientation() - goal) % (2 * math.pi))
+    conservative_turn(destination, True)
+    print 'testing succesful'
+    exit(0)
 
 def simple_turn_test3():
-    pass
+    print 'This test routine attempts to turn in place given degrees counter-clockwise and then clockwise'
+    while True:
+        print 'current position: ' + str(currentState.getCurrentPos())
+        answer = raw_input('Start testing?  y/n ')
+        if answer == 'y':
+            break
+    goal = float(raw_input('Enter how much to turn in degrees. input should be less than 360'))
+    goal = goal * math.pi / 180.0
+    currentPos = currentState.getCurrentPos()
+    destination = pp.Position(currentPos.getX_pos(), currentPos.getY_pos(),
+                              (currentPos.getOrientation() + goal) % (2 * math.pi))
+    conservative_turn(destination, False)
+
+    currentPos = currentState.getCurrentPos()
+    destination = pp.Position(currentPos.getX_pos(), currentPos.getY_pos(),
+                              (currentPos.getOrientation() - goal) % (2 * math.pi))
+    conservative_turn(destination, True)
+    print 'testing succesful'
+    exit(0)
 
 def transit_test1():
-    pass
+    print 'trasit_Test1 not ready yet'
+    exit(0)
 
 def transit_test2():
-    pass
+    print 'trasit_Test2 not ready yet'
+    exit(0)
 
 def transit_test3():
-    pass
+    print 'trasit_Test3 not ready yet'
+    exit(0)
 
 def deposition_align_test():
-    pass
+    print 'align_test not ready yet'
+    exit(0)
+
+def waitForLocalization():
+    print 'waiting localization data'
+    while currentState.getCurrentPos() is None:
+        rospy.sleep(0.01)
 
 def updateState(msg):
     global currentState
@@ -188,24 +371,41 @@ def updateObstacle(msg):
     currentState.addObstcle(obs)
 
 def updatePos(msg):
+    print "loc data received"
     global currentState
     pos = pp.Position(msg.x, msg.y, msg.theta)
     currentState.setCurrentPos(pos)
 
 def subscribe():
     rospy.Subscriber('sensorValue', sensorValue, updateState)
-    rospy.Subscriber('Localization', Pose2D, updatePos)
+    rospy.Subscriber('localization_data', Pose2D, updatePos)
     rospy.Subscriber('Obstacle', Obstacle, updateObstacle)
 
+def testShutdown():
+    global logfile, motor_pub
+    mc.drive_left_motor(motor_pub, 0)
+    mc.drive_right_motor(motor_pub, 0)
+    logfile.close()
+
 def main():
+    print "setting up logging"
+    global logfile
+    logfile = open(str(sys.path[1]) + '/logs/' +time.strftime("%b-%a-%d-%H-%M-%S.txt"), "w")
+
     routines = [simple_drive_test1, simple_drive_test2, simple_drive_test3,
                 simple_turn_test1, simple_turn_test2, simple_turn_test3,
                 transit_test1, transit_test2, transit_test3, deposition_align_test]
-    routine = sys.argv[0]
+    routine = int(sys.argv[1])
     rospy.init_node('Auonomy_Test')
     subscribe()
-    rospy.on_shutdown(shutdownRoutine)
-    rospy.sleep(3)
+    rospy.on_shutdown(testShutdown)
+    waitForLocalization()
+    print "Testing ready"
+    print "Routine " + str(sys.argv[1])
+    while True:
+        answer = raw_input("Start testing? y/n ")
+        if answer == 'y':
+            break
     routines[routine]()
     rospy.spin()
 

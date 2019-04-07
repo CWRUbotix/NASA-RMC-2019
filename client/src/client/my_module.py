@@ -1,18 +1,10 @@
 #!/usr/bin/env python
 import os
 
-from geometry_msgs.msg import Twist
-from std_msgs.msg import String
-
 import rospy
 import rospkg
 import sys
 import rosservice
-
-#setattr(sys, 'SELECT_QT_BINDING', 'pyside')
-
-#from client.srv import motorCommand
-#from client.msg import sensorValue
 
 import robotInterface
 
@@ -32,8 +24,6 @@ sensorValueTopic = 'sensorValue'
 #
 # Manual Control Subteam
 # ---------------------------------------------------
-
-motorValue = 0
 
 class MyPlugin(Plugin):
 
@@ -57,11 +47,6 @@ class MyPlugin(Plugin):
         # ROS Publisher
         self._publisher = None
 
-        #motor_command = motorCommand
-        #sensor_value = client.msg.sensorValue
-        #print(motor_command)
-        #print(sensor_value)
-
         robotInterface.initializeRobotInterface()
 
         # Service Proxy and Subscriber
@@ -83,9 +68,13 @@ class MyPlugin(Plugin):
             0:self._widget.motor0_spinbox,
             1:self._widget.motor1_spinbox,
             2:self._widget.motor2_spinbox,
-            3:self._widget.motor3_spinbox
+            3:self._widget.motor3_spinbox,
+            4:self._widget.motor4_spinbox,
+            5:self._widget.motor5_spinbox,
+            6:self._widget.motor6_spinbox,
+            7:self._widget.motor7_spinbox
         }
-        print(self.motor_widgets)
+        #print(self.motor_widgets)
         # Hook Qt UI Elements up
         """
         self._widget.vertical_add_button.pressed.connect(self.increase_linear_speed_pressed)
@@ -95,6 +84,14 @@ class MyPlugin(Plugin):
         self._widget.motor1_spinbox.valueChanged.connect(self.motor1_spinbox_changed)
         self._widget.motor2_spinbox.valueChanged.connect(self.motor2_spinbox_changed)
         self._widget.motor3_spinbox.valueChanged.connect(self.motor3_spinbox_changed)
+        self._widget.motor4_spinbox.valueChanged.connect(self.motor4_spinbox_changed)
+        self._widget.motor5_spinbox.valueChanged.connect(self.motor5_spinbox_changed)
+        self._widget.motor6_spinbox.valueChanged.connect(self.motor6_spinbox_changed)
+        self._widget.motor7_spinbox.valueChanged.connect(self.motor7_spinbox_changed)
+
+
+        self._widget.general_speed_spinbox.valueChanged.connect(self.general_spinbox_changed)
+        self._widget.general_speed_slider.valueChanged.connect(self.general_slider_changed)
 
         self._widget.emergency_stop_button.pressed.connect(self.estop_pressed)
         self._widget.w_button.pressed.connect(self.w_pressed)
@@ -102,16 +99,21 @@ class MyPlugin(Plugin):
         self._widget.s_button.pressed.connect(self.s_pressed)
         self._widget.d_button.pressed.connect(self.d_pressed)
 
-        #self._widget.keyPressed.connect(self.key_pressed)
-        #self._widget.Form.keyReleased.connect(self.key_released)
+        self._widget.zero_locomotion_button.pressed.connect(self.zero_locomotion_speeds)
 
         # ROS Connection Fields
         """
         self._widget.topic_line_edit.textChanged.connect(self._on_topic_changed)
         """
-        self._widget.connect_button.pressed.connect(self._connect_to_topics)
+        #self._widget.connect_button.pressed.connect(self._connect_to_topics)
 
         self._widget.service_name_textbox.setText(motorCommandTopic)
+        """
+        if robotInterface.motorCommandPub != None:
+            self._widget.status_label.setText("CONNECTED")
+        else:
+            self._widget.status_label.setText("ROBOT INTERFACE PUBLISHER NOT SET")
+        """
         ###
 
         if context.serial_number() > 1:
@@ -121,8 +123,9 @@ class MyPlugin(Plugin):
         self._widget.setFocusPolicy(0x8)
         self._widget.setFocus()
 
-        # ROS Twist Stuff
-
+        ### Keyboard teleop setup
+        self._widget.keyPressEvent = self.keyPressEvent
+        self._widget.keyReleaseEvent = self.keyReleaseEvent
         # timer to consecutively send service messages
         """
         self._update_parameter_timer = QTimer(self)
@@ -132,49 +135,99 @@ class MyPlugin(Plugin):
         self.zero_cmd_sent = False
         """
 
-    def w_pressed(self):
-        robotInterface.sendMotorCommand(0, int(self._widget.motor3_spinbox.value()))
-        robotInterface.sendMotorCommand(1, int(self._widget.motor3_spinbox.value()))
+    # Keyboard Teleop with signalling
+    """
+    Messy, but it works, theoretically.
+    """
+    def keyPressEvent(self, event):
+        motor_speed = self.get_general_motor_val()
+        #print("general motor value is: %s" % motor_speed)
+        if event.key() == Qt.Key_W:
+            #print("W down")
+            self.w_pressed(motor_speed)
+        elif event.key() == Qt.Key_S:
+            #print("S down")
+            self.s_pressed(motor_speed)
+        elif event.key() == Qt.Key_A:
+            #print("A down")
+            self.a_pressed(motor_speed)
+        elif event.key() == Qt.Key_D:
+            #print("D down")
+            self.d_pressed(motor_speed)
+        # Emergency stop, triggers for all motors. Can include one explicitly defined for locomotion though
+        elif event.key() == Qt.Key_E:
+            print("Emergency Stopping")
+            self.estop_pressed()
+        
+        # Arrow keys to manipulate the general spinbox speed
+        elif event.key() == Qt.Key_Up:
+            print("Key up")
+            self._widget.general_speed_spinbox.setValue(motor_speed + 1)
+
+        elif event.key() == Qt.Key_Down:
+            print("Key down")
+            self._widget.general_speed_spinbox.setValue(motor_speed - 1)
+
+    # Currently only geared toward locomotion
+
+    def keyReleaseEvent(self, event):
+        if event.key() in (Qt.Key_W, Qt.Key_S, Qt.Key_A, Qt.Key_D):
+            print("Key released")
+            self.set_locomotion_speeds(0,0)
+
+    def set_locomotion_speeds(self, port_speed, starboard_speed):
+        respPort = robotInterface.sendMotorCommand(0, port_speed)
+        respStarboard = robotInterface.sendMotorCommand(1, starboard_speed)
+        print("Set locomotion speeds: %s" % (respPort and respStarboard))
+
+    def zero_locomotion_speeds(self):
+        self.motor_widgets.get(0).setValue(0)
+        self.motor_widgets.get(1).setValue(0)
+        self.set_locomotion_speeds(0,0)
+        
+    def get_general_motor_val(self):
+        val = int(self._widget.general_speed_spinbox.value())
+        return val
+
+    def w_pressed(self, motor_speed=None):
+        if motor_speed is None:
+            motor_speed = self.get_general_motor_val()
+
+        robotInterface.sendMotorCommand(0, motor_speed)
+        robotInterface.sendMotorCommand(1, motor_speed)
         print("w key pressed")
 
-    def a_pressed(self):
-        robotInterface.sendMotorCommand(0, -int(self._widget.motor3_spinbox.value()))
-        robotInterface.sendMotorCommand(1, int(self._widget.motor3_spinbox.value()))
+    def a_pressed(self, motor_speed=None):
+        if motor_speed is None:
+            motor_speed = self.get_general_motor_val()
+        robotInterface.sendMotorCommand(0, -motor_speed)
+        robotInterface.sendMotorCommand(1, motor_speed)
         print("a key pressed")
 
-    def s_pressed(self):
-        robotInterface.sendMotorCommand(0, -int(self._widget.motor3_spinbox.value()))
-        robotInterface.sendMotorCommand(1, -int(self._widget.motor3_spinbox.value()))
+    def s_pressed(self, motor_speed=None):
+        if motor_speed is None:
+            motor_speed = self.get_general_motor_val()
+        robotInterface.sendMotorCommand(0, -motor_speed)
+        robotInterface.sendMotorCommand(1, -motor_speed)
         print("s key pressed")
 
-    def d_pressed(self):
-        robotInterface.sendMotorCommand(0, int(self._widget.motor3_spinbox.value()))
-        robotInterface.sendMotorCommand(1, -int(self._widget.motor3_spinbox.value()))
+    def d_pressed(self, motor_speed=None):
+        if motor_speed is None:
+            motor_speed = self.get_general_motor_val()
+        robotInterface.sendMotorCommand(0, motor_speed)
+        robotInterface.sendMotorCommand(1, -motor_speed)
         print("d key pressed")
 
     def estop_pressed(self):
-        # TODO: Implement this as a loop over some list of all known motors
-        # Check against the values reported in sensorValue
         print("Attempting to zero all motors...")
-        robotInterface.sendMotorCommand(0, 0)
-        robotInterface.sendMotorCommand(1, 0)
-        robotInterface.sendMotorCommand(2, 0)
-
-
-    def keyReleaseEvent(self, event):
-        if event.key() == QtCore.Qt.Key_W:
-            print("W down")
-        elif event.key() == QtCore.Qt.Key_S:
-            print("S down")
-        elif event.key() == QtCore.Qt.Key_A:
-            print("A down")
-        elif event.key() == QtCore.Qt.Key_D:
-            print("D down")
-
-
-    # Keyboard Teleop with signalling
-    #def keyPressEvent(self, event):
-    #    if event.key()
+        #robotInterface.sendMotorCommand(0, 0)
+        #robotInterface.sendMotorCommand(1, 0)
+        #robotInterface.sendMotorCommand(2, 0)
+        
+        # Set all known motors to value 0
+        for motor_id, ui_widget in self.motor_widgets.items():
+            #ui_widget.setValue(0)
+            robotInterface.sendMotorCommand(motor_id, 0)
 
     # ROS Connection things
     """
@@ -203,6 +256,9 @@ class MyPlugin(Plugin):
             # TODO:Doesn't actually shutdown/unregister??
             #self._service_proxy.shutdown('Shutting down service proxy...')
             self._service_proxy = None
+
+        #if robotInterface is not None:
+        #    robotInterface.motorCommandPub.unregister()
 
 
     #### Speed and Angle change Functions
@@ -240,26 +296,58 @@ class MyPlugin(Plugin):
         print("Spinbox Motor 1 val:", val)
         resp = robotInterface.sendMotorCommand(1, val)
         #resp = self._send_motor_command(1, val)
-
-        #self._on_parameter_changed()
+        print("Motor 1 command sent successfully: %s" % resp)
 
     def motor2_spinbox_changed(self):
         val = int(self._widget.motor2_spinbox.value())
         print("Spinbox Motor 2 val:", val)
         resp = robotInterface.sendMotorCommand(2, val)
-        #resp = self._send_motor_command(2, val)
-        #self._on_parameter_changed()
+        print("Motor 2 command sent successfully: %s" % resp)
 
     def motor3_spinbox_changed(self):
         motorValue = int(self._widget.motor3_spinbox.value())
-        print("General locomotion value = " + str(motorValue))
-        #resp = self._send_motor_command(3, val)
-        #self._on_parameter_changed()
+        print("Spinbox motor 3 " + str(motorValue))
+        resp = robotInterface.sendMotorCommand(3, motorValue)
+        print("Motor 3 command sent successfully: %s" % resp)
+
+    def motor4_spinbox_changed(self):
+        motorValue = int(self._widget.motor4_spinbox.value())
+        resp = robotInterface.sendMotorCommand(4, motorValue)
+        print("Motor 4 command sent successfully: %s" % resp)
+
+    def motor5_spinbox_changed(self):
+        motorValue = int(self._widget.motor5_spinbox.value())
+        resp = robotInterface.sendMotorCommand(5, motorValue)
+        print("Motor 5 command sent successfully: %s" % resp)
+
+    ### Looky Spinboxes
+
+    def motor6_spinbox_changed(self):
+        motorValue = int(self._widget.motor6_spinbox.value())
+        resp = robotInterface.sendMotorCommand(6, motorValue)
+        print("Motor 6 command sent successfully: %s" % resp)
+
+    def motor7_spinbox_changed(self):
+        motorValue = int(self._widget.motor7_spinbox.value())
+        resp = robotInterface.sendMotorCommand(7, motorValue)
+        print("Motor 7 command sent successfully: %s" % resp)
 
     """
     Grouped Motor Control Functions
     """
 
+    def general_spinbox_changed(self):
+        if self._widget.general_assign_checkbox.isChecked():
+            motor_speed = self.get_general_motor_val()
+            for motor_id, ui_widget in self.motor_widgets.items():
+                ui_widget.setValue(motor_speed)
+        else:
+            return
+
+    def general_slider_changed(self):
+        sliderValue = int(self._widget.general_speed_slider.value())
+        self._widget.general_speed_spinbox.setValue(sliderValue)
+        #print("Slider value is: %s" % sliderValue)
     """
      Sending messages
     """
@@ -267,46 +355,19 @@ class MyPlugin(Plugin):
     def _on_parameter_changed(self):
         for motor_id, ui_widget in self.motor_widgets.items():
             # If widget is spinbox,
-            val = ui_widget.value()
+            val = int(ui_widget.value())
             resp = self._send_motor_command(motor_id, val)
             print("on motor: %s" % motor_id + ", value: %s" % val + "sending result: %s" % resp)
-
-
-    def _connect_to_topics(self):
-        self._unregister_publisher()
-        print("trying topic: " + motorCommandTopic)
-        alltopics = rosservice.get_service_list()
-        print("Services Reported As Published")
-        for t in alltopics :
-            print(t)
-
-        try:
-            rospy.wait_for_service(motorCommandTopic, timeout=3)
-        except (rospy.ServiceException, rospy.ROSException), e:
-            print("ERROR: Timed out while waiting for service: %s" % motorCommandTopic)
-            self._set_status_text("SERVICE TIMEOUT ERROR")
-            return
-        try:
-            self._service_proxy = rospy.ServiceProxy(motorCommandTopic, motorCommand, persistent=True)
-            self._set_status_text("SERVICES CONNECTED")
-        except TypeError:
-            # TODO: Uhhh, what do we do if this breaks
-            print("Error while connecting to topic: %s" % motorCommandTopic)
-            self._set_status_text("TOPIC CONNECTION ERROR")
-            #self._service_proxy = rospy.ServiceProxy()
 
     """
     Sends a single commanded value (0-100) to a specified motor id
     """
     def _send_motor_command(self, motor_id, val):
-        if self._service_proxy is None:
-            return
         try:
-            resp = self._service_proxy(motor_id, val)
-            return resp.success
-        except rospy.ServiceException as exc:
-            print("motor command service didn't process request: " + str(exc))
-            return False
+            robotInterface.sendMotorCommand(motor_id, val)
+            print("Sent motor command for motor: %s" % motor_id + " with value: %s" % val)
+        except Exception as exc:
+            print("There was a problem sending the motor command: " + str(exc))
 
     def _set_status_text(self, text):
         self._widget.status_label.setText(text)
@@ -330,22 +391,3 @@ class MyPlugin(Plugin):
         # Comment in to signal that the plugin has a way to configure
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
-"""
-class ros_robot_interface():
-
-    def __init__(self, motor_command, sensor_value):
-        node_name = 'robotInterface'
-        motorCommandTopic = 'motorCommand'
-        sensorValueTopic = 'sensorValue'
-
-        motorCommand = motor_command
-        sensorValue = sensor_value
-
-        #rospy.init_node(node_name,disable_signals=True)
-
-        rospy.wait_for_service(motorCommandTopic)
-        motorCommandPub = rospy.ServiceProxy(motorCommandTopic, motorCommand, persistent=True)
-
-        rospy.Subscriber(sensorValueTopic,sensorValue,sensorValueCallback)
-
-"""

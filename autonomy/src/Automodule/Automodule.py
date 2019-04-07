@@ -5,7 +5,7 @@ import math
 from std_msgs.msg import String
 from PathPlanning.PathPlanning import Position #import specific functions later
 from DriveControl.DriveControl import DriveModule, ObstacleAlert
-import MotorCommand as mc
+import DriveControl.MotorCommand as mc
 
 """ 
 Main Module for Autonomy operation
@@ -173,7 +173,10 @@ def modifyTimes(timeLeft):
 	pass
 
 def shutdownRoutine():
-	pass
+	mc.drive_right_motor(0)
+	mc.drive_left_motor(0)
+	mc.deposition_motor(0)
+	mc.bucket_drive_motor(0)
 
 def main():
 	rospy.init_node("automodule")
