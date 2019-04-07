@@ -12,6 +12,7 @@ def send_obstacle_data(obs):
     try:
         pub = rospy.Publisher(topic, Obstacle, queue_size=10)
         msg = Obstacle()
+        msg.obsID = obs.id
         msg.x = obs.x
         msg.y = obs.y
         msg.z = obs.z

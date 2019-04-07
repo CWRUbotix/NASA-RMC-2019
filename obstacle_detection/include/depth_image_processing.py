@@ -76,7 +76,7 @@ def depthToPointCloudPos(x_d, y_d, z, scale=1000):
     return x / scale, y / scale, z / scale
 
 
-def applyCameraOrientation(pt):
+def applyCameraOrientation(pt, CameraPosition):
     # Kinect Sensor Orientation Compensation
     # This runs slowly in Python as it is required to be called within a loop, but it is a more intuitive example than it's vertorized alternative (Purly for example)
     # use trig to rotate a vertex around a gimbal.
@@ -100,7 +100,21 @@ def applyCameraOrientation(pt):
     return pt
 
 
-def applyCameraMatrixOrientation(pt):
+def create_circular_mask(h, w, center=None, radius=None):
+
+    if center is None: # use the middle of the image
+        center = [int(w/2), int(h/2)]
+    if radius is None: # use the smallest distance between the center and image walls
+        radius = min(center[0], center[1], w-center[0], h-center[1])
+
+    Y, X = np.ogrid[:h, :w]
+    dist_from_center = np.sqrt((X - center[0])**2 + (Y-center[1])**2)
+
+    mask = dist_from_center <= radius
+    return mask
+
+
+def applyCameraMatrixOrientation(pt, CameraPosition):
     # Kinect Sensor Orientation Compensation
     # bacically this is a vectorized version of applyCameraOrientation()
     # uses same trig to rotate a vertex around a gimbal.
@@ -154,20 +168,24 @@ def get_orientation(xyz_arr, num_points, n_iter):
     norms, and pitch degrees.
     """
     pitch = []
+    azimuth = []
     planes = []
     centers = []
     for _ in range(0, n_iter):
-        rand_points = []
+        indices = np.random.choice(np.arange(0, len(xyz_arr)), size=len(xyz_arr), replace=False)
+        rand_points = xyz_arr[random.randrange(0, len(xyz_arr))]
+        i = 0
         while len(rand_points) < num_points:
-            index = random.randrange(0,len(xyz_arr))
-            if not xyz_arr[index].all() == np.zeros(3).all():
-                rand_points.append(xyz_arr[index])
+            if not xyz_arr[indices[i]].all() == 0:
+                rand_points = np.vstack((rand_points, xyz_arr[indices[i]]))
+            i += 1
         rand_points = np.array(rand_points).T
         ctr, P = plane_fit(rand_points)
         r = math.sqrt(P[0]**2 + P[1]**2 + P[2]**2)
         theta = math.acos(P[2]/r) * 180 / math.pi
-        phi = math.atan(P[1]/P[0]) * 180 / math.pi
-        pitch.append(theta)
+        phi = math.atan2(P[1], P[0]) * 180 / math.pi
+        pitch.append(phi)
+        azimuth.append(theta)
         planes.append(P)
         centers.append(ctr)
-    return np.mean(centers, axis = 0), np.mean(planes, axis = 0), np.mean(pitch)
+    return np.mean(centers, axis=0), np.mean(planes, axis=0), np.mean(pitch), np.mean(azimuth)
