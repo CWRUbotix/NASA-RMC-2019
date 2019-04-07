@@ -6,13 +6,15 @@ from geometry_msgs.msg import Pose2D
 from hci.msg import motorCommand
 
 wait = True
+locPub = rospy.Publisher('localization_data', Pose2D, queue_size=10)
 
 def sendFalseLocData(x, y, theta):
-    pub = rospy.Publisher('localization_data', Pose2D, queue_size=10)
-    pub.publish(x=x, y=y, theta=theta)
+    global locPub
+    locPub.publish(x=x, y=y, theta=theta)
     print 'sent'
 
 def confirmMotorMsg(msg):
+    print 'got motor command'
     global wait
     wait = False
 
@@ -25,9 +27,11 @@ def main():
     sendFalseLocData(0, 0, 0)
     rospy.Subscriber('motorCommand', motorCommand, confirmMotorMsg)
     while x < 1.5:
+        print 'wating motorcommand'
         while wait:
-            rospy.sleep(0.003)
-        x+=increment
+            rospy.sleep(0.01)
+        print 'motorcommand received'
+        x += increment
         sendFalseLocData(x, 0, 0)
         wait = True
     rospy.spin()

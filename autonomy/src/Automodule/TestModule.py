@@ -8,7 +8,7 @@ import PathPlanning.PathPlanning as pp
 import DriveControl.MotorCommand as mc
 
 from geometry_msgs.msg import Pose2D
-from hci.msg import sensorValue
+from hci.msg import sensorValue, motorCommand
 from obstacle_detection.msg import Obstacle
 
 
@@ -124,6 +124,7 @@ class Robot_state:
 #Current position of the robot
 currentState = Robot_state()
 logfile = None
+motor_pub = rospy.Publisher('motorCommand', motorCommand, queue_size=100)
 ROBOT_SPEED = 0.0
 
 def logData(drive, direction, value):
@@ -143,7 +144,7 @@ def logData(drive, direction, value):
     logfile.write(log + '\n')
 
 def conservative_drive(dest, forward):
-    global logfile
+    global motor_pub
     done = False
     initPos = currentState.getCurrentPos()
     while not done:
@@ -162,18 +163,20 @@ def conservative_drive(dest, forward):
                 speed = 0.5 * speed
 
             if forward:
-                mc.drive_left_motor(speed)
-                mc.drive_right_motor(speed)
+                mc.drive_left_motor(motor_pub, speed)
+                mc.drive_right_motor(motor_pub, speed)
                 logData(True, True, speed)
             else:
-                mc.drive_left_motor(-speed)
-                mc.drive_right_motor(-speed)
+                mc.drive_left_motor(motor_pub, -speed)
+                mc.drive_right_motor(motor_pub, -speed)
                 logData(True, False, speed)
+            print 'sent motorCommand'
         rospy.sleep(0.005)
-    mc.drive_right_motor(0)
-    mc.drive_left_motor(0)
+    mc.drive_right_motor(motor_pub, 0)
+    mc.drive_left_motor(motor_pub, 0)
 
 def conservative_turn(dest, clockwise):
+    global motor_pub
     done = False
     while not done:
         print 'current angle in degrees: ' + str((currentState.getCurrentPos().getOrientation())/math.pi*180)
@@ -188,16 +191,16 @@ def conservative_turn(dest, clockwise):
             if currentState.getCurrentPos().angleToFace(dest) < math.pi / 180 * 25:
                 speed = 0.5 * speed
             if clockwise:
-                mc.drive_left_motor(speed)
-                mc.drive_right_motor(-speed)
+                mc.drive_left_motor(motor_pub, speed)
+                mc.drive_right_motor(motor_pub, -speed)
                 logData(False, False, speed)
             else:
-                mc.drive_left_motor(-speed)
-                mc.drive_right_motor(speed)
+                mc.drive_left_motor(motor_pub, -speed)
+                mc.drive_right_motor(motor_pub, speed)
                 logData(False, True, speed)
         rospy.sleep(0.005)
-    mc.drive_right_motor(0)
-    mc.drive_left_motor(0)
+    mc.drive_right_motor(motor_pub, 0)
+    mc.drive_left_motor(motor_pub, 0)
 
 def simple_drive_test1():
     print 'This test routine attempts to drive 1.5 meter straight from is current position'
@@ -379,9 +382,9 @@ def subscribe():
     rospy.Subscriber('Obstacle', Obstacle, updateObstacle)
 
 def testShutdown():
-    global logfile
-    mc.drive_left_motor(0)
-    mc.drive_right_motor(0)
+    global logfile, motor_pub
+    mc.drive_left_motor(motor_pub, 0)
+    mc.drive_right_motor(motor_pub, 0)
     logfile.close()
 
 def main():

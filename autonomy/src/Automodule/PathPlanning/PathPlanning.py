@@ -27,7 +27,7 @@ class Position:
         self.Orientation = o
 
     def __str__(self):
-        return "x: " + self.X_pos + " y: " + self.Y_pos + " angle: " + self.Orientation + " radians."
+        return "x: " + str(self.X_pos) + " y: " + str(self.Y_pos) + " angle: " + str(self.Orientation) + " radians."
 
     def __eq__(self, p):
         if self.distanceTo(p) < Error_bound:
@@ -35,12 +35,12 @@ class Position:
         return False
 
     def distanceTo(self, p):
-        x = abs(p.getX_pos - self.X_pos)
-        y = abs(p.getY_pos - self.Y_pos)
+        x = abs(p.getX_pos() - self.X_pos)
+        y = abs(p.getY_pos() - self.Y_pos)
         return (x ** 2 + y ** 2) ** .5
 
     def angleToFace(self, p):
-        return p.getOrientation - self.Orientation
+        return p.getOrientation() - self.Orientation
 
 class Grid:
 
