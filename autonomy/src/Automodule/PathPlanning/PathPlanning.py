@@ -172,5 +172,3 @@ class Vertex:
 
     def getPosition(self):
         return self.position
-
-

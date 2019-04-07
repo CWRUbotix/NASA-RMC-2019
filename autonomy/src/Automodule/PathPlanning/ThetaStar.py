@@ -7,6 +7,7 @@ from PathPlanning import Grid, Path
 open = deque()
 closed = deque()
 
+
 def aStar(start, end):
     openList = [start]
     start.setStartDistance(0)

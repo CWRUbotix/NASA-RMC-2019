@@ -1,13 +1,17 @@
 #!/usr/bin/env python 
 import rospy
-from hci.srv import motorCommand
+
+#from client.srv import motorCommand
+#from client.msg import sensorValue
 from hci.msg import sensorValue
+from hci.srv import motorCommand
+
 
 node_name = 'robotInterface'
 motorCommandTopic = 'motorCommand'
 sensorValueTopic = 'sensorValue'
 
-motorCommandPub
+motorCommandPub = None
 
 sensorValueMap = {
 	(0,0),
@@ -47,6 +51,8 @@ sensorValueMap = {
 
 
 def sendMotorCommand(motorID, value):
+	if motorCommandPub is None:
+		return
 	try:
 		resp = motorCommandPub(motorID,value)
 	except rospy.ServiceException as exc:
@@ -61,7 +67,7 @@ def getSensorValue(sensorID):
 	return sensorValueMap(sensorID);
 
 def initializeRobotInterface():
-	rospy.init_node(node_name,disable_signals=True)
+	#rospy.init_node(node_name,disable_signals=True)
 
 	rospy.wait_for_service(motorCommandTopic)
 	motorCommandPub = rospy.ServiceProxy(motorCommandTopic, motorCommand, persistent=True)

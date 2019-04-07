@@ -9,7 +9,7 @@ project(hci)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  #serial
+  serial
   std_msgs
   message_generation
 )
@@ -51,15 +51,14 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
 	FILES
 	sensorValue.msg
-#   Message2.msg
+	motorCommand.msg
 )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-	FILES
-	motorCommand.srv
-#   Service2.srv
-)
+#add_service_files(
+#	FILES
+#	motorCommand.srv
+#)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -117,7 +116,7 @@ CATKIN_DEPENDS roscpp std_msgs message_runtime
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
