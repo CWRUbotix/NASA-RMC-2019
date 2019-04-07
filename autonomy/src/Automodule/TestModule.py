@@ -170,6 +170,8 @@ def conservative_drive(dest, forward):
                 mc.drive_right_motor(-speed)
                 logData(True, False, speed)
         rospy.sleep(0.005)
+    mc.drive_right_motor(0)
+    mc.drive_left_motor(0)
 
 def conservative_turn(dest, clockwise):
     done = False
@@ -194,6 +196,8 @@ def conservative_turn(dest, clockwise):
                 mc.drive_right_motor(speed)
                 logData(False, True, speed)
         rospy.sleep(0.005)
+    mc.drive_right_motor(0)
+    mc.drive_left_motor(0)
 
 def simple_drive_test1():
     print 'This test routine attempts to drive 1.5 meter straight from is current position'
@@ -324,6 +328,7 @@ def deposition_align_test():
     exit(0)
 
 def waitForLocalization():
+    print 'waiting localization data'
     while currentState.getCurrentPos() is None:
         rospy.sleep(0.01)
 
@@ -363,13 +368,14 @@ def updateObstacle(msg):
     currentState.addObstcle(obs)
 
 def updatePos(msg):
+    print "loc data received"
     global currentState
     pos = pp.Position(msg.x, msg.y, msg.theta)
     currentState.setCurrentPos(pos)
 
 def subscribe():
     rospy.Subscriber('sensorValue', sensorValue, updateState)
-    rospy.Subscriber('Localization', Pose2D, updatePos)
+    rospy.Subscriber('localization_data', Pose2D, updatePos)
     rospy.Subscriber('Obstacle', Obstacle, updateObstacle)
 
 def testShutdown():
@@ -379,7 +385,6 @@ def testShutdown():
     logfile.close()
 
 def main():
-    print sys.path[2]
     print "setting up logging"
     global logfile
     logfile = open(str(sys.path[1]) + '/logs/' +time.strftime("%b-%a-%d-%H-%M-%S.txt"), "w")
