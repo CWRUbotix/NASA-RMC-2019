@@ -67,7 +67,8 @@ phis = np.array([])
 obstacle_list = []
 obstacle_id = 0
 
-visualize = False
+visualize = True
+save_frames = True
 
 while True:
     frames = listener.waitForNewFrame()
@@ -84,7 +85,8 @@ while True:
                                       phis,
                                       obstacle_id,
                                       send_data=True,
-                                      visualize=visualize)
+                                      visualize=visualize,
+                                      save_frames=save_frames)
     
     if visualize:
         key = cv2.waitKey(delay=1)
