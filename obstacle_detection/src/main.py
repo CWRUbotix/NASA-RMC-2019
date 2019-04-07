@@ -6,10 +6,6 @@ import cv2
 import time
 import math
 import pandas as pd
-from pyqtgraph import mkQApp, GraphicsWindow
-from pyqtgraph.Qt import QtCore, QtGui
-from pyqtgraph import Vector
-import pyqtgraph.opengl as gl
 from obstacle_detection import get_obstacles_with_plane
 from depth_image_processing import *
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
