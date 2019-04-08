@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
-from obstacle_detection.include.depth_image_processing import depthMatrixToPointCloudPos, get_orientation, applyCameraOrientation, applyCameraMatrixOrientation, CameraPosition, depthToPointCloudPos, CameraParams
+from obstacle_detection.include.depth_image_processing import depth_matrix_to_point_cloud, get_orientation, apply_camera_orientation, apply_camera_matrix_orientation, CameraPosition, depth_to_point_cloud_pos, CameraParams
 
 depth_frame = np.load('src/test_frame.npy')
 depth_frame = np.flip(depth_frame, 1)
@@ -23,14 +23,14 @@ plt.show()
 
 img = np.uint8(depth_frame) #some opencv functions require a byte image
 
-xyz_arr = depthMatrixToPointCloudPos(depth_frame) #convert depth data to XYZ coordinates
+xyz_arr = depth_matrix_to_point_cloud(depth_frame) #convert depth data to XYZ coordinates
 print(xyz_arr.shape)
 center, plane, theta = get_orientation(xyz_arr, xyz_arr.shape[0] // 32, 1)
 print(center, plane, theta)
 CameraPosition['elevation'] = -theta
-center = applyCameraOrientation(center, CameraPosition)
-plane = applyCameraOrientation(plane, CameraPosition)
-xyz_arr = applyCameraMatrixOrientation(xyz_arr, CameraPosition)
+center = apply_camera_orientation(center, CameraPosition)
+plane = apply_camera_orientation(plane, CameraPosition)
+xyz_arr = apply_camera_matrix_orientation(xyz_arr, CameraPosition)
 
 plane_img = np.zeros(len(xyz_arr))
 plane_img[xyz_arr[:,2] > 0.1 - center[2]] = 1
@@ -100,7 +100,7 @@ for cntr in contours:
             cy = int(moment['m01']/moment['m00'])
 
             if mean_val < HIGH_DISTANCE_BOUND: #kinect loses accuracy beyond 4.5m
-                coords = depthToPointCloudPos(cx, cy, mean_val) #convert obstacle depth to XYZ coordinate
+                coords = depth_to_point_cloud_pos(cx, cy, mean_val) #convert obstacle depth to XYZ coordinate
 
                 mm_diameter = (equi_diameter) * (1.0 / CameraParams['fx']) * mean_val #convert pixel diameter to mm
                 fig, ax = plt.subplots()
