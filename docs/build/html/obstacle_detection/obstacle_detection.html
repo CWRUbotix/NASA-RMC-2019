@@ -1,0 +1,375 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Detection &mdash; CWRUbotix NASA-RMC  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Data Publishing" href="ros_publish.html" />
+    <link rel="prev" title="Depth Frame Processing" href="depth_image_processing.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> CWRUbotix NASA-RMC
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../obstacle_detection_node.html">Obstacle Detection</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="depth_image_processing.html">Depth Frame Processing</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ros_publish.html">Data Publishing</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CWRUbotix NASA-RMC</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../obstacle_detection_node.html">Obstacle Detection</a> &raquo;</li>
+        
+      <li>Detection</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/obstacle_detection/obstacle_detection.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-obstacle_detection.include.obstacle_detection">
+<span id="detection"></span><h1>Detection<a class="headerlink" href="#module-obstacle_detection.include.obstacle_detection" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="obstacle_detection.include.obstacle_detection.get_dimensions_from_contour">
+<code class="descclassname">obstacle_detection.include.obstacle_detection.</code><code class="descname">get_dimensions_from_contour</code><span class="sig-paren">(</span><em>img</em>, <em>cntr</em>, <em>kernel</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/obstacle_detection.html#get_dimensions_from_contour"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.obstacle_detection.get_dimensions_from_contour" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimated obstacle dimensions from a contour</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>img</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.uint8</span></code>) – image representaion of depth frame</p></li>
+<li><p><strong>cntr</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">cv2.OutputArrayOfArrays</span></code>) – OpenCV contour object</p></li>
+<li><p><strong>kernel</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.uint8</span></code>) – kernel to use for mask erosion</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Mask for obstacle image, bounding box of obstacle, x coordinate of bottom left corner of bounding box,
+y coording of bottom left corner of bounding box, length of bounding box, and height of bounding box</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mask</span><span class="p">,</span> <span class="n">box</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">obj_length</span><span class="p">,</span> <span class="n">obj_height</span> <span class="o">=</span> <span class="n">get_dimensions_from_contour</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">cntr</span><span class="p">,</span> <span class="n">kernel</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.obstacle_detection.get_ground_plane_roi">
+<code class="descclassname">obstacle_detection.include.obstacle_detection.</code><code class="descname">get_ground_plane_roi</code><span class="sig-paren">(</span><em>depth_frame</em>, <em>depth_cutoff</em>, <em>y_cutoff</em>, <em>roi_x</em>, <em>roi_y</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/obstacle_detection.html#get_ground_plane_roi"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.obstacle_detection.get_ground_plane_roi" title="Permalink to this definition">¶</a></dt>
+<dd><p>Crops the depth frame and applies a circular mask to define the region of interest for ground plane estimation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>depth_frame</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.float32</span></code>) – [424, 512] depth frame</p></li>
+<li><p><strong>depth_cutoff</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>) – furthest depth to keep, Kinect loses accuracy beyond 4.5m</p></li>
+<li><p><strong>y_cutoff</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – minimum height to keep, everything else set to zero</p></li>
+<li><p><strong>roi_x</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – x coordinate of center of circular mask</p></li>
+<li><p><strong>roi_y</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – y coordinate of center of circular mask</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Cropped depth frame with only region of interest (preferably a rough estimate of the ground plane)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.obstacle_detection.get_obstacles_with_plane">
+<code class="descclassname">obstacle_detection.include.obstacle_detection.</code><code class="descname">get_obstacles_with_plane</code><span class="sig-paren">(</span><em>depth_frame</em>, <em>color_frame</em>, <em>obstacle_list</em>, <em>thetas</em>, <em>phis</em>, <em>obstacle_id</em>, <em>num_planes=1</em>, <em>dist_thresh=0.2</em>, <em>memory=200</em>, <em>obstacle_lifetime=5</em>, <em>depth_cutoff=4500.0</em>, <em>y_cutoff=212</em>, <em>roi_x=256</em>, <em>roi_y=320</em>, <em>send_data=False</em>, <em>visualize=False</em>, <em>save_frames=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/obstacle_detection.html#get_obstacles_with_plane"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.obstacle_detection.get_obstacles_with_plane" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main obstacle detection function.  Performs full cycle of algorithm on a single depth frame, updates the obstacle
+list, and optionally visualizes the detected obstacles in real-time, publishes the obstacle data to the <code class="docutils literal notranslate"><span class="pre">obstacleDetection</span></code>
+topic, or save the visualizations for viewing (generally used when running the algorithm on the robot during testing)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>depth_frame</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.float32</span></code>) – [424, 512] depth frame of meter values</p></li>
+<li><p><strong>color_frame</strong> – (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.uint8</span></code>) : [424, 512] RGB image representation of Kinect color data overlayed on the depth frame</p></li>
+<li><p><strong>obstacle_list</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code> of <code class="xref py py-obj docutils literal notranslate"><span class="pre">Obstacle</span></code>) – list of currently detected obstacles in memory</p></li>
+<li><p><strong>thetas</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code> of <code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>) – list of Kinect elevation values currently in memory</p></li>
+<li><p><strong>phis</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code> of <code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>) – list of Kinect azimuth values currently in memory</p></li>
+<li><p><strong>obstacle_id</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – current maximum obstacle ID reached, ensures unique IDs</p></li>
+<li><p><strong>num_planes</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – number of ground plane estimates to average over</p></li>
+<li><p><strong>dist_thresh</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>) – maximum distance from the ground plane in meters</p></li>
+<li><p><strong>memory</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – memory: number of orientations to hold in memory at a time</p></li>
+<li><p><strong>obstacle_lifetime</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – default lifetime for newly detected obstacles</p></li>
+<li><p><strong>depth_cutoff</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>) – furthest depth to keep, Kinect loses accuracy beyond 4.5m</p></li>
+<li><p><strong>y_cutoff</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – minimum height to keep, everything else set to zero</p></li>
+<li><p><strong>roi_x</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – x coordinate of center of circular mask</p></li>
+<li><p><strong>roi_y</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – y coordinate of center of circular mask</p></li>
+<li><p><strong>send_data</strong> (<cite>bool</cite>) – boolean value specifying if detected obstacles should be published to the <code class="docutils literal notranslate"><span class="pre">obstacleDetection</span></code> topic</p></li>
+<li><p><strong>visualize</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>) – boolean value specifying if obstacle detection should be visualized by displaying the result</p></li>
+<li><p><strong>drawing the bounding box and measured values on each obstacle</strong> (<em>of</em>) – </p></li>
+<li><p><strong>save_frames</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">bool</span></code>) – boolean value specifying if detected obstacle visualizations should be saved to the disk</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>[424, 512] Numpy array showing the locations of all detected obstacles (used for validation with labeled data)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.obstacle_detection.orient_point_cloud_to_ground_plane">
+<code class="descclassname">obstacle_detection.include.obstacle_detection.</code><code class="descname">orient_point_cloud_to_ground_plane</code><span class="sig-paren">(</span><em>xyz_arr</em>, <em>roi_point_cloud</em>, <em>thetas</em>, <em>phis</em>, <em>num_points</em>, <em>num_planes</em>, <em>memory</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/obstacle_detection.html#orient_point_cloud_to_ground_plane"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.obstacle_detection.orient_point_cloud_to_ground_plane" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the estimated ground plane and orients the point cloud coordinate system to have that plane be the XZ plane</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xyz_arr</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.float32</span></code>) – 3D point cloud of the entire depth frame represented as an [N, 3] Numpy array</p></li>
+<li><p><strong>roi_point_cloud</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.float32</span></code>) – 3D point cloud of cropped ROI represented as an [N, 3] Numpy array which is used to estimate the ground plane</p></li>
+<li><p><strong>thetas</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code> of <cite>float</cite>) – list of Kinect elevation values currently in memory</p></li>
+<li><p><strong>phis</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code> of <cite>float</cite>) – list of Kinect azimuth values currently in memory</p></li>
+<li><p><strong>num_points</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – number of points to consider in estimating each ground plane</p></li>
+<li><p><strong>num_planes</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – number of ground plane estimates to average over</p></li>
+<li><p><strong>memory</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – number of orientations to hold in memory at a time</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Re-oriented point cloud, ROI point cloud, and center of the ground plane estimate</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">xyz_arr</span><span class="p">,</span> <span class="n">roi_point_cloud</span><span class="p">,</span> <span class="n">center</span> <span class="o">=</span> <span class="n">orient_point_cloud_to_ground_plane</span><span class="p">(</span><span class="n">xyz_arr</span><span class="p">,</span> <span class="n">roi_point_cloud</span><span class="p">,</span> <span class="n">thetas</span><span class="p">,</span> <span class="n">phis</span><span class="p">,</span> <span class="n">num_points</span><span class="p">,</span> <span class="n">num_planes</span><span class="p">,</span> <span class="n">memory</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.obstacle_detection.process_obstacle">
+<code class="descclassname">obstacle_detection.include.obstacle_detection.</code><code class="descname">process_obstacle</code><span class="sig-paren">(</span><em>color</em>, <em>cx</em>, <em>cy</em>, <em>box</em>, <em>x</em>, <em>y</em>, <em>obj_length</em>, <em>obj_height</em>, <em>obj_depth</em>, <em>equi_diameter</em>, <em>obstacle_list</em>, <em>obstacle_lifetime</em>, <em>obstacle_id</em>, <em>visualize</em>, <em>send_data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/obstacle_detection.html#process_obstacle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.obstacle_detection.process_obstacle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Consider each possible obstacle and decide if it meets the criteria for detection and data publishing.
+Optionally displays visualizations of the algorithm in real-time and publishes obstacle data using ROS.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>color</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.uint8</span></code>) – <code class="docutils literal notranslate"><span class="pre">uint8</span></code> RGB image representation of depth frame used to visualize detected obstacles</p></li>
+<li><p><strong>cx</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – estimated x coordinate of the center of obstacle in depth frame</p></li>
+<li><p><strong>cy</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – estimated y coordinate of the center of obstacle in depth frame</p></li>
+<li><p><strong>box</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">cv2.RotatedRect</span></code>) – bounding box of obstacle</p></li>
+<li><p><strong>x</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – x coordinate of bottom left corner of bounding box</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – y coordinate of bottom left corner of bounding box</p></li>
+<li><p><strong>obj_length</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – length of bounding box in pixels</p></li>
+<li><p><strong>obj_height</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – height of bounding box in pixels</p></li>
+<li><p><strong>obj_depth</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>) – estimated depth (z coordinate) of bounding box area in original depth frame in millimeters</p></li>
+<li><p><strong>equi_diameter</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – estimated obstacle diameter in pixels</p></li>
+<li><p><strong>obstacle_list</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code> of <code class="xref py py-obj docutils literal notranslate"><span class="pre">Obstacle</span></code>) – list of currently detected obstacles in memory</p></li>
+<li><p><strong>obstacle_lifetime</strong> (<cite>int</cite>) – default lifetime for newly detected obstacles</p></li>
+<li><p><strong>obstacle_id</strong> (<cite>int</cite>) – current maximum obstacle ID reached, ensures unique IDs</p></li>
+<li><p><strong>visualize</strong> (<cite>bool</cite>) – boolean value specifying if obstacle detection should be visualized by displaying the result</p></li>
+<li><p><strong>drawing the bounding box and measured values on each obstacle</strong> (<em>of</em>) – </p></li>
+<li><p><strong>send_data</strong> (<cite>bool</cite>) – boolean value specifying if detected obstacles should be published to the <code class="docutils literal notranslate"><span class="pre">obstacleDetection</span></code> topic</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.obstacle_detection.project_plane_to_2d">
+<code class="descclassname">obstacle_detection.include.obstacle_detection.</code><code class="descname">project_plane_to_2d</code><span class="sig-paren">(</span><em>xyz_arr</em>, <em>img</em>, <em>center</em>, <em>dist_thresh</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/obstacle_detection.html#project_plane_to_2d"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.obstacle_detection.project_plane_to_2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes all points above some threshold of the estimated ground plane and projects the remaining points back to 2D</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xyz_arr</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.float32</span></code>) – 3D point cloud represented as an [N, 3] Numpy array</p></li>
+<li><p><strong>img</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.uint8</span></code>) – image representaion of depth frame</p></li>
+<li><p><strong>center</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.float32</span></code>) – XYZ coordinate of center of ground plane</p></li>
+<li><p><strong>dist_thresh</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>) – maximum distance from the ground plane in meters</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Image representation of depth frame containing only the potential obstacle points</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.obstacle_detection.remove_dead_obstacles">
+<code class="descclassname">obstacle_detection.include.obstacle_detection.</code><code class="descname">remove_dead_obstacles</code><span class="sig-paren">(</span><em>obstacle_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/obstacle_detection.html#remove_dead_obstacles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.obstacle_detection.remove_dead_obstacles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks the lifetimes of all obstacles currently in memory to see if any have died.  If any obstacles have reached
+a lifetime of zero (meaning they have been absent from <code class="docutils literal notranslate"><span class="pre">obstacle_lifetime</span></code> frames) they are removed from the
+obstacle list</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obstacle_list</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">list</span></code> of <code class="xref py py-obj docutils literal notranslate"><span class="pre">Obstacle</span></code>) – list of currently detected obstacles in memory</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="ros_publish.html" class="btn btn-neutral float-right" title="Data Publishing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="depth_image_processing.html" class="btn btn-neutral float-left" title="Depth Frame Processing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, CWRUbotix
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

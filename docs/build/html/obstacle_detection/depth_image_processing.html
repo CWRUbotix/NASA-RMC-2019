@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Depth Frame Processing &mdash; CWRUbotix NASA-RMC  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Detection" href="obstacle_detection.html" />
+    <link rel="prev" title="Obstacle Detection" href="../obstacle_detection_node.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> CWRUbotix NASA-RMC
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../obstacle_detection_node.html">Obstacle Detection</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Depth Frame Processing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#attributes">Attributes:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#functions">Functions:</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="obstacle_detection.html">Detection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ros_publish.html">Data Publishing</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CWRUbotix NASA-RMC</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../obstacle_detection_node.html">Obstacle Detection</a> &raquo;</li>
+        
+      <li>Depth Frame Processing</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/obstacle_detection/depth_image_processing.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-obstacle_detection.include.depth_image_processing">
+<span id="depth-frame-processing"></span><h1>Depth Frame Processing<a class="headerlink" href="#module-obstacle_detection.include.depth_image_processing" title="Permalink to this headline">¶</a></h1>
+<p>This module contains functions which process the depth data from a Kinect v2 sensor and prepares the data for obstacle detection</p>
+<div class="section" id="attributes">
+<h2>Attributes:<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h2>
+<dl class="attribute">
+<dt id="obstacle_detection.include.depth_image_processing.CameraParams">
+<code class="descclassname">obstacle_detection.include.depth_image_processing.</code><code class="descname">CameraParams</code><a class="headerlink" href="#obstacle_detection.include.depth_image_processing.CameraParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parameters of Kinect v2 sensor used for conversion between depth values and cartesian coordinates:</p>
+<table class="docutils align-center">
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 16%" />
+<col style="width: 15%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>cx</p></th>
+<th class="head"><p>cy</p></th>
+<th class="head"><p>fx</p></th>
+<th class="head"><p>fy</p></th>
+<th class="head"><p>k1</p></th>
+<th class="head"><p>k2</p></th>
+<th class="head"><p>k3</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>254.878</p></td>
+<td><p>205.395</p></td>
+<td><p>365.456</p></td>
+<td><p>365.456</p></td>
+<td><p>0.0905474</p></td>
+<td><p>-0.26819</p></td>
+<td><p>0.0950862</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="obstacle_detection.include.depth_image_processing.CameraPosition">
+<code class="descclassname">obstacle_detection.include.depth_image_processing.</code><code class="descname">CameraPosition</code><a class="headerlink" href="#obstacle_detection.include.depth_image_processing.CameraPosition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parameters describing the 3D position and orientation of the Kinect. Used for properly orienting the point cloud.
+Initially all values are 0, but are updated as the obstacle detection node estumates the ground plane</p>
+</dd></dl>
+
+</div>
+<div class="section" id="functions">
+<h2>Functions:<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="obstacle_detection.include.depth_image_processing.apply_camera_matrix_orientation">
+<code class="descclassname">obstacle_detection.include.depth_image_processing.</code><code class="descname">apply_camera_matrix_orientation</code><span class="sig-paren">(</span><em>pt</em>, <em>CameraPosition</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/depth_image_processing.html#apply_camera_matrix_orientation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.depth_image_processing.apply_camera_matrix_orientation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms the entire 3D point cloud according to the position of the Kinect.  Basically an efficient vectorized version of <code class="docutils literal notranslate"><span class="pre">apply_camera_orientation</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pt</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.float32</span></code>) – 3D point cloud represented by an [N, 3] Numpy array</p></li>
+<li><p><strong>CameraPosition</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code>) – the current position and orientation of the Kinect sensor.  Either hardcoded in the <code class="docutils literal notranslate"><span class="pre">CameraPosition</span></code> dictionary, or computed from the best-fit ground plane</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Updated point cloud represented as an [N, 3] numpy array in correct orientation to the Kinect</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.depth_image_processing.apply_camera_orientation">
+<code class="descclassname">obstacle_detection.include.depth_image_processing.</code><code class="descname">apply_camera_orientation</code><span class="sig-paren">(</span><em>pt</em>, <em>CameraPosition={'azimuth': 0</em>, <em>'elevation': -30</em>, <em>'roll': 0</em>, <em>'x': 0</em>, <em>'y': 0</em>, <em>'z': 0}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/depth_image_processing.html#apply_camera_orientation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.depth_image_processing.apply_camera_orientation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms a single XYZ coordinate according to the position of the Kinect</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pt</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.float32</span></code>) – an XYZ coordinate of a point in the point cloud</p></li>
+<li><p><strong>CameraPosition</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">dict</span></code>) – the current position and orientation of the Kinect sensor.  Either hardcoded in the <code class="docutils literal notranslate"><span class="pre">CameraPosition</span></code> dictionary, or computed from the best-fit ground plane</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>An updated XYZ coordinate where the input point has been transformed to correspond with the current camera position and orientation</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.depth_image_processing.create_circular_mask">
+<code class="descclassname">obstacle_detection.include.depth_image_processing.</code><code class="descname">create_circular_mask</code><span class="sig-paren">(</span><em>h</em>, <em>w</em>, <em>center=None</em>, <em>radius=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/depth_image_processing.html#create_circular_mask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.depth_image_processing.create_circular_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a circular mask for defining the ROI for plane fitting</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>h</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – height of frame (depth frame is 424)</p></li>
+<li><p><strong>w</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – width of frame (depth frame is 512)</p></li>
+<li><p><strong>center</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – (x, y) coordinates of the center of the circle.  If no value is given, center is assumed to be the center of the frame</p></li>
+<li><p><strong>radius</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – radius of the circle in pixels</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A [h, w] boolean Numpy array defining the circular mask</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.depth_image_processing.depth_matrix_to_point_cloud">
+<code class="descclassname">obstacle_detection.include.depth_image_processing.</code><code class="descname">depth_matrix_to_point_cloud</code><span class="sig-paren">(</span><em>z</em>, <em>scale=1000</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/depth_image_processing.html#depth_matrix_to_point_cloud"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.depth_image_processing.depth_matrix_to_point_cloud" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms an entire depth frame into a 3D point cloud using the Kinect parameters defined in <code class="docutils literal notranslate"><span class="pre">CameraParams</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.float32</span></code>) – A depth frame, generally of millimeter values</p></li>
+<li><p><strong>scale</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – the conversion scale to use.  If the depth frame has millimeter units, then by default they will be converted to meters</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A point cloud represented as an [N, 3] Numpy array where each entry on axis 0 represent an XYZ coordinate</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">xyz_arr</span> <span class="o">=</span> <span class="n">depth_matrix_to_point_cloud</span><span class="p">(</span><span class="n">depth_frame</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.depth_image_processing.depth_to_point_cloud_pos">
+<code class="descclassname">obstacle_detection.include.depth_image_processing.</code><code class="descname">depth_to_point_cloud_pos</code><span class="sig-paren">(</span><em>x_d</em>, <em>y_d</em>, <em>z</em>, <em>scale=1000</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/depth_image_processing.html#depth_to_point_cloud_pos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.depth_image_processing.depth_to_point_cloud_pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms a single depth value to an XYZ coordinate using the Kinect parameters defined in <code class="docutils literal notranslate"><span class="pre">CameraParams</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_d</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – the row index of the depth value in the depth frame</p></li>
+<li><p><strong>y_d</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – the column index of the depth value in the depth frame</p></li>
+<li><p><strong>z</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">float</span></code>) – the depth value at index [x_d, y_d]</p></li>
+<li><p><strong>scale</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – the conversion scale to use.  If the depth frame has millimeter units, then by default they will be converted to meters</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple (X, Y, Z) representing the cartesian coordinates of the given point in the point cloud</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">col</span><span class="p">,</span> <span class="n">depth</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.depth_image_processing.get_orientation">
+<code class="descclassname">obstacle_detection.include.depth_image_processing.</code><code class="descname">get_orientation</code><span class="sig-paren">(</span><em>xyz_arr</em>, <em>num_points</em>, <em>n_iter</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/depth_image_processing.html#get_orientation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.depth_image_processing.get_orientation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimates the best fit ground plane by iteratively fitting a plane to a set of random points using the <code class="docutils literal notranslate"><span class="pre">plane_fit</span></code> function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xyz_arr</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.float32</span></code>) – 3D point cloud represented as an [N, 3] Numpy array</p></li>
+<li><p><strong>num_points</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – number of points to consider for each plane</p></li>
+<li><p><strong>n_iter</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">int</span></code>) – number of planes to fit before taking the average as the best estimate</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple containing the center, normal, pitch, and azimuth of the Kinect sensor as estimated by the ground plane</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">center</span><span class="p">,</span> <span class="n">plane</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">get_orientation</span><span class="p">(</span><span class="n">xyz_arr</span><span class="p">,</span> <span class="n">num_points</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="obstacle_detection.include.depth_image_processing.plane_fit">
+<code class="descclassname">obstacle_detection.include.depth_image_processing.</code><code class="descname">plane_fit</code><span class="sig-paren">(</span><em>points</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/obstacle_detection/include/depth_image_processing.html#plane_fit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#obstacle_detection.include.depth_image_processing.plane_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits a plane to the input point cloud by minimizing the orthogonal distance between each point and the plane using the method of least-squares</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>points</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.float32</span></code>) – point cloud represented as an [N, 3] Numpy array</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple defining the center of the plane</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">center</span><span class="p">,</span> <span class="n">plane</span> <span class="o">=</span> <span class="n">plane_fit</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="obstacle_detection.html" class="btn btn-neutral float-right" title="Detection" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../obstacle_detection_node.html" class="btn btn-neutral float-left" title="Obstacle Detection" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, CWRUbotix
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
