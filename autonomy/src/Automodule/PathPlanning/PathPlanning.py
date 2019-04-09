@@ -35,8 +35,8 @@ class Position:
         return False
 
     def distanceTo(self, p):
-        x = abs(p.getX_pos - self.X_pos)
-        y = abs(p.getY_pos - self.Y_pos)
+        x = abs(p.getX_pos() - self.X_pos)
+        y = abs(p.getY_pos() - self.Y_pos)
         return (x ** 2 + y ** 2) ** .5
 
     def angleToFace(self, p):

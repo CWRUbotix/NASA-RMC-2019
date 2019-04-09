@@ -2,7 +2,7 @@
 
 from collections import deque
 import math
-from PathPlanning import Grid, Path
+from PathPlanning import Grid, Path, Vertex
 
 open = deque()
 closed = deque()
@@ -71,7 +71,7 @@ def thetaStar(start, goal, obstacles, unitScale):
                 if neighbor not in open:
                     neighbor.setStartDistance(math.inf)
                     neighbor.setParent(None)
-            update_vertex(s, neighbor, obstacles, unitScale)
+                update_vertex(s, neighbor, obstacles, unitScale)
     return None
 
 def update_vertex(vertex, neighbor, obstacles, unitScale):
@@ -96,7 +96,7 @@ def reconstruct_path(vertex):
     if vertex.getParent() != vertex:
         total_path.insert(0, vertex.getPosition())
         parent = vertex.getParent()
-        if(vertex.getParent().getParent() == vertex.getParent()):
+        if(parent.getParent() == vertex.getParent()):
             total_path.insert(0, parent.getPosition())
         return reconstruct_path(parent)
     else:

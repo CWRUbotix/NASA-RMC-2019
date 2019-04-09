@@ -1,12 +1,10 @@
 from PathTesting import drawPath
 from ThetaStar import thetaStar
-from Obstacle import Obstacle
-from PathPlanning import Position
-from Vertex import Vertex
+from PathPlanning import Position, Vertex, Grid, Obstacle
 import random
 
-startpos = Position(0, 0, 0, 1)
-endpos = Position(400, 400, 0, 1)
+startpos = Position(0, 0, 0,)
+endpos = Position(400, 400, 0)
 start = Vertex(0, 0, 565, [], startpos)
 start.setParent(start)
 end = Vertex(None, 565, 0, [], endpos)
@@ -17,24 +15,24 @@ positions = []
 vertices=[[None]*10 for y in range(10)]
 for i in range(10):
     for j in range(10):
-        point = Vertex(None, (((i**2)+(j**2))**1/2)*100, (((4-i)**2 + (4-j)**2)**1/2)*100, [], Position(j*100, i*100, 0, 0))
         if (i == 4 and j == 4):
             vertices[i][j] = end
         elif(i==0 and j==0):
             vertices[i][j] = start
         else:
+            point = Vertex(None, (((i ** 2) + (j ** 2)) ** 1 / 2) * 100, (((4 - i) ** 2 + (4 - j) ** 2) ** 1 / 2) * 100, [], Position(j * 100, i * 100, 0))
             vertices[i][j] = point
 for i in range(10):
     for j in range(10):
         elem = vertices[i][j]
         if (i + 1 <= 9):
             elem.addNeighbor(vertices[i + 1][j])
-            if (j + 1 <= 9):
+        if (j + 1 <= 9):
                 #vertices[i][j].addNeighbor(vertices[i + 1][j + 1])
-                elem.addNeighbor(vertices[i][j + 1])
-            if (j - 1 >= 0):
+            elem.addNeighbor(vertices[i][j + 1])
+        if (j - 1 >= 0):
                 #vertices[i][j].addNeighbor(vertices[i + 1][j - 1])
-                elem.addNeighbor(vertices[i][j - 1])
+            elem.addNeighbor(vertices[i][j - 1])
         if (i - 1 >= 0):
             elem.addNeighbor(vertices[i - 1][j])
             #if (j + 1 <= 9):
@@ -44,7 +42,7 @@ for i in range(10):
                 #vertices[i][j].addNeighbor(vertices[i - 1][j - 1])
              #   None
         vertices[i][j]=elem
-        positions.append(Position(j * 100, i * 100, 0, 0))
+        positions.append(Position(j * 100, i * 100, 0))
 
 #vertices[0][0].setParent(start)
 for i in range(15):
