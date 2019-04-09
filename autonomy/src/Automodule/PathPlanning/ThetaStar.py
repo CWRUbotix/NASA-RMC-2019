@@ -2,11 +2,11 @@
 
 from collections import deque
 import math
-from Grid import Grid
-from Path import Path
+from PathPlanning import Grid, Path
 
 open = deque()
 closed = deque()
+
 
 def aStar(start, end):
     openList = [start]
