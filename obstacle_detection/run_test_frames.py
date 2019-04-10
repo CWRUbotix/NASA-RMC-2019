@@ -85,8 +85,8 @@ def run_obstacle_detection():
         mask = create_circular_mask(h, w, center=[roi_x, roi_y], radius=100)
         ground_plane_roi[mask] = 0
 
-        xyz_arr = depthMatrixToPointCloudPos(depth_frame)  # convert depth data to XYZ coordinates
-        roi_point_cloud = depthMatrixToPointCloudPos(ground_plane_roi)
+        xyz_arr = depth_matrix_to_point_cloud(depth_frame)  # convert depth data to XYZ coordinates
+        roi_point_cloud = depth_matrix_to_point_cloud(ground_plane_roi)
         num_points = np.count_nonzero(roi_point_cloud[..., 0]) // 100
         center, plane, phi, theta = get_orientation(roi_point_cloud, num_points, 1)
         thetas = np.append(thetas, theta)
@@ -98,9 +98,9 @@ def run_obstacle_detection():
             thetas = thetas[1:]
         if phis.size > memory:
             phis = phis[1:]
-        center = applyCameraOrientation(center, CameraPosition)
-        plane = applyCameraOrientation(plane, CameraPosition)
-        xyz_arr = applyCameraMatrixOrientation(xyz_arr, CameraPosition)
+        center = apply_camera_orientation(center, CameraPosition)
+        plane = apply_camera_orientation(plane, CameraPosition)
+        xyz_arr = apply_camera_matrix_orientation(xyz_arr, CameraPosition)
         plane_img = np.zeros(img.size)
         plane_img[xyz_arr[:, 2] > dist_thresh + center[2]] = 1
 
@@ -165,7 +165,7 @@ def run_obstacle_detection():
                     cy = int(moment['m01'] / moment['m00'])
 
                     if mean_val < HIGH_DISTANCE_BOUND:  # kinect loses accuracy beyond 4.5m
-                        coords = depthToPointCloudPos(cx, cy, mean_val)  # convert obstacle depth to XYZ coordinate
+                        coords = depth_to_point_cloud_pos(cx, cy, mean_val)  # convert obstacle depth to XYZ coordinate
                         mm_diameter = equi_diameter * (1.0 / CameraParams['fx']) * mean_val  # convert pixel diameter to mm
 
                         if 100 < mm_diameter < 400:
@@ -180,7 +180,7 @@ def run_obstacle_detection():
                                     obstacle.x = coords[0]
                                     obstacle.y = coords[1]
                                     obstacle.z = coords[2]
-                                    obstacle.diameter = mm_diameter
+                                    obstacle.diameter = mm_diameter / 1000
                                     new_obstacle = False
                                     obstacle.lifetime = obstacle_lifetime
                                     current_obstacle = Obstacle(obstacle.id,

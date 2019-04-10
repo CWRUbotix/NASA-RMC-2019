@@ -1,0 +1,559 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>obstacle_detection.include.obstacle_detection &mdash; CWRUbotix NASA-RMC  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> CWRUbotix NASA-RMC
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../obstacle_detection_node.html">Obstacle Detection</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CWRUbotix NASA-RMC</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>obstacle_detection.include.obstacle_detection</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for obstacle_detection.include.obstacle_detection</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">depth_image_processing</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">obstacle</span> <span class="k">import</span> <span class="n">Obstacle</span>
+<span class="kn">from</span> <span class="nn">ros_publish</span> <span class="k">import</span> <span class="n">send_obstacle_data</span>
+
+<span class="n">saved_dir</span> <span class="o">=</span> <span class="s1">&#39;saved_frames/&#39;</span>
+
+
+<div class="viewcode-block" id="get_ground_plane_roi"><a class="viewcode-back" href="../../../obstacle_detection/obstacle_detection.html#obstacle_detection.include.obstacle_detection.get_ground_plane_roi">[docs]</a><span class="k">def</span> <span class="nf">get_ground_plane_roi</span><span class="p">(</span><span class="n">depth_frame</span><span class="p">,</span> <span class="n">depth_cutoff</span><span class="p">,</span> <span class="n">y_cutoff</span><span class="p">,</span> <span class="n">roi_x</span><span class="p">,</span> <span class="n">roi_y</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Crops the depth frame and applies a circular mask to define the region of interest for ground plane estimation</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        depth_frame (:obj:`numpy.float32`): [424, 512] depth frame</span>
+<span class="sd">        depth_cutoff (:obj:`float`) : furthest depth to keep, Kinect loses accuracy beyond 4.5m</span>
+<span class="sd">        y_cutoff (:obj:`int`) : minimum height to keep, everything else set to zero</span>
+<span class="sd">        roi_x (:obj:`int`) : x coordinate of center of circular mask</span>
+<span class="sd">        roi_y (:obj:`int`) : y coordinate of center of circular mask</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Cropped depth frame with only region of interest (preferably a rough estimate of the ground plane)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">h</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">depth_frame</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+
+    <span class="n">depth_frame</span><span class="p">[</span><span class="n">depth_frame</span> <span class="o">&gt;</span> <span class="n">depth_cutoff</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">depth_frame</span><span class="p">[:</span><span class="n">y_cutoff</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">ground_plane_roi</span> <span class="o">=</span> <span class="n">depth_frame</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">ground_plane_roi</span><span class="p">[:</span><span class="n">y_cutoff</span> <span class="o">+</span> <span class="mi">100</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">create_circular_mask</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">[</span><span class="n">roi_x</span><span class="p">,</span> <span class="n">roi_y</span><span class="p">],</span> <span class="n">radius</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">ground_plane_roi</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="n">ground_plane_roi</span></div>
+
+
+<div class="viewcode-block" id="orient_point_cloud_to_ground_plane"><a class="viewcode-back" href="../../../obstacle_detection/obstacle_detection.html#obstacle_detection.include.obstacle_detection.orient_point_cloud_to_ground_plane">[docs]</a><span class="k">def</span> <span class="nf">orient_point_cloud_to_ground_plane</span><span class="p">(</span><span class="n">xyz_arr</span><span class="p">,</span> <span class="n">roi_point_cloud</span><span class="p">,</span> <span class="n">thetas</span><span class="p">,</span> <span class="n">phis</span><span class="p">,</span> <span class="n">num_points</span><span class="p">,</span> <span class="n">num_planes</span><span class="p">,</span> <span class="n">memory</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the estimated ground plane and orients the point cloud coordinate system to have that plane be the XZ plane</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xyz_arr (:obj:`numpy.float32`) : 3D point cloud of the entire depth frame represented as an [N, 3] Numpy array</span>
+<span class="sd">        roi_point_cloud (:obj:`numpy.float32`) : 3D point cloud of cropped ROI represented as an [N, 3] Numpy array which is used to estimate the ground plane</span>
+<span class="sd">        thetas (:obj:`list` of `float`) : list of Kinect elevation values currently in memory</span>
+<span class="sd">        phis (:obj:`list` of `float`) : list of Kinect azimuth values currently in memory</span>
+<span class="sd">        num_points (:obj:`int`) : number of points to consider in estimating each ground plane</span>
+<span class="sd">        num_planes (:obj:`int`) : number of ground plane estimates to average over</span>
+<span class="sd">        memory (:obj:`int`) : number of orientations to hold in memory at a time</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Re-oriented point cloud, ROI point cloud, and center of the ground plane estimate</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        .. highlight:: python</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            xyz_arr, roi_point_cloud, center = orient_point_cloud_to_ground_plane(xyz_arr, roi_point_cloud, thetas, phis, num_points, num_planes, memory)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">center</span><span class="p">,</span> <span class="n">plane</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">get_orientation</span><span class="p">(</span><span class="n">roi_point_cloud</span><span class="p">,</span> <span class="n">num_points</span><span class="p">,</span> <span class="n">num_planes</span><span class="p">)</span>
+    <span class="n">thetas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">thetas</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+    <span class="n">phis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">phis</span><span class="p">,</span> <span class="n">phi</span><span class="p">)</span>
+    <span class="c1"># print(center, plane, np.median(theta), np.median(phis))</span>
+    <span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;elevation&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">thetas</span><span class="p">)</span>
+    <span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;azimuth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">phis</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">thetas</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="n">memory</span><span class="p">:</span>
+        <span class="n">thetas</span> <span class="o">=</span> <span class="n">thetas</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="k">if</span> <span class="n">phis</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="n">memory</span><span class="p">:</span>
+        <span class="n">phis</span> <span class="o">=</span> <span class="n">phis</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">center</span> <span class="o">=</span> <span class="n">apply_camera_orientation</span><span class="p">(</span><span class="n">center</span><span class="p">,</span> <span class="n">CameraPosition</span><span class="p">)</span>
+    <span class="n">plane</span> <span class="o">=</span> <span class="n">apply_camera_orientation</span><span class="p">(</span><span class="n">plane</span><span class="p">,</span> <span class="n">CameraPosition</span><span class="p">)</span>
+    <span class="n">xyz_arr</span> <span class="o">=</span> <span class="n">apply_camera_matrix_orientation</span><span class="p">(</span><span class="n">xyz_arr</span><span class="p">,</span> <span class="n">CameraPosition</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">xyz_arr</span><span class="p">,</span> <span class="n">roi_point_cloud</span><span class="p">,</span> <span class="n">center</span></div>
+
+
+<div class="viewcode-block" id="project_plane_to_2d"><a class="viewcode-back" href="../../../obstacle_detection/obstacle_detection.html#obstacle_detection.include.obstacle_detection.project_plane_to_2d">[docs]</a><span class="k">def</span> <span class="nf">project_plane_to_2d</span><span class="p">(</span><span class="n">xyz_arr</span><span class="p">,</span> <span class="n">img</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">dist_thresh</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Removes all points above some threshold of the estimated ground plane and projects the remaining points back to 2D</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xyz_arr (:obj:`numpy.float32`): 3D point cloud represented as an [N, 3] Numpy array</span>
+<span class="sd">        img (:obj:`numpy.uint8`) : image representaion of depth frame</span>
+<span class="sd">        center (:obj:`numpy.float32`) : XYZ coordinate of center of ground plane</span>
+<span class="sd">        dist_thresh (:obj:`float`) : maximum distance from the ground plane in meters</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Image representation of depth frame containing only the potential obstacle points</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">plane_img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+    <span class="n">plane_img</span><span class="p">[</span><span class="n">xyz_arr</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dist_thresh</span> <span class="o">+</span> <span class="n">center</span><span class="p">[</span><span class="mi">2</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">plane_img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">plane_img</span><span class="p">,</span> <span class="p">(</span><span class="mi">424</span><span class="p">,</span> <span class="mi">512</span><span class="p">))</span> <span class="o">*</span> <span class="mi">255</span><span class="p">)</span>  <span class="c1"># reshape to match depth data and convert to uint8</span>
+    <span class="n">plane_img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">424</span><span class="p">,</span> <span class="mi">512</span><span class="p">))</span> <span class="o">*</span> <span class="mi">255</span><span class="p">)</span> <span class="o">-</span> <span class="n">plane_img</span><span class="p">)</span>  <span class="c1"># invert img so pixel value corresponds to NOT ground plane</span>
+    <span class="n">ret</span><span class="p">,</span> <span class="n">plane_img</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">threshold</span><span class="p">(</span><span class="n">plane_img</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span>
+                                   <span class="n">cv2</span><span class="o">.</span><span class="n">THRESH_BINARY</span><span class="p">)</span>  <span class="c1"># filter points that are probaly not ground plane</span>
+    <span class="n">plane_img</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">plane_img</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">plane_img</span></div>
+
+
+<div class="viewcode-block" id="get_dimensions_from_contour"><a class="viewcode-back" href="../../../obstacle_detection/obstacle_detection.html#obstacle_detection.include.obstacle_detection.get_dimensions_from_contour">[docs]</a><span class="k">def</span> <span class="nf">get_dimensions_from_contour</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">cntr</span><span class="p">,</span> <span class="n">kernel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimated obstacle dimensions from a contour</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        img (:obj:`numpy.uint8`) : image representaion of depth frame</span>
+<span class="sd">        cntr (:obj:`cv2.OutputArrayOfArrays`) : OpenCV contour object</span>
+<span class="sd">        kernel (:obj:`numpy.uint8`) : kernel to use for mask erosion</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Mask for obstacle image, bounding box of obstacle, x coordinate of bottom left corner of bounding box,</span>
+<span class="sd">        y coording of bottom left corner of bounding box, length of bounding box, and height of bounding box</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        .. highlight:: python</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            mask, box, x, y, obj_length, obj_height = get_dimensions_from_contour(img, cntr, kernel)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>  <span class="c1"># mask will contain the fitted and adjusted ellipse of a single obstacle</span>
+    <span class="n">ellipse</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">fitEllipse</span><span class="p">(</span><span class="n">cntr</span><span class="p">)</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">obj_length</span><span class="p">,</span> <span class="n">obj_height</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">boundingRect</span><span class="p">(</span><span class="n">cntr</span><span class="p">)</span>
+    <span class="n">rect</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">minAreaRect</span><span class="p">(</span><span class="n">cntr</span><span class="p">)</span>
+
+    <span class="n">equi_diameter</span> <span class="o">=</span> <span class="n">obj_length</span>  <span class="c1"># bounding rectangle gives a better approximation of diameter</span>
+
+    <span class="n">box</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">boxPoints</span><span class="p">(</span><span class="n">rect</span><span class="p">)</span>
+    <span class="n">box</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int0</span><span class="p">(</span><span class="n">box</span><span class="p">)</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">ellipse</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">ellipse</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># draw the fitted ellipse</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">equi_diameter</span> <span class="o">/</span> <span class="mi">4</span><span class="p">]])</span>  <span class="c1"># shift mask down to match obstacle, not edge</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">warpAffine</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">rows</span><span class="p">))</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">erode</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>  <span class="c1"># erode the mask to remove background points</span>
+    <span class="k">return</span> <span class="n">mask</span><span class="p">,</span> <span class="n">box</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">obj_length</span><span class="p">,</span> <span class="n">obj_height</span></div>
+
+
+<div class="viewcode-block" id="process_obstacle"><a class="viewcode-back" href="../../../obstacle_detection/obstacle_detection.html#obstacle_detection.include.obstacle_detection.process_obstacle">[docs]</a><span class="k">def</span> <span class="nf">process_obstacle</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">box</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">obj_length</span><span class="p">,</span> <span class="n">obj_height</span><span class="p">,</span> <span class="n">obj_depth</span><span class="p">,</span>
+                     <span class="n">equi_diameter</span><span class="p">,</span> <span class="n">obstacle_list</span><span class="p">,</span> <span class="n">obstacle_lifetime</span><span class="p">,</span> <span class="n">obstacle_id</span><span class="p">,</span> <span class="n">visualize</span><span class="p">,</span> <span class="n">send_data</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Consider each possible obstacle and decide if it meets the criteria for detection and data publishing.</span>
+<span class="sd">    Optionally displays visualizations of the algorithm in real-time and publishes obstacle data using ROS.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        color (:obj:`numpy.uint8`) : ``uint8`` RGB image representation of depth frame used to visualize detected obstacles</span>
+<span class="sd">        cx (:obj:`int`) : estimated x coordinate of the center of obstacle in depth frame</span>
+<span class="sd">        cy (:obj:`int`) : estimated y coordinate of the center of obstacle in depth frame</span>
+<span class="sd">        box (:obj:`cv2.RotatedRect`) : bounding box of obstacle</span>
+<span class="sd">        x (:obj:`int`) : x coordinate of bottom left corner of bounding box</span>
+<span class="sd">        y (:obj:`int`) : y coordinate of bottom left corner of bounding box</span>
+<span class="sd">        obj_length (:obj:`int`) : length of bounding box in pixels</span>
+<span class="sd">        obj_height (:obj:`int`) : height of bounding box in pixels</span>
+<span class="sd">        obj_depth (:obj:`float`) : estimated depth (z coordinate) of bounding box area in original depth frame in millimeters</span>
+<span class="sd">        equi_diameter (:obj:`int`) : estimated obstacle diameter in pixels</span>
+<span class="sd">        obstacle_list (:obj:`list` of :obj:`Obstacle`) : list of currently detected obstacles in memory</span>
+<span class="sd">        obstacle_lifetime (`int`) : default lifetime for newly detected obstacles</span>
+<span class="sd">        obstacle_id (`int`) : current maximum obstacle ID reached, ensures unique IDs</span>
+<span class="sd">        visualize (`bool`) : boolean value specifying if obstacle detection should be visualized by displaying the result</span>
+<span class="sd">        of drawing the bounding box and measured values on each obstacle</span>
+<span class="sd">        send_data (`bool`) : boolean value specifying if detected obstacles should be published to the ``obstacleDetection`` topic</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">depth_to_point_cloud_pos</span><span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">obj_depth</span><span class="p">)</span>  <span class="c1"># convert obstacle depth to XYZ coordinate</span>
+    <span class="n">mm_diameter</span> <span class="o">=</span> <span class="n">equi_diameter</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">CameraParams</span><span class="p">[</span><span class="s1">&#39;fx&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">obj_depth</span>  <span class="c1"># convert pixel diameter to mm</span>
+
+    <span class="k">if</span> <span class="mi">100</span> <span class="o">&lt;</span> <span class="n">mm_diameter</span> <span class="o">&lt;</span> <span class="mi">400</span><span class="p">:</span>
+        <span class="n">new_obstacle</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">current_obstacle</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">obstacle</span> <span class="ow">in</span> <span class="n">obstacle_list</span><span class="p">:</span>
+            <span class="n">x_match</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">obstacle</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">0.3</span>
+            <span class="n">y_match</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">obstacle</span><span class="o">.</span><span class="n">y</span> <span class="o">-</span> <span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mf">0.3</span>
+            <span class="n">z_match</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">obstacle</span><span class="o">.</span><span class="n">z</span> <span class="o">-</span> <span class="n">obj_depth</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.5</span>
+            <span class="n">diameter_match</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">obstacle</span><span class="o">.</span><span class="n">diameter</span> <span class="o">-</span> <span class="n">mm_diameter</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1000.</span> <span class="o">&lt;</span> <span class="mf">0.5</span>
+            <span class="k">if</span> <span class="n">x_match</span> <span class="ow">and</span> <span class="n">y_match</span><span class="p">:</span>
+                <span class="n">obstacle</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">obstacle</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">obstacle</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">obstacle</span><span class="o">.</span><span class="n">diameter</span> <span class="o">=</span> <span class="n">mm_diameter</span> <span class="o">/</span> <span class="mf">1000.</span>
+                <span class="n">new_obstacle</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">obstacle</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">=</span> <span class="n">obstacle_lifetime</span>
+                <span class="k">if</span> <span class="n">send_data</span><span class="p">:</span>
+                    <span class="n">send_obstacle_data</span><span class="p">(</span><span class="n">obstacle</span><span class="p">)</span>
+                <span class="n">current_obstacle</span> <span class="o">=</span> <span class="n">Obstacle</span><span class="p">(</span><span class="n">obstacle</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                                            <span class="n">obstacle</span><span class="o">.</span><span class="n">x</span><span class="p">,</span>
+                                            <span class="n">obstacle</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
+                                            <span class="n">obstacle</span><span class="o">.</span><span class="n">z</span><span class="p">,</span>
+                                            <span class="n">obstacle</span><span class="o">.</span><span class="n">diameter</span><span class="p">,</span>
+                                            <span class="n">obstacle_lifetime</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">obstacle</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">obstacle_list</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">obstacle</span><span class="p">)</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">new_obstacle</span><span class="p">:</span>
+            <span class="n">current_obstacle</span> <span class="o">=</span> <span class="n">Obstacle</span><span class="p">(</span><span class="n">obstacle_id</span><span class="p">,</span>
+                                        <span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                        <span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                        <span class="n">coords</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+                                        <span class="n">mm_diameter</span><span class="p">,</span>
+                                        <span class="n">obstacle_lifetime</span><span class="p">)</span>
+            <span class="n">obstacle_id</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">send_data</span><span class="p">:</span>
+                <span class="n">send_obstacle_data</span><span class="p">(</span><span class="n">current_obstacle</span><span class="p">)</span>
+            <span class="n">obstacle_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_obstacle</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">visualize</span><span class="p">:</span>
+            <span class="c1"># begin visualization</span>
+            <span class="n">cv2</span><span class="o">.</span><span class="n">drawContours</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="p">[</span><span class="n">box</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">cv2</span><span class="o">.</span><span class="n">rectangle</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span> <span class="p">(</span><span class="n">x</span> <span class="o">+</span> <span class="n">obj_length</span><span class="p">,</span> <span class="n">y</span> <span class="o">+</span> <span class="n">obj_height</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">font</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">FONT_HERSHEY_SIMPLEX</span>
+            <span class="n">cv2</span><span class="o">.</span><span class="n">putText</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="s1">&#39;id = </span><span class="si">%d</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">current_obstacle</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">+</span> <span class="mi">15</span><span class="p">),</span> <span class="n">font</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span>
+                        <span class="mi">1</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">LINE_AA</span><span class="p">)</span>
+            <span class="n">cv2</span><span class="o">.</span><span class="n">putText</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="s2">&quot;x = </span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">+</span> <span class="mi">30</span><span class="p">),</span> <span class="n">font</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="n">cv2</span><span class="o">.</span><span class="n">LINE_AA</span><span class="p">)</span>
+            <span class="n">cv2</span><span class="o">.</span><span class="n">putText</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="s2">&quot;y = </span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">+</span> <span class="mi">45</span><span class="p">),</span> <span class="n">font</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="n">cv2</span><span class="o">.</span><span class="n">LINE_AA</span><span class="p">)</span>
+            <span class="n">cv2</span><span class="o">.</span><span class="n">putText</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="s2">&quot;z = </span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">obj_depth</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">),</span> <span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">+</span> <span class="mi">60</span><span class="p">),</span> <span class="n">font</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">127</span><span class="p">),</span>
+                        <span class="mi">1</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">LINE_AA</span><span class="p">)</span>
+            <span class="n">cv2</span><span class="o">.</span><span class="n">putText</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="s2">&quot;diameter = </span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">mm_diameter</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">),</span> <span class="p">(</span><span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">+</span> <span class="mi">75</span><span class="p">),</span> <span class="n">font</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span>
+                        <span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">127</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span>
+                        <span class="n">cv2</span><span class="o">.</span><span class="n">LINE_AA</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="remove_dead_obstacles"><a class="viewcode-back" href="../../../obstacle_detection/obstacle_detection.html#obstacle_detection.include.obstacle_detection.remove_dead_obstacles">[docs]</a><span class="k">def</span> <span class="nf">remove_dead_obstacles</span><span class="p">(</span><span class="n">obstacle_list</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks the lifetimes of all obstacles currently in memory to see if any have died.  If any obstacles have reached</span>
+<span class="sd">    a lifetime of zero (meaning they have been absent from ``obstacle_lifetime`` frames) they are removed from the</span>
+<span class="sd">    obstacle list</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obstacle_list (:obj:`list` of :obj:`Obstacle`) : list of currently detected obstacles in memory</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">obstacle</span> <span class="ow">in</span> <span class="n">obstacle_list</span><span class="p">:</span>
+        <span class="n">obstacle</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">obstacle</span><span class="o">.</span><span class="n">lifetime</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">obstacle_list</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">obstacle</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">obstacle</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_obstacles_with_plane"><a class="viewcode-back" href="../../../obstacle_detection/obstacle_detection.html#obstacle_detection.include.obstacle_detection.get_obstacles_with_plane">[docs]</a><span class="k">def</span> <span class="nf">get_obstacles_with_plane</span><span class="p">(</span><span class="n">depth_frame</span><span class="p">,</span>
+                             <span class="n">color_frame</span><span class="p">,</span>
+                             <span class="n">obstacle_list</span><span class="p">,</span>
+                             <span class="n">thetas</span><span class="p">,</span>
+                             <span class="n">phis</span><span class="p">,</span>
+                             <span class="n">obstacle_id</span><span class="p">,</span>
+                             <span class="n">num_planes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                             <span class="n">dist_thresh</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+                             <span class="n">memory</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+                             <span class="n">obstacle_lifetime</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                             <span class="n">depth_cutoff</span><span class="o">=</span><span class="mf">4500.</span><span class="p">,</span>
+                             <span class="n">y_cutoff</span><span class="o">=</span><span class="mi">424</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span>
+                             <span class="n">roi_x</span><span class="o">=</span><span class="mi">512</span><span class="o">//</span><span class="mi">2</span><span class="p">,</span>
+                             <span class="n">roi_y</span><span class="o">=</span><span class="mi">320</span><span class="p">,</span>
+                             <span class="n">send_data</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                             <span class="n">visualize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                             <span class="n">save_frames</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main obstacle detection function.  Performs full cycle of algorithm on a single depth frame, updates the obstacle</span>
+<span class="sd">    list, and optionally visualizes the detected obstacles in real-time, publishes the obstacle data to the ``obstacleDetection``</span>
+<span class="sd">    topic, or save the visualizations for viewing (generally used when running the algorithm on the robot during testing)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        depth_frame (:obj:`numpy.float32`) : [424, 512] depth frame of meter values</span>
+<span class="sd">        color_frame: (:obj:`numpy.uint8`) : [424, 512] RGB image representation of Kinect color data overlayed on the depth frame</span>
+<span class="sd">        obstacle_list (:obj:`list` of :obj:`Obstacle`) : list of currently detected obstacles in memory</span>
+<span class="sd">        thetas (:obj:`list` of :obj:`float`) : list of Kinect elevation values currently in memory</span>
+<span class="sd">        phis (:obj:`list` of :obj:`float`) : list of Kinect azimuth values currently in memory</span>
+<span class="sd">        obstacle_id (:obj:`int`) : current maximum obstacle ID reached, ensures unique IDs</span>
+<span class="sd">        num_planes (:obj:`int`) : number of ground plane estimates to average over</span>
+<span class="sd">        dist_thresh (:obj:`float`) : maximum distance from the ground plane in meters</span>
+<span class="sd">        memory (:obj:`int`) : memory: number of orientations to hold in memory at a time</span>
+<span class="sd">        obstacle_lifetime (:obj:`int`) : default lifetime for newly detected obstacles</span>
+<span class="sd">        depth_cutoff (:obj:`float`) : furthest depth to keep, Kinect loses accuracy beyond 4.5m</span>
+<span class="sd">        y_cutoff (:obj:`int`) : minimum height to keep, everything else set to zero</span>
+<span class="sd">        roi_x (:obj:`int`) : x coordinate of center of circular mask</span>
+<span class="sd">        roi_y (:obj:`int`) : y coordinate of center of circular mask</span>
+<span class="sd">        send_data (`bool`) : boolean value specifying if detected obstacles should be published to the ``obstacleDetection`` topic</span>
+<span class="sd">        visualize (:obj:`bool`) : boolean value specifying if obstacle detection should be visualized by displaying the result</span>
+<span class="sd">        of drawing the bounding box and measured values on each obstacle</span>
+<span class="sd">        save_frames (:obj:`bool`) : boolean value specifying if detected obstacle visualizations should be saved to the disk</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        [424, 512] Numpy array showing the locations of all detected obstacles (used for validation with labeled data)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">obstacles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">depth_frame</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># empty image that will store the locations of detected obstacles</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">(</span><span class="n">depth_frame</span> <span class="o">/</span> <span class="mf">4500.</span> <span class="o">*</span> <span class="mf">255.</span><span class="p">)</span>  <span class="c1"># image representation of depth frame</span>
+    <span class="c1"># crop the depth frame and apply a circular mask</span>
+    <span class="n">ground_plane_roi</span> <span class="o">=</span> <span class="n">get_ground_plane_roi</span><span class="p">(</span><span class="n">depth_frame</span><span class="p">,</span> <span class="n">depth_cutoff</span><span class="p">,</span> <span class="n">y_cutoff</span><span class="p">,</span> <span class="n">roi_x</span><span class="p">,</span> <span class="n">roi_y</span><span class="p">)</span>
+
+    <span class="n">xyz_arr</span> <span class="o">=</span> <span class="n">depth_matrix_to_point_cloud</span><span class="p">(</span><span class="n">depth_frame</span><span class="p">)</span>  <span class="c1"># convert depth data to point cloud</span>
+    <span class="n">roi_point_cloud</span> <span class="o">=</span> <span class="n">depth_matrix_to_point_cloud</span><span class="p">(</span><span class="n">ground_plane_roi</span><span class="p">)</span>  <span class="c1"># convert ROI to point cloud</span>
+    <span class="n">num_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">roi_point_cloud</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span> <span class="o">//</span> <span class="mi">100</span>  <span class="c1"># use 1% of ROI points for each plane fit</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># fit a plane to the ROI point cloud and re-orient both point clouds to use that as the ground plane</span>
+        <span class="n">xyz_arr</span><span class="p">,</span> <span class="n">roi_point_cloud</span><span class="p">,</span> <span class="n">center</span> <span class="o">=</span> <span class="n">orient_point_cloud_to_ground_plane</span><span class="p">(</span><span class="n">xyz_arr</span><span class="p">,</span>
+                                                                              <span class="n">roi_point_cloud</span><span class="p">,</span>
+                                                                              <span class="n">thetas</span><span class="p">,</span>
+                                                                              <span class="n">phis</span><span class="p">,</span>
+                                                                              <span class="n">num_points</span><span class="p">,</span>
+                                                                              <span class="n">num_planes</span><span class="p">,</span>
+                                                                              <span class="n">memory</span><span class="p">)</span>
+
+        <span class="c1"># project the remaining points back to 2D</span>
+        <span class="n">plane_img</span> <span class="o">=</span> <span class="n">project_plane_to_2d</span><span class="p">(</span><span class="n">xyz_arr</span><span class="p">,</span> <span class="n">img</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">dist_thresh</span><span class="p">)</span>
+
+        <span class="c1"># noise removal</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+        <span class="n">opening</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">morphologyEx</span><span class="p">(</span><span class="n">plane_img</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">MORPH_OPEN</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>  <span class="c1"># erosion followed by dilation</span>
+
+        <span class="c1"># erosiong</span>
+        <span class="n">opening</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">erode</span><span class="p">(</span><span class="n">opening</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span> <span class="n">iterations</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">color</span> <span class="o">=</span> <span class="n">color_frame</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>  <span class="c1"># BGR image to draw labels on</span>
+
+        <span class="c1"># begin contour detection</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">contours</span><span class="p">,</span> <span class="n">hierarchy</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">findContours</span><span class="p">(</span><span class="n">opening</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">RETR_TREE</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">CHAIN_APPROX_SIMPLE</span><span class="p">)</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">drawContours</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">contours</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cntr</span> <span class="ow">in</span> <span class="n">contours</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># calculate diameter of equivalent circle</span>
+                <span class="c1"># this measurement is only used for checking if countours fit our bounds</span>
+                <span class="n">area</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">contourArea</span><span class="p">(</span><span class="n">cntr</span><span class="p">)</span>
+                <span class="n">equi_diameter</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">area</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+                <span class="c1"># Hardcoded Diameter Range in pixels</span>
+                <span class="n">LOW_DIAMETER_BOUND</span> <span class="o">=</span> <span class="mi">20</span>
+                <span class="n">HIGH_DIAMETER_BOUND</span> <span class="o">=</span> <span class="mi">150</span>
+
+                <span class="n">HIGH_DISTANCE_BOUND</span> <span class="o">=</span> <span class="mi">4500</span>
+                <span class="c1"># Original tolerances were 20 and 150</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">equi_diameter</span> <span class="o">&gt;</span> <span class="n">LOW_DIAMETER_BOUND</span> <span class="ow">and</span> <span class="n">equi_diameter</span> <span class="o">&lt;</span> <span class="n">HIGH_DIAMETER_BOUND</span><span class="p">):</span>
+                    <span class="n">mask</span><span class="p">,</span> <span class="n">box</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">obj_length</span><span class="p">,</span> <span class="n">obj_height</span> <span class="o">=</span> <span class="n">get_dimensions_from_contour</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">cntr</span><span class="p">,</span> <span class="n">kernel</span><span class="p">)</span>
+                    <span class="n">img_fg</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">bitwise_and</span><span class="p">(</span><span class="n">depth_frame</span><span class="p">,</span> <span class="n">depth_frame</span><span class="p">,</span>
+                                             <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>  <span class="c1"># use the mask to isolate original depth values</span>
+                    <span class="n">img_fg</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">medianBlur</span><span class="p">(</span><span class="n">img_fg</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>  <span class="c1"># median blur to further remove noise</span>
+                    <span class="n">obstacles</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">img_fg</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">(</span><span class="n">obstacles</span><span class="p">))</span>
+
+                    <span class="n">mean_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">img_fg</span><span class="p">[</span><span class="n">img_fg</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()])</span>  <span class="c1"># compute the non-zero average of obstacle depth values</span>
+
+                    <span class="n">moment</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">moments</span><span class="p">(</span><span class="n">cntr</span><span class="p">)</span>  <span class="c1"># get the centroid of the obstacle using its moment</span>
+                    <span class="n">cx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">moment</span><span class="p">[</span><span class="s1">&#39;m10&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">moment</span><span class="p">[</span><span class="s1">&#39;m00&#39;</span><span class="p">])</span>
+                    <span class="n">cy</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">moment</span><span class="p">[</span><span class="s1">&#39;m01&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">moment</span><span class="p">[</span><span class="s1">&#39;m00&#39;</span><span class="p">])</span>
+
+                    <span class="k">if</span> <span class="n">mean_val</span> <span class="o">&lt;</span> <span class="n">HIGH_DISTANCE_BOUND</span><span class="p">:</span>  <span class="c1"># kinect loses accuracy beyond 4.5m</span>
+                        <span class="n">process_obstacle</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">box</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">obj_length</span><span class="p">,</span> <span class="n">obj_height</span><span class="p">,</span> <span class="n">mean_val</span><span class="p">,</span>
+                                         <span class="n">equi_diameter</span><span class="p">,</span> <span class="n">obstacle_list</span><span class="p">,</span> <span class="n">obstacle_lifetime</span><span class="p">,</span> <span class="n">obstacle_id</span><span class="p">,</span> <span class="n">visualize</span><span class="p">,</span> <span class="n">send_data</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">cv2</span><span class="o">.</span><span class="n">error</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">pass</span>
+
+        <span class="k">if</span> <span class="n">save_frames</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">saved_dir</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="n">rgb</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2RGB</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">imsave</span><span class="p">(</span><span class="n">saved_dir</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="si">%d</span><span class="s1">.png&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">saved_dir</span><span class="p">)),</span> <span class="n">rgb</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">visualize</span><span class="p">:</span>
+            <span class="n">cv2</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="s1">&#39;detected_obstacles&#39;</span><span class="p">,</span> <span class="n">color</span><span class="p">)</span>
+            <span class="c1">#cv2.imshow(&#39;plane&#39;, plane_img)</span>
+            <span class="c1">#cv2.imshow(&#39;roi&#39;, np.uint8(ground_plane_roi / 4500. * 255.))</span>
+
+        <span class="n">remove_dead_obstacles</span><span class="p">(</span><span class="n">obstacle_list</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">AssertionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Not enough points to estimate the ground plane, trying again...&#39;</span><span class="p">)</span>
+        <span class="k">pass</span>
+
+    <span class="k">return</span> <span class="n">obstacles</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, CWRUbotix
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

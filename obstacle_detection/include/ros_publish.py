@@ -7,6 +7,13 @@ node_name = 'master'
 
 
 def send_obstacle_data(obs):
+    """
+    Publishes the ID, XYZ coordinates, and diameter in a custom Obstacle message.  All measurements are in meters
+
+    Args:
+        obs (:obj:`Obstacle`) : obstacle object containing the ID, coordinates, and diameter of the obstacle to publish
+
+    """
     global topic
     global node_name
     try:
