@@ -4,9 +4,11 @@
 #include <boost/foreach.hpp>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
+#include <hci/motorCommand.h>
 #include <apriltags_ros/AprilTagDetection.h>
 #include <apriltags_ros/AprilTagDetectionArray.h>
 #include <apriltags_ros/Localization.h>
+#include <geometry_msgs/Pose2D.h>
 #include <AprilTags/Tag16h5.h>
 #include <AprilTags/Tag25h7.h>
 #include <AprilTags/Tag25h9.h>
@@ -26,7 +28,7 @@ const double TWOPI = 2.0 * PI;
 
 namespace apriltags_ros{
 
-AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh): it_(nh){
+AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& nh1, ros::NodeHandle& pnh): it_(nh), it_1(nh1){
   XmlRpc::XmlRpcValue april_tag_descriptions;
   if(!pnh.getParam("tag_descriptions", april_tag_descriptions)){
     ROS_WARN("No april tags specified");
@@ -71,11 +73,15 @@ AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh): i
 
   tag_detector_= boost::shared_ptr<AprilTags::TagDetector>(new AprilTags::TagDetector(*tag_codes));
   image_sub_ = it_.subscribeCamera("image_rect", 1, &AprilTagDetector::imageCb, this);
+  //image_sub_1 = it_1.subscribeCamera("image_rect_1", 1, &AprilTagDetector::imageCb, this);
+  //image_sub_2 = it_2.subscribeCamera("image_rect_2", 1, &AprilTagDetector::imageCb, this);
   image_pub_ = it_.advertise("tag_detections_image", 1);
   detections_pub_ = nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
   pose_pub_ = nh.advertise<geometry_msgs::PoseArray>("tag_detections_pose", 1);
-  localization_pub_ = nh.advertise<Localization>("localization_data", 1);
-  localization_1_pub_ = nh.advertise<Localization>("localization_data_1", 1);
+  localization_pub_ = nh.advertise<geometry_msgs::Pose2D>("localization_data", 1);
+  localization_1_pub_ = nh.advertise<geometry_msgs::Pose2D>("localization_data_1", 1);
+  motor_commands_ = nh.advertise<hci::motorCommand>("motorCommand", 10);
+  
 }
 
 void wRo_to_euler(const Eigen::Matrix3d& wRo, double& yaw, double& pitch,
@@ -308,25 +314,25 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
       tf_pub_.sendTransform(tf::StampedTransform(tag_transform, tag_transform.stamp_, tag_transform.frame_id_, description.frame_name()));*/
     /**/
 
-    Localization localization_data;
-    localization_data.x_pos = Mpose_pose_position_x;
-    localization_data.y_pos = Mpose_pose_position_y;
-    localization_data.angle = (-1 * Mpose_pose_orientation_y) - (PI / 2);
+    geometry_msgs::Pose2D localization_data;
+    localization_data.x = -1 * Mpose_pose_position_x;
+    localization_data.y = Mpose_pose_position_y;
+    localization_data.theta = (-1 * ((-1 * Mpose_pose_orientation_z) + (PI / 2)));
     localization_pub_.publish(localization_data);
 
-    Localization localization_data_1;
-    localization_data_1.x_pos = centerxy->first;
-    localization_data_1.y_pos = centerxy->second;
-    localization_data_1.angle = (-1 * Mpose_pose_orientation_y) - (PI / 2);
+    //Localization localization_data_1;
+    //localization_data_1.x_pos = centerxy->first;
+    //localization_data_1.y_pos = centerxy->second;
+    //localization_data_1.angle = Mpose_pose_orientation_y;
     //localization_1_pub_.publish(localization_data_1);
 
     tf::Stamped<tf::Transform> tag_transform;
     tf::poseStampedMsgToTF(tag_pose, tag_transform);
     tf_pub_.sendTransform(tf::StampedTransform(tag_transform, tag_transform.stamp_, tag_transform.frame_id_, description.frame_name()));
   }
-  detections_pub_.publish(tag_detection_array);
+  /*detections_pub_.publish(tag_detection_array);
   pose_pub_.publish(tag_pose_array);
-  image_pub_.publish(cv_ptr->toImageMsg());
+  image_pub_.publish(cv_ptr->toImageMsg());*/
   
 }
 
