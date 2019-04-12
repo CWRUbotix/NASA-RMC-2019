@@ -90,7 +90,21 @@ void init_sensors(){
 					debug("setting up load cell ADC");
 					device->adc->setup(CONFIG_FOR_LOAD_CELL);
 					device->adc->set_mux_input(diff_1_2);
-					device->adc->set_gain(7);
+					device->adc->set_gain(7); 	// 7 is the max gain
+					for(int i = 0; i<NUM_PREV_VALUES; i++){
+		        		uint16_t temp 		= 0;
+		        		int16_t signed_temp = 0;
+		        		float f_temp 		= 0.0;
+						sensor->value_good = sensor->device->adc->read_channel(sensor->adc_channel_config, &temp);
+						if(sensor->value_good){
+							memcpy(&signed_temp, &temp, 2);
+							f_temp 			= (signed_temp/32767.0)*5.0; 				// voltage
+							sensor->value 	= sensor->slope*f_temp + sensor->offset;	// apply linear correction
+							sensor->prev_values[i] = sensor->value;
+							sensor->baseline += sensor->value/NUM_PREV_VALUES; 			// for generating an average value
+						}
+						delay(5);
+					}
 					device->is_setup = true;
 				}
 				break;}
@@ -98,19 +112,35 @@ void init_sensors(){
 				if(device != NULL && !device->is_setup){
 					// configure device
 					debug("begin IMU");
-					device->imu->begin();
-					delayMicroseconds(10);
-					device->is_setup = device->imu->is_ok();
-					if(device->is_setup){debug("IMU setup success");}
-					else{debug("IMU setup failed");}
+					SPI.beginTransaction(IMU_SPI_settings);
+					int result = device->imu->begin();
+					sensor->value = (float)result;
+					if(result != 0){
+						debug("IMU setup failed "+String(result, DEC));
+						device->is_setup = false;
+					}else{
+						debug("IMU setup success");
+						device->is_setup = true;
+					}
+					SPI.endTransaction();
+					// device->is_setup = true;
 				}
 				break;}
 			case SENS_ACCEL: {
 				if(device != NULL && !device->is_setup){
-					// configure device
-					device->imu->begin();
-					delayMicroseconds(10);
-					device->is_setup = device->imu->is_ok();
+					debug("begin IMU");
+					SPI.beginTransaction(IMU_SPI_settings);
+					int result = device->imu->begin();
+					sensor->value = (float)result;
+					if(result != 0){
+						debug("IMU setup failed "+String(result, DEC));
+						sensor->device->is_setup = false;
+					}else{
+						debug("IMU setup success");
+						sensor->device->is_setup = true;
+					}
+					SPI.endTransaction();
+					// device->is_setup = true;
 				}
 				break;}
 			case SENS_ROT_ENC: {

@@ -311,7 +311,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::WheelFocus</enum>
    </property>
    <property name="minimum">
     <number>-100</number>
@@ -330,7 +330,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::WheelFocus</enum>
    </property>
    <property name="minimum">
     <number>-100</number>
@@ -349,7 +349,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::WheelFocus</enum>
    </property>
    <property name="minimum">
     <number>-100</number>
@@ -368,7 +368,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::WheelFocus</enum>
    </property>
    <property name="minimum">
     <number>-100</number>
@@ -644,18 +644,18 @@ bcTranslation</string>
     <rect>
      <x>240</x>
      <y>380</y>
-     <width>48</width>
+     <width>70</width>
      <height>26</height>
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::WheelFocus</enum>
    </property>
    <property name="minimum">
-    <number>-100</number>
+    <number>-999</number>
    </property>
    <property name="maximum">
-    <number>100</number>
+    <number>999</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_13">
@@ -682,7 +682,7 @@ bcAttitude</string>
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::WheelFocus</enum>
    </property>
    <property name="minimum">
     <number>-100</number>

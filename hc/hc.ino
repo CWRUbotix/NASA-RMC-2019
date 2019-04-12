@@ -3,7 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "VESC/VESC.h"
-#include "LSM6DS3.h"
+#include "SparkFunLSM6DS3.h"
 #include "ADS1120.h"
 #include "Herkulex.h"
 #include "values_and_types.h"
@@ -25,7 +25,7 @@ void setup(){
 	
 	debug("setup devices");
 	setup_devices();
-	
+
 	debug("setup sensors");
 	setup_sensors(); 		// sets up sensor data structures
 	
@@ -114,5 +114,11 @@ void loop(){
 		// time_str.concat(String(loop_t, 3));
 		// debug(time_str);
 	}
+	debug("TIME : "+String(TIME_STAMP));
+
+
+	// debug("\nIMU 0 Bus Errors Reported:");
+	// debug(" All '1's = " + String(imu0.allOnesCounter));
+	// debug(" Non-success = " + String(imu0.nonSuccessCounter));
 	
 }

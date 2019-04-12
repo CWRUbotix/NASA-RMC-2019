@@ -31,6 +31,14 @@ float VESC::get_current_in(){
 	return (this->motor_values).current_in;
 }
 
+float VESC::get_temperature_1(){
+	return (this->motor_values).temp_mos1;
+}
+
+float VESC::get_temperature_2(){
+	 return (this->motor_values).temp_mos2;
+}
+
 // COMMANDS
 void VESC::request_mc_values(){
 	this->send_ind = 0;

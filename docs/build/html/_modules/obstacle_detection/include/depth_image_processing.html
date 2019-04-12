@@ -1,0 +1,457 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>obstacle_detection.include.depth_image_processing &mdash; CWRUbotix NASA-RMC  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> CWRUbotix NASA-RMC
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../obstacle_detection_node.html">Obstacle Detection</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CWRUbotix NASA-RMC</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>obstacle_detection.include.depth_image_processing</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for obstacle_detection.include.depth_image_processing</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains functions which process the depth data from a Kinect v2 sensor and prepares the data for obstacle detection</span>
+
+<span class="sd">Attributes:</span>
+<span class="sd">-----------</span>
+
+<span class="sd">Attributes:</span>
+
+<span class="sd">    CameraParams : Parameters of Kinect v2 sensor used for conversion between depth values and cartesian coordinates:</span>
+
+<span class="sd">        +---------+---------+---------+---------+-----------+----------+-----------+</span>
+<span class="sd">        | cx      | cy      | fx      | fy      | k1        | k2       | k3        |</span>
+<span class="sd">        +=========+=========+=========+=========+===========+==========+===========+</span>
+<span class="sd">        | 254.878 | 205.395 | 365.456 | 365.456 | 0.0905474 | -0.26819 | 0.0950862 |</span>
+<span class="sd">        +---------+---------+---------+---------+-----------+----------+-----------+</span>
+
+<span class="sd">    CameraPosition : Parameters describing the 3D position and orientation of the Kinect. Used for properly orienting the point cloud.</span>
+<span class="sd">        Initially all values are 0, but are updated as the obstacle detection node estumates the ground plane</span>
+
+<span class="sd">Functions:</span>
+<span class="sd">----------</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">os.path</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">random</span>
+
+<span class="c1">#camera information based on the Kinect v2 hardware</span>
+<span class="n">CameraParams</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="s2">&quot;cx&quot;</span><span class="p">:</span><span class="mf">254.878</span><span class="p">,</span>
+  <span class="s2">&quot;cy&quot;</span><span class="p">:</span><span class="mf">205.395</span><span class="p">,</span>
+  <span class="s2">&quot;fx&quot;</span><span class="p">:</span><span class="mf">365.456</span><span class="p">,</span>
+  <span class="s2">&quot;fy&quot;</span><span class="p">:</span><span class="mf">365.456</span><span class="p">,</span>
+  <span class="s2">&quot;k1&quot;</span><span class="p">:</span><span class="mf">0.0905474</span><span class="p">,</span>
+  <span class="s2">&quot;k2&quot;</span><span class="p">:</span><span class="o">-</span><span class="mf">0.26819</span><span class="p">,</span>
+  <span class="s2">&quot;k3&quot;</span><span class="p">:</span><span class="mf">0.0950862</span><span class="p">,</span>
+  <span class="s2">&quot;p1&quot;</span><span class="p">:</span><span class="mf">0.0</span><span class="p">,</span>
+  <span class="s2">&quot;p2&quot;</span><span class="p">:</span><span class="mf">0.0</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># Kinect&#39;s physical orientation in the real world.</span>
+<span class="n">CameraPosition</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="c1"># actual position in meters of kinect sensor relative to the viewport&#39;s center.</span>
+    <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="c1"># actual position in meters of kinect sensor relative to the viewport&#39;s center.</span>
+    <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="c1"># height in meters of actual kinect sensor from the floor.</span>
+    <span class="s2">&quot;roll&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="c1"># angle in degrees of sensor&#39;s roll (used for INU input - trig function for this is commented out by default).</span>
+    <span class="s2">&quot;azimuth&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="c1"># sensor&#39;s yaw angle in degrees.</span>
+    <span class="s2">&quot;elevation&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">30</span><span class="p">,</span> <span class="c1"># sensor&#39;s pitch angle in degrees.</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="depth_matrix_to_point_cloud"><a class="viewcode-back" href="../../../obstacle_detection/depth_image_processing.html#obstacle_detection.include.depth_image_processing.depth_matrix_to_point_cloud">[docs]</a><span class="k">def</span> <span class="nf">depth_matrix_to_point_cloud</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Transforms an entire depth frame into a 3D point cloud using the Kinect parameters defined in ``CameraParams``</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        z (:obj:`numpy.float32`) : A depth frame, generally of millimeter values</span>
+<span class="sd">        scale (:obj:`int`) : the conversion scale to use.  If the depth frame has millimeter units, then by default they will be converted to meters</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A point cloud represented as an [N, 3] Numpy array where each entry on axis 0 represent an XYZ coordinate</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        .. highlight:: python</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            xyz_arr = depth_matrix_to_point_cloud(depth_frame)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">C</span><span class="p">,</span> <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">CameraParams</span><span class="p">[</span><span class="s1">&#39;cx&#39;</span><span class="p">])</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="n">CameraParams</span><span class="p">[</span><span class="s1">&#39;fx&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale</span><span class="p">)</span>
+
+    <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">CameraParams</span><span class="p">[</span><span class="s1">&#39;cy&#39;</span><span class="p">])</span>
+    <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+    <span class="n">C</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">CameraParams</span><span class="p">[</span><span class="s1">&#39;fy&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">((</span><span class="n">z</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span> <span class="o">/</span> <span class="n">scale</span><span class="p">,</span> <span class="n">R</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="o">-</span><span class="n">C</span><span class="o">.</span><span class="n">ravel</span><span class="p">()))</span></div>
+
+
+<div class="viewcode-block" id="depth_to_point_cloud_pos"><a class="viewcode-back" href="../../../obstacle_detection/depth_image_processing.html#obstacle_detection.include.depth_image_processing.depth_to_point_cloud_pos">[docs]</a><span class="k">def</span> <span class="nf">depth_to_point_cloud_pos</span><span class="p">(</span><span class="n">x_d</span><span class="p">,</span> <span class="n">y_d</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Transforms a single depth value to an XYZ coordinate using the Kinect parameters defined in ``CameraParams``</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        x_d (:obj:`int`) : the row index of the depth value in the depth frame</span>
+<span class="sd">        y_d (:obj:`int`) : the column index of the depth value in the depth frame</span>
+<span class="sd">        z (:obj:`float`) : the depth value at index [x_d, y_d]</span>
+<span class="sd">        scale (:obj:`int`) : the conversion scale to use.  If the depth frame has millimeter units, then by default they will be converted to meters</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A tuple (X, Y, Z) representing the cartesian coordinates of the given point in the point cloud</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        .. highlight:: python</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            x, y, z = (row, col, depth)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_d</span> <span class="o">-</span> <span class="n">CameraParams</span><span class="p">[</span><span class="s1">&#39;cx&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">z</span> <span class="o">/</span> <span class="n">CameraParams</span><span class="p">[</span><span class="s1">&#39;fx&#39;</span><span class="p">]</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_d</span> <span class="o">-</span> <span class="n">CameraParams</span><span class="p">[</span><span class="s1">&#39;cy&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">z</span> <span class="o">/</span> <span class="n">CameraParams</span><span class="p">[</span><span class="s1">&#39;fy&#39;</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">x</span> <span class="o">/</span> <span class="n">scale</span><span class="p">,</span> <span class="n">y</span> <span class="o">/</span> <span class="n">scale</span><span class="p">,</span> <span class="n">z</span> <span class="o">/</span> <span class="n">scale</span></div>
+
+
+<div class="viewcode-block" id="apply_camera_orientation"><a class="viewcode-back" href="../../../obstacle_detection/depth_image_processing.html#obstacle_detection.include.depth_image_processing.apply_camera_orientation">[docs]</a><span class="k">def</span> <span class="nf">apply_camera_orientation</span><span class="p">(</span><span class="n">pt</span><span class="p">,</span> <span class="n">CameraPosition</span><span class="o">=</span><span class="n">CameraPosition</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Transforms a single XYZ coordinate according to the position of the Kinect</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pt (:obj:`numpy.float32`) : an XYZ coordinate of a point in the point cloud</span>
+<span class="sd">        CameraPosition (:obj:`dict`) : the current position and orientation of the Kinect sensor.  Either hardcoded in the ``CameraPosition`` dictionary, or computed from the best-fit ground plane</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        An updated XYZ coordinate where the input point has been transformed to correspond with the current camera position and orientation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># This runs slowly in Python as it is required to be called within a loop, but it is a more intuitive example than it&#39;s vertorized alternative (Purly for example)</span>
+    <span class="c1"># use trig to rotate a vertex around a gimbal.</span>
+    <span class="k">def</span> <span class="nf">rotatePoints</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">,</span> <span class="n">deg</span><span class="p">):</span>
+        <span class="c1"># math to rotate vertexes around a center point on a plane.</span>
+        <span class="n">hyp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pt</span><span class="p">[</span><span class="n">ax1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">pt</span><span class="p">[</span><span class="n">ax2</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="c1"># Get the length of the hypotenuse of the real-world coordinate from center of rotation, this is the radius!</span>
+        <span class="n">d_tan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">pt</span><span class="p">[</span><span class="n">ax2</span><span class="p">],</span> <span class="n">pt</span><span class="p">[</span><span class="n">ax1</span><span class="p">])</span> <span class="c1"># Calculate the vertexes current angle (returns radians that go from -180 to 180)</span>
+
+        <span class="n">cur_angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">d_tan</span><span class="p">)</span> <span class="o">%</span> <span class="mi">360</span> <span class="c1"># Convert radians to degrees and use modulo to adjust range from 0 to 360.</span>
+        <span class="n">new_angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">((</span><span class="n">cur_angle</span> <span class="o">+</span> <span class="n">deg</span><span class="p">)</span> <span class="o">%</span> <span class="mi">360</span><span class="p">)</span> <span class="c1"># The new angle (in radians) of the vertexes after being rotated by the value of deg.</span>
+
+        <span class="n">pt</span><span class="p">[</span><span class="n">ax1</span><span class="p">]</span> <span class="o">=</span> <span class="n">hyp</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">new_angle</span><span class="p">)</span> <span class="c1"># Calculate the rotated coordinate for this axis.</span>
+        <span class="n">pt</span><span class="p">[</span><span class="n">ax2</span><span class="p">]</span> <span class="o">=</span> <span class="n">hyp</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">new_angle</span><span class="p">)</span> <span class="c1"># Calculate the rotated coordinate for this axis.</span>
+
+    <span class="c1">#rotatePoints(0, 2, CameraPosition[&#39;roll&#39;]) #rotate on the Y&amp;Z plane # Disabled because most tripods don&#39;t roll. If an Inertial Nav Unit is available this could be used)</span>
+    <span class="n">rotatePoints</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;elevation&#39;</span><span class="p">])</span> <span class="c1">#rotate on the X&amp;Z plane</span>
+    <span class="n">rotatePoints</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;azimuth&#39;</span><span class="p">])</span> <span class="c1">#rotate on the X&amp;Y plane</span>
+
+    <span class="c1"># Apply offsets for height and linear position of the sensor (from viewport&#39;s center)</span>
+    <span class="n">pt</span><span class="p">[:]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">float_</span><span class="p">([</span><span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]])</span>
+    <span class="k">return</span> <span class="n">pt</span></div>
+
+
+<div class="viewcode-block" id="apply_camera_matrix_orientation"><a class="viewcode-back" href="../../../obstacle_detection/depth_image_processing.html#obstacle_detection.include.depth_image_processing.apply_camera_matrix_orientation">[docs]</a><span class="k">def</span> <span class="nf">apply_camera_matrix_orientation</span><span class="p">(</span><span class="n">pt</span><span class="p">,</span> <span class="n">CameraPosition</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Transforms the entire 3D point cloud according to the position of the Kinect.  Basically an efficient vectorized version of ``apply_camera_orientation``</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        pt (:obj:`numpy.float32`) : 3D point cloud represented by an [N, 3] Numpy array</span>
+<span class="sd">        CameraPosition (:obj:`dict`) : the current position and orientation of the Kinect sensor.  Either hardcoded in the ``CameraPosition`` dictionary, or computed from the best-fit ground plane</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Updated point cloud represented as an [N, 3] numpy array in correct orientation to the Kinect</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Kinect Sensor Orientation Compensation</span>
+    <span class="c1"># bacically this is a vectorized version of applyCameraOrientation()</span>
+    <span class="c1"># uses same trig to rotate a vertex around a gimbal.</span>
+    <span class="k">def</span> <span class="nf">rotatePoints</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">,</span> <span class="n">deg</span><span class="p">):</span>
+        <span class="c1"># math to rotate vertexes around a center point on a plane.</span>
+        <span class="n">hyp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pt</span><span class="p">[:,</span> <span class="n">ax1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">pt</span><span class="p">[:,</span> <span class="n">ax2</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="c1"># Get the length of the hypotenuse of the real-world coordinate from center of rotation, this is the radius!</span>
+        <span class="n">d_tan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">pt</span><span class="p">[:,</span> <span class="n">ax2</span><span class="p">],</span> <span class="n">pt</span><span class="p">[:,</span> <span class="n">ax1</span><span class="p">])</span> <span class="c1"># Calculate the vertexes current angle (returns radians that go from -180 to 180)</span>
+
+        <span class="n">cur_angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">d_tan</span><span class="p">)</span> <span class="o">%</span> <span class="mi">360</span> <span class="c1"># Convert radians to degrees and use modulo to adjust range from 0 to 360.</span>
+        <span class="n">new_angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">((</span><span class="n">cur_angle</span> <span class="o">+</span> <span class="n">deg</span><span class="p">)</span> <span class="o">%</span> <span class="mi">360</span><span class="p">)</span> <span class="c1"># The new angle (in radians) of the vertexes after being rotated by the value of deg.</span>
+
+        <span class="n">pt</span><span class="p">[:,</span> <span class="n">ax1</span><span class="p">]</span> <span class="o">=</span> <span class="n">hyp</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">new_angle</span><span class="p">)</span> <span class="c1"># Calculate the rotated coordinate for this axis.</span>
+        <span class="n">pt</span><span class="p">[:,</span> <span class="n">ax2</span><span class="p">]</span> <span class="o">=</span> <span class="n">hyp</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">new_angle</span><span class="p">)</span> <span class="c1"># Calculate the rotated coordinate for this axis.</span>
+
+    <span class="c1">#rotatePoints(1, 2, CameraPosition[&#39;roll&#39;]) #rotate on the Y&amp;Z plane # Disabled because most tripods don&#39;t roll. If an Inertial Nav Unit is available this could be used)</span>
+    <span class="n">rotatePoints</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;elevation&#39;</span><span class="p">])</span> <span class="c1">#rotate on the X&amp;Z plane</span>
+    <span class="n">rotatePoints</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;azimuth&#39;</span><span class="p">])</span> <span class="c1">#rotate on the X&amp;Y</span>
+
+    <span class="c1"># Apply offsets for height and linear position of the sensor (from viewport&#39;s center)</span>
+    <span class="n">pt</span><span class="p">[:]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">float_</span><span class="p">([</span><span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">CameraPosition</span><span class="p">[</span><span class="s1">&#39;z&#39;</span><span class="p">]])</span>
+    <span class="k">return</span> <span class="n">pt</span></div>
+
+
+<div class="viewcode-block" id="create_circular_mask"><a class="viewcode-back" href="../../../obstacle_detection/depth_image_processing.html#obstacle_detection.include.depth_image_processing.create_circular_mask">[docs]</a><span class="k">def</span> <span class="nf">create_circular_mask</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a circular mask for defining the ROI for plane fitting</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        h (:obj:`int`) : height of frame (depth frame is 424)</span>
+<span class="sd">        w (:obj:`int`) : width of frame (depth frame is 512)</span>
+<span class="sd">        center (:obj:`int`) : (x, y) coordinates of the center of the circle.  If no value is given, center is assumed to be the center of the frame</span>
+<span class="sd">        radius (:obj:`int`) : radius of the circle in pixels</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A [h, w] boolean Numpy array defining the circular mask</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">center</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># use the middle of the image</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">w</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">h</span><span class="o">/</span><span class="mi">2</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">radius</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># use the smallest distance between the center and image walls</span>
+        <span class="n">radius</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">w</span><span class="o">-</span><span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">h</span><span class="o">-</span><span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">Y</span><span class="p">,</span> <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ogrid</span><span class="p">[:</span><span class="n">h</span><span class="p">,</span> <span class="p">:</span><span class="n">w</span><span class="p">]</span>
+    <span class="n">dist_from_center</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">X</span> <span class="o">-</span> <span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y</span><span class="o">-</span><span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">dist_from_center</span> <span class="o">&lt;=</span> <span class="n">radius</span>
+    <span class="k">return</span> <span class="n">mask</span></div>
+
+
+<div class="viewcode-block" id="plane_fit"><a class="viewcode-back" href="../../../obstacle_detection/depth_image_processing.html#obstacle_detection.include.depth_image_processing.plane_fit">[docs]</a><span class="k">def</span> <span class="nf">plane_fit</span><span class="p">(</span><span class="n">points</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Fits a plane to the input point cloud by minimizing the orthogonal distance between each point and the plane using the method of least-squares</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        points (:obj:`numpy.float32`) : point cloud represented as an [N, 3] Numpy array</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A tuple defining the center of the plane</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        .. highlight:: python</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            center, plane = plane_fit(points)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">numpy.linalg</span> <span class="k">import</span> <span class="n">svd</span>
+    <span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">points</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span> <span class="c1"># Collapse trialing dimensions</span>
+    <span class="k">assert</span> <span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;There are only </span><span class="si">{}</span><span class="s2"> points in </span><span class="si">{}</span><span class="s2"> dimensions.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">ctr</span> <span class="o">=</span> <span class="n">points</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">points</span> <span class="o">-</span> <span class="n">ctr</span><span class="p">[:,</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="c1"># Could also use np.cov(x) here.</span>
+    <span class="k">return</span> <span class="n">ctr</span><span class="p">,</span> <span class="n">svd</span><span class="p">(</span><span class="n">M</span><span class="p">)[</span><span class="mi">0</span><span class="p">][:,</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="get_orientation"><a class="viewcode-back" href="../../../obstacle_detection/depth_image_processing.html#obstacle_detection.include.depth_image_processing.get_orientation">[docs]</a><span class="k">def</span> <span class="nf">get_orientation</span><span class="p">(</span><span class="n">xyz_arr</span><span class="p">,</span> <span class="n">num_points</span><span class="p">,</span> <span class="n">n_iter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimates the best fit ground plane by iteratively fitting a plane to a set of random points using the ``plane_fit`` function</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xyz_arr (:obj:`numpy.float32`) : 3D point cloud represented as an [N, 3] Numpy array</span>
+<span class="sd">        num_points (:obj:`int`) : number of points to consider for each plane</span>
+<span class="sd">        n_iter (:obj:`int`) : number of planes to fit before taking the average as the best estimate</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple containing the center, normal, pitch, and azimuth of the Kinect sensor as estimated by the ground plane</span>
+
+<span class="sd">    Examples:</span>
+<span class="sd">        .. highlight:: python</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            center, plane, phi, theta = get_orientation(xyz_arr, num_points)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pitch</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">azimuth</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">planes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">centers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_iter</span><span class="p">):</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">xyz_arr</span><span class="p">)),</span> <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">xyz_arr</span><span class="p">),</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">rand_points</span> <span class="o">=</span> <span class="n">xyz_arr</span><span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">randrange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">xyz_arr</span><span class="p">))]</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">rand_points</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">num_points</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">xyz_arr</span><span class="p">[</span><span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">rand_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">((</span><span class="n">rand_points</span><span class="p">,</span> <span class="n">xyz_arr</span><span class="p">[</span><span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">]]))</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">rand_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">rand_points</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">ctr</span><span class="p">,</span> <span class="n">P</span> <span class="o">=</span> <span class="n">plane_fit</span><span class="p">(</span><span class="n">rand_points</span><span class="p">)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">P</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">P</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">P</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">acos</span><span class="p">(</span><span class="n">P</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">/</span><span class="n">r</span><span class="p">)</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span>
+        <span class="n">phi</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">atan2</span><span class="p">(</span><span class="n">P</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">P</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="n">math</span><span class="o">.</span><span class="n">pi</span>
+        <span class="n">pitch</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
+        <span class="n">azimuth</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+        <span class="n">planes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">P</span><span class="p">)</span>
+        <span class="n">centers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ctr</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">centers</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">planes</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pitch</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">azimuth</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, CWRUbotix
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
