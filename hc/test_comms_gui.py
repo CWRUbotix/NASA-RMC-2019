@@ -220,10 +220,13 @@ class Application(tk.Frame):
 			for i in range(0, len(OUTPUT_LUT)):
 				id_n 	= i
 				try:
-					value 	= float(self.set_entries[i].get())
+					s = self.set_entries[i].get()
+					if len(s) > 0: 		# don't send update if no number is entered
+						value 	= float(s)
+						cmd_str += '{:d},{:.6f} '.format(id_n, value)
 				except ValueError:
 					value 	= 0.0
-				cmd_str += '{:d},{:.6f} '.format(id_n, value)
+				
 			rpy_type, rpy_body, round_trip_time = send_cmd('SET', cmd_str, self.teensy)
 
 

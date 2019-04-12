@@ -134,7 +134,7 @@ void setup_sensors(){
 	sensor->name 		= "EXC TRANS ENC";
 	sensor->device 		= &(device_infos[TRANS_ENCODER]);
 	sensor->type 		= SENS_ROT_ENC;
-	sensor->offset 		= 50.0; 		// NEED TO ACTUALLY MEASURE THIS
+	sensor->offset 		= 45.0; 		// 
 
 	// EXC ROTATION PORT ENCODER (ADC AIN2)
 	sensor 				= &(sensor_infos[EXC_ROT_PORT_ENC]);
@@ -173,6 +173,8 @@ void setup_sensors(){
 	sensor->type 		= SENS_LOAD_CELL;
 	sensor->adc_channel_config = diff_1_2;
 	sensor->prev_values = dep_lc_values;
+	sensor->slope 		= -72.052;
+	sensor->offset 		= 19.022;
 
 	// EXC LOAD LOAD-CELL
 	sensor 				= &(sensor_infos[EXC_LOAD_CELL]);
@@ -188,6 +190,7 @@ void setup_sensors(){
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_0]);
 	sensor->imu_axis 	= 'X';
+	sensor->prev_values = gyro_0_x_values;
 	// sensor->get_value 	= &(sensor->device->imu->get_gyro_x);
 
 	// GYRO-0 Y
@@ -196,6 +199,7 @@ void setup_sensors(){
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_0]);
 	sensor->imu_axis 	= 'Y';
+	sensor->prev_values = gyro_0_y_values;
 	// sensor->get_value 	= &(sensor->device->imu->get_gyro_y);
 
 	// GYRO-0 Z
@@ -204,6 +208,8 @@ void setup_sensors(){
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_0]);
 	sensor->imu_axis 	= 'Z';
+	sensor->offset 		= -2.5;
+	sensor->prev_values = gyro_0_z_values;
 	// sensor->get_value 	= &(sensor->device->imu->get_gyro_z);
 
 	// ACCEL-0 X
@@ -212,6 +218,8 @@ void setup_sensors(){
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_0]);
 	sensor->imu_axis 	= 'X';
+	sensor->slope 		= -9.8; 	// for converting g's to m/s^2
+	sensor->prev_values = accel_0_x_values;
 
 	// ACCEL-0 Y
 	sensor 				= &(sensor_infos[ACCEL_0_Y]);
@@ -219,6 +227,8 @@ void setup_sensors(){
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_0]);
 	sensor->imu_axis 	= 'Y';
+	sensor->slope 		= -9.8; 	// for converting g's to m/s^2
+	sensor->prev_values = accel_0_y_values;
 
 	// ACCEL-0 Z
 	sensor 				= &(sensor_infos[ACCEL_0_Z]);
@@ -226,6 +236,8 @@ void setup_sensors(){
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_0]);
 	sensor->imu_axis 	= 'Z';
+	sensor->slope 		= -9.8; 	// for converting g's to m/s^2
+	sensor->prev_values = accel_0_z_values;
 
 	// GYRO-1 X
 	sensor 				= &(sensor_infos[GYRO_1_X]);
@@ -233,6 +245,7 @@ void setup_sensors(){
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_1]);
 	sensor->imu_axis 	= 'X';
+	sensor->prev_values = gyro_1_x_values;
 
 	// GYRO-1 Y
 	sensor 				= &(sensor_infos[GYRO_1_Y]);
@@ -240,6 +253,7 @@ void setup_sensors(){
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_1]);
 	sensor->imu_axis 	= 'Y';
+	sensor->prev_values = gyro_1_y_values;
 
 	// GYRO-1 Z
 	sensor 				= &(sensor_infos[GYRO_1_Z]);
@@ -247,6 +261,8 @@ void setup_sensors(){
 	sensor->type 		= SENS_GYRO;
 	sensor->device 		= &(device_infos[IMU_1]);
 	sensor->imu_axis 	= 'Z';
+	sensor->offset 		= -4.2;
+	sensor->prev_values = gyro_1_z_values;
 
 	// ACCEL-1 X
 	sensor 				= &(sensor_infos[ACCEL_1_X]);
@@ -254,6 +270,8 @@ void setup_sensors(){
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_1]);
 	sensor->imu_axis 	= 'X';
+	sensor->slope 		= -9.8; 	// for converting g's to m/s^2
+	sensor->prev_values = accel_1_x_values;
 
 	// ACCEL-1 Y
 	sensor 				= &(sensor_infos[ACCEL_1_Y]);
@@ -261,6 +279,8 @@ void setup_sensors(){
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_1]);
 	sensor->imu_axis 	= 'Y';
+	sensor->slope 		= -9.8; 	// for converting g's to m/s^2
+	sensor->prev_values = accel_1_y_values;
 
 	// ACCEL-1 Z
 	sensor 				= &(sensor_infos[ACCEL_1_Z]);
@@ -268,6 +288,8 @@ void setup_sensors(){
 	sensor->type 		= SENS_ACCEL;
 	sensor->device 		= &(device_infos[IMU_1]);
 	sensor->imu_axis 	= 'Z';
+	sensor->slope 		= -9.8; 	// for converting g's to m/s^2
+	sensor->prev_values = accel_1_z_values;
 
 	// DEP. LOWER LIMIT SWITCH
 	sensor 				= &(sensor_infos[DEP_LIMIT_LOWER]);
@@ -320,32 +342,36 @@ void setup_motors(void){
 	motor 				= &(motor_infos[PORT_VESC]);
 	motor->device 		= &(device_infos[VESC_1]);
 	motor->type 		= MTR_VESC;
+	motor->name 		= "PORT VESC";
 	motor->max_setpt 	= 100.0; 					// max RPM
-	motor->max_delta 	= 25.0; 					// final output RPM/s
+	motor->max_delta 	= 35.0; 					// final output RPM/s (changed from 25)
 	motor->rpm_factor 	= 50.0 * 7; 				// external_reduc * pole_pairs
 
 	// STBD VESC (VESC 2)
 	motor 				= &(motor_infos[STBD_VESC]);
 	motor->device 		= &(device_infos[VESC_2]);
 	motor->type 		= MTR_VESC;
+	motor->name 		= "STBD VESC";
 	motor->max_setpt 	= 100.0; 					// max RPM
-	motor->max_delta 	= 25.0; 					// final output RPM/s
+	motor->max_delta 	= 35.0; 					// final output RPM/s (changed from 25)
 	motor->rpm_factor 	= 50.0 * 7; 				// external_reduc * pole_pairs
 
 	// DEP VESC (VESC 3)
 	motor 				= &(motor_infos[DEP_VESC]);
 	motor->device 		= &(device_infos[VESC_3]);
 	motor->type 		= MTR_VESC;
+	motor->name 		= "DEP VESC";
 	motor->limit_1 		= &(sensor_infos[DEP_LIMIT_UPPER]);
 	motor->limit_2 		= &(sensor_infos[DEP_LIMIT_LOWER]);
 	motor->max_setpt 	= 100.0; 					// max RPM
-	motor->max_delta 	= 25.0; 					// final output RPM/s
-	motor->rpm_factor 	= 25.0 * 7; 				// external_reduc * pole_pairs
+	motor->max_delta 	= 50.0; 					// final output RPM/s
+	motor->rpm_factor 	= 49.0 * 7; 				// external_reduc * pole_pairs
 
 	// EXC VESC (VESC 4)
 	motor 				= &(motor_infos[EXC_VESC]);
 	motor->device 		= &(device_infos[VESC_4]);
 	motor->type 		= MTR_VESC;
+	motor->name 		= "EXC VESC";
 	motor->max_setpt 	= 100.0; 					// max RPM
 	motor->max_delta 	= 50.0; 					// final output RPM/s
 	motor->rpm_factor 	= 25.0 * 7; 				// external_reduc * pole_pairs
@@ -355,21 +381,26 @@ void setup_motors(void){
 	motor->device 		= &(device_infos[DAC_0]); 	// DAC 0 is dead, but we'll use the CS pin for RC style control
 	motor->sensor 		= &(sensor_infos[EXC_TRANS_ENC]);
 	motor->type 		= MTR_SABERTOOTH_RC;
+	motor->name 		= "EXC TRANS";
 	motor->limit_1 		= &(sensor_infos[EXC_CONV_LIMIT_UPPER]);
 	motor->limit_2 		= &(sensor_infos[EXC_CONV_LIMIT_LOWER]);
+	motor->min_setpt 	= 0.0;
 	motor->max_setpt 	= 780.0; 					// max positional value (mm)
 	motor->setpt 		= 0.0; 		// FOR TESTING
 	motor->kp 			= 5.0;
-	motor->ki 			= 0.0;
+	motor->ki 			= 10.0;
+	motor->max_integ 	= 20.0;
 	motor->deadband 	= 75.0; 	// at least
+	motor->err_margin 	= 1.0; 
 	motor->min_power 	= -500.0;
-	motor->max_power 	= 500.0;
+	motor->max_power 	= 300.0;
 
 	// Exc Rot Port (DAC 2)
 	motor 				= &(motor_infos[EXC_ROT_PORT]);
 	motor->sensor 		= &(sensor_infos[EXC_ROT_PORT_ENC]);
 	motor->device 		= &(device_infos[DAC_2]);
 	motor->type 		= MTR_SABERTOOTH;
+	motor->name 		= "EXC ROT PORT";
 	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
 	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
 	motor->min_setpt 	= 10.0;
@@ -387,6 +418,7 @@ void setup_motors(void){
 	motor->sensor 		= &(sensor_infos[EXC_ROT_STBD_ENC]);
 	motor->device 		= &(device_infos[DAC_1]);
 	motor->type 		= MTR_SABERTOOTH;
+	motor->name 		= "EXC ROT STBD";
 	motor->limit_1 		= &(sensor_infos[EXC_LIMIT_FORE]);
 	motor->limit_2 		= &(sensor_infos[EXC_LIMIT_AFT]);
 	motor->min_setpt 	= 10.0;
@@ -403,6 +435,7 @@ void setup_motors(void){
 	motor 				= &(motor_infos[LOOKY_PORT]);
 	motor->device 		= &(device_infos[LOOKY_0]);
 	motor->type 		= MTR_LOOKY;
+	motor->name 		= "PORT LOOKY";
 	motor->max_setpt 	= 150.0; 					// max position in degrees
 	motor->min_setpt 	= -150.0;
 	motor->max_power 	= 120.0; 	// degrees per second
@@ -411,6 +444,7 @@ void setup_motors(void){
 	motor 				= &(motor_infos[LOOKY_STBD]);
 	motor->device 		= &(device_infos[LOOKY_1]);
 	motor->type 		= MTR_LOOKY;
+	motor->name 		= "STBD LOOKY";
 	motor->max_setpt 	= 150.0; 					// max position in degrees
 	motor->min_setpt 	= -150.0;
 	motor->max_power 	= 120.0; 	// degrees per second

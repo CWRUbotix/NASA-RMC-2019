@@ -34,6 +34,8 @@ public:
 	void set_rpm(int rpm);
 	int  get_rpm();
 	float get_current_in();
+	float get_temperature_1();
+	float get_temperature_2();
 };
 
 #endif

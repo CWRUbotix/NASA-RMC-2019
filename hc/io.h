@@ -1,5 +1,3 @@
-#include <XYZrobotServo.h>
-
 #ifndef IO_H_
 #define IO_H_
 
@@ -33,57 +31,87 @@ void update_sensors(){
 				if(sensor->device != NULL && sensor->device->is_setup){
 	        		uint16_t temp 		= 0;
 	        		int16_t signed_temp = 0;
+	        		float ratio 		= 0.0;
 	        		float f_temp 		= 0.0;
 	        		sensor->value_good = sensor->device->adc->read_channel(sensor->adc_channel_config, &temp);
 					if(sensor->value_good){
 						memcpy(&signed_temp, &temp, 2);
-						f_temp = (signed_temp/32767.0)*5.0; 					// voltage
-						sensor->value = sensor->slope*f_temp + sensor->offset;	// apply linear correction
+						ratio 			= signed_temp/32767.0; 	// ratio of full scale
+						f_temp 			= ratio*5.0; 			// voltage
+						sensor->value 	= sensor->slope*f_temp + sensor->offset;	// apply linear correction
 						sensor->t_stamp = TIME_STAMP;
 						sensor->prev_values[sensor->val_ind] = sensor->value;
 						sensor->val_ind++;
 						if(sensor->val_ind >= NUM_PREV_VALUES){
 							sensor->val_ind = 0;}
-						debug("Load cell v:\t"+String(f_temp, 3));
+						float max_value = max_in_array(sensor->prev_values, NUM_PREV_VALUES);
+						if(i == EXC_LOAD_CELL){
+							debug(String(sensor->name)+":"+
+								String(f_temp, 3)+":"+
+								String(max_value, 3)+":"+
+								String(ratio, 2));
+						}
 					}else{
-						debug("Load cell read ERROR");
+						debug(String(sensor->name)+":"+"ERROR");
 					}
 				}
 				break;}
 			case SENS_GYRO:{
 				if(sensor->device != NULL && sensor->device->is_setup){
+
+					SPI.beginTransaction(IMU_SPI_settings);
 					switch(sensor->imu_axis){
-						case 'X': sensor->value = device->imu->get_gyro_x(); break;
-						case 'Y': sensor->value = device->imu->get_gyro_y(); break;
-						case 'Z': sensor->value = device->imu->get_gyro_z(); break;
+						case 'X': {sensor->value = device->imu->readFloatGyroX(); break;}
+						case 'Y': {sensor->value = device->imu->readFloatGyroY(); break;}
+						case 'Z': {sensor->value = device->imu->readFloatGyroZ(); break;}
 					}
+					SPI.endTransaction();
+					sensor->t_stamp = TIME_STAMP;
+					sensor->value 	= sensor->slope * sensor->value + sensor->offset;
+					// sensor->prev_values[sensor->val_ind] = sensor->value;
+					// sensor->val_ind++;
+					// if(sensor->val_ind >= NUM_PREV_VALUES){
+					// 	sensor->val_ind = 0;}
 				}
-				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_ACCEL:{
 				if(sensor->device != NULL && sensor->device->is_setup){
+					SPI.beginTransaction(IMU_SPI_settings);
 					switch(sensor->imu_axis){
-						case 'X': sensor->value = device->imu->get_accel_x(); break;
-						case 'Y': sensor->value = device->imu->get_accel_y(); break;
-						case 'Z': sensor->value = device->imu->get_accel_z(); break;
+						case 'X': {sensor->value = device->imu->readFloatAccelX(); break;}
+						case 'Y': {sensor->value = device->imu->readFloatAccelY(); break;}
+						case 'Z': {sensor->value = device->imu->readFloatAccelZ(); break;}
 					}
+					SPI.endTransaction();
+					sensor->t_stamp = TIME_STAMP;
+					sensor->value = sensor->slope * sensor->value + sensor->offset; 	// convert g's to m/s^2
+					// sensor->prev_values[sensor->val_ind] = sensor->value;
+					// sensor->val_ind++;
+					// if(sensor->val_ind >= NUM_PREV_VALUES){
+					// 	sensor->val_ind = 0;}
 				}
-				sensor->t_stamp = TIME_STAMP;
 				break;}
 			case SENS_ROT_ENC:{
-				float delta = (encoder_A_pulses/ROT_ENC_PPR) * EXC_MM_PER_ROT;  // how much have we moved in this loop
-				sensor_infos[EXC_TRANS_ENC].value += delta; 					// change value by this much
-				sensor_infos[EXC_TRANS_ENC].t_stamp = TIME_STAMP;
-				encoder_A_pulses = 0; // reset this
-				
+				float delta 		= (encoder_A_pulses/ROT_ENC_PPR) * EXC_MM_PER_ROT;  // how much have we moved in this loop
+				encoder_A_pulses 	= 0; // reset this
+				long new_time 		= TIME_STAMP;
+				float speed 		= delta / ((new_time - sensor->t_stamp)/1000000.0); // in mm/s
+				sensor->value 		+= delta; 					// change value by this much
+				sensor->t_stamp 	= new_time;
+				debug("EXC TRANS SPD:"+String(speed,3));
 				break;}
 			case SENS_BLDC_ENC:{
 				if(sensor->device != NULL && sensor->device->is_setup){
 					// sensor->device->vesc->request_mc_values(); 				// should have been called during maintain motors
 					sensor->device->vesc->update_mc_values(); 					// read the available packet
 					sensor->value = 1.0*sensor->device->vesc->get_rpm();		// get the motor RPM
-					sensor->value = sensor->value / sensor->motor->rpm_factor; 	// convert to output RPM
+					sensor->value 	= sensor->value / sensor->motor->rpm_factor; 	// convert to output RPM
 					sensor->t_stamp = TIME_STAMP;
+					float current 	= sensor->device->vesc->get_current_in();
+					float temp_1 	= sensor->device->vesc->get_temperature_1();
+					// float temp_2 	= sensor->device->vesc->get_temperature_2();
+
+					debug(String(sensor->motor->name)+" : "+String(current,3)+" : "+String(temp_1,3)); 
 				}
 				break;}
 			case SENS_POT_ENC:{
@@ -98,7 +126,7 @@ void update_sensors(){
 						temp 			= -((float)pow(4.0*temp + 9.4132, 2) - 170.7218)/102.7197;
 						temp 			= 1.6917 - (float)acos( temp ); // angle in radians
 						sensor->value 	= temp * (180/3.14159); 		// convert to degrees
-						debug("Pot. raw val:\t"+String(raw, DEC));
+						// debug("Pot. raw val:\t"+String(raw, DEC));
 					}else{
 						debug("Pot. read ERROR");
 					}
@@ -147,6 +175,7 @@ void maintain_motors(){
 				motor->device->vesc->set_rpm(rpm); 							// actually send the rpm
 				motor->device->vesc->request_mc_values(); 					// resonse packet should be ready when we call update sensors
 				motor->t_stamp = TIME_STAMP;
+
 				break;}
 			case MTR_SABERTOOTH:{
 				
@@ -210,12 +239,12 @@ void maintain_motors(){
 				}else{}
 
 
-				debug(String(i, DEC) + " Sabertooth,\tError: " + String(err, 3) + " deg,\tV: "+ String(voltage, 3));
-				
+				// debug(String(i, DEC) + " Sabertooth,\tError: " + String(err, 3) + " deg,\tV: "+ String(voltage, 3));
+				motor->power = voltage; 	// for other things to reference it
 				if(motor->device->interface == DIGITAL_IO){
 					int pwm = (int)(voltage + 4095.0/2 + 0.5);
-					debug("PIN: " + String(motor->device->spi_cs));
-					debug("pwm: " + String(pwm, DEC));
+					// debug("PIN: " + String(motor->device->spi_cs));
+					// debug("pwm: " + String(pwm, DEC));
 					analogWrite(motor->device->spi_cs, pwm);
 				}else{
 					// voltage = voltage + MOTOR_ANLG_CENTER_V; 	// shift bipolar voltage into the correct range
@@ -236,19 +265,21 @@ void maintain_motors(){
 				float power 	= 0.0;//motor->setpt; // FOR DEBUGGING
 				float dt 		= (TIME_STAMP - motor->t_stamp) / 1000000.0;
 				float err 		= motor->setpt - motor->sensor->value; 	// error in mm
-				motor->integ 	+= err*dt;
-				if(motor->integ != motor->integ){
-					motor->integ = 0.0;
-				}
-				motor->integ = fconstrain(motor->integ, -motor->max_integ, motor->max_integ);
-
+				
+				
 				if(fabs(err) > motor->err_margin){
+					motor->integ 	+= err*dt; 			// only integrate when outside the error margin
+					if(motor->integ != motor->integ){
+						motor->integ = 0.0;
+					}
+					motor->integ = fconstrain(motor->integ, -motor->max_integ, motor->max_integ);
+
 					power = motor->kp*err + motor->ki*motor->integ;
 				}else{
-					power = 0.0; 	// stop the fucker
+					power = 0.0; 						// stop the fucker
 				}
 				// ACCOUNT FOR DEADBAND
-				int dir = get_sign(power); 	// in case something changed
+				int dir = get_sign(power); 				
 				if(dir > 0){
 					power = fmap(power, 0, motor->max_power, motor->deadband, motor->max_power);
 				}else if(dir < 0){
@@ -260,16 +291,17 @@ void maintain_motors(){
 				dir 		= get_sign(power);
 				if(motor->limit_1->value > 0.0){
 					if(dir != motor->limit_1->allowed_dir){
-						power = 0.0;
+						power = 0.0; 								// STOP
 					}
 					motor->sensor->value = motor->limit_1->offset;  // what is the position at this limit
 				}else if(motor->limit_2->value > 0.0){
 					if(dir != motor->limit_2->allowed_dir){
-						power = 0.0;
+						power = 0.0; 								// STOP
 					}
 					motor->sensor->value = motor->limit_2->offset;  // what is the position at this limit
 				}
-
+				motor->power = power; 
+				debug(String(motor->name)+String(i,DEC)+" : "+String(power,1));
 				int pulse_width = power + 1500.0 + 0.5;
 				digitalWrite(motor->device->spi_cs, HIGH);
 				delayMicroseconds(pulse_width);
@@ -312,7 +344,7 @@ void package_DAC_voltage(float v, uint8_t* data){
 	data[0] &= 0x00;
 
 	uint16_t temp = (uint16_t)(((v/5.0)*65535)+0.5);
-	debug("DAC voltage: " + String(temp));
+	// debug("DAC voltage: " + String(temp));
 	data[1] = (temp >> 8) & 0xFF;
 	data[2] = (temp) & 0xFF;
 }
