@@ -3,6 +3,7 @@
 map<uint8_t, float> motorValues;
 ros::Publisher sensorPublisher;
 ros::Subscriber motorSubscriber;
+ros::Subscriber driveSubscriber;
 
 serial::Serial hcSerial;
 unsigned long baud = 115200; 
@@ -23,6 +24,29 @@ bool addMotorValue(int ID, float value){
 
 void addMotorCallback(const hci::motorCommand& msg){
     addMotorValue(msg.motorID, msg.value);
+}
+
+void driveCommandCallback(const hci::driveCommand& msg){
+    if(msg.direction == 0){
+    	//forward
+    	addMotorValue(0, msg.value);
+    	addMotorValue(1, msg.value);
+    }
+    else if(msg.direction == 1){
+    	//backward
+    	addMotorValue(0, -msg.value);
+    	addMotorValue(1, -msg.value);
+    }
+    else if(msg.direction == 2){
+    	//rightward
+    	addMotorValue(0, msg.value);
+    	addMotorValue(1, -msg.value);
+    }
+    else if(msg.direction == 3){
+    	//leftward
+    	addMotorValue(0, -msg.value);
+    	addMotorValue(1, msg.value);
+    }
 }
 
 void enumeratePorts(void){
@@ -56,6 +80,11 @@ vector<uint8_t> generateMotorCommandMessage(void){
     vector<uint8_t> commandMessage;
     commandMessage.push_back(setOutputsByte);
     uint16_t checksum = 0;
+
+    if(abs(motorValues[0]) != abs(motorValues[1])){
+    	ROS_WARN("Sending motor command to one drive motor but not the other!");
+    }
+
     for(map<uint8_t,float>::iterator it = motorValues.begin(); it != motorValues.end(); it++) {
 
         commandMessage.push_back(it->first);
@@ -169,15 +198,16 @@ int main(int argc, char** argv) {
     ros::NodeHandle n; 
     sensorPublisher = n.advertise<hci::sensorValue>("sensorValue", 32);
     motorSubscriber = n.subscribe("motorCommand",10,addMotorCallback); 
+    driveSubscriber = n.subscribe("driveCommand",10,driveCommandCallback);
 
-    /*string port = "0";
+    string port = "0";
     while(port == "0"){
         port = findHardwareControllerPort();
         ros::Duration(1).sleep();
     } 
     ROS_INFO("%s\n ", port.c_str());
-    */
-    while(ros::ok()){/*
+    
+    while(ros::ok()){
         if(!hcSerial.isOpen()){
             while(!hcSerial.isOpen()){
                 try
@@ -197,43 +227,43 @@ int main(int argc, char** argv) {
                 ros::spinOnce();
             }
             ROS_INFO("Serial port opened");
-        }*/
+        }
         vector<uint8_t> motorCommandMessage = generateMotorCommandMessage();
-        /*ROS_INFO("NEW MOTOR MESSAGE");
+        ROS_INFO("NEW MOTOR MESSAGE");
         for (std::vector<uint8_t>::const_iterator i = motorCommandMessage.begin(); i != motorCommandMessage.end(); ++i){
             ROS_INFO("%u", *i);
-        }*/
+        }
 
-        //ROS_INFO("LENGTH OF MOTOR COMMAND: %u", (motorCommandMessage[1] << 8) + motorCommandMessage[2]);
+        ROS_INFO("LENGTH OF MOTOR COMMAND: %u", (motorCommandMessage[1] << 8) + motorCommandMessage[2]);
 
 
-        //hcSerial.write(motorCommandMessage);
-        //vector<uint8_t> motorCommandResponse;
-        //hcSerial.read(motorCommandResponse, motorCommandMessage.size());
+        hcSerial.write(motorCommandMessage);
+        vector<uint8_t> motorCommandResponse;
+        hcSerial.read(motorCommandResponse, motorCommandMessage.size());
         //assume for now that this works...
 
 
         //now move on to asking about the sensors
 
         vector<uint8_t> sensorRequestMessage = generateSensorRequestMessage();
-        //ROS_INFO("NEW SENSOR MESSAGE");
-        //for (std::vector<uint8_t>::const_iterator i = sensorRequestMessage.begin(); i != sensorRequestMessage.end(); ++i){
-        //    ROS_INFO("%u", *i);
-        //}
+        ROS_INFO("NEW SENSOR MESSAGE");
+        for (std::vector<uint8_t>::const_iterator i = sensorRequestMessage.begin(); i != sensorRequestMessage.end(); ++i){
+            ROS_INFO("%u", *i);
+        }
 
-        //hcSerial.write(sensorRequestMessage);
+        hcSerial.write(sensorRequestMessage);
         vector<uint8_t> sensorRequestResponse;
         //jank cuz yolo
         uint16_t sensorRequestResponseLength = (((sensorRequestResponse.size() - 5) * 9) + 5);
-        //hcSerial.read(sensorRequestResponse, sensorRequestResponseLength);
+        hcSerial.read(sensorRequestResponse, sensorRequestResponseLength);
 
-        ROS_INFO("SENSOR RESPONSE LENGTH: %lu" , sensorRequestResponse.size());
+        //ROS_INFO("SENSOR RESPONSE LENGTH: %lu" , sensorRequestResponse.size());
 
-        parseSensorResponseMessage(motorCommandMessage);
-        
+        parseSensorResponseMessage(sensorRequestResponse);
 
 
-        ros::Duration(.1).sleep();
+
+        ros::Duration(.05).sleep();
         ros::spinOnce();
 
     }

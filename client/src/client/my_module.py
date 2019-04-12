@@ -221,13 +221,14 @@ class MyPlugin(Plugin):
     def w_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
-        robotInterface.sendDriveCommand(0, motor_speed) 
+        robotInterface.sendDriveCommand(0, motor_speed)
         print("w key pressed")
 
     def a_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
-        robotInterface.sendDriveCommand(3, motor_speed) 
+
+        robotInterface.sendDriveCommand(3, motor_speed)
         print("a key pressed")
 
     def s_pressed(self, motor_speed=None):

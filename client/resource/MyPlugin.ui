@@ -317,7 +317,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::WheelFocus</enum>
    </property>
    <property name="minimum">
     <number>-100</number>
@@ -336,7 +336,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::WheelFocus</enum>
    </property>
    <property name="minimum">
     <number>-100</number>
@@ -355,7 +355,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::WheelFocus</enum>
    </property>
    <property name="minimum">
     <number>-30</number>
@@ -374,7 +374,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::WheelFocus</enum>
    </property>
    <property name="minimum">
     <number>-100</number>
@@ -652,13 +652,14 @@ bcTranslation</string>
      <y>380</y>
      <width>101</width>
      <height>31</height>
+
     </rect>
    </property>
    <property name="focusPolicy">
     <enum>Qt::WheelFocus</enum>
    </property>
    <property name="minimum">
-    <number>-100</number>
+    <number>-999</number>
    </property>
    <property name="maximum">
     <number>800</number>

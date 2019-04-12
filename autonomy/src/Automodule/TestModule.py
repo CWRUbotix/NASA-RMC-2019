@@ -125,7 +125,11 @@ class Robot_state:
 currentState = Robot_state()
 logfile = None
 motor_pub = rospy.Publisher('motorCommand', motorCommand, queue_size=100)
-ROBOT_SPEED = 0.0
+
+
+
+
+ROBOT_SPEED = 30.0
 
 def logData(drive, direction, value):
     log = ""
@@ -152,7 +156,7 @@ def conservative_drive(dest, forward):
         print 'distance to destination ' + str(currentState.getCurrentPos().distanceTo(dest))
         if currentState.getCurrentPos() == dest:
             done = True
-        elif math.fabs(initPos.distanceTo(currentState.getCurrentPos()) - initPos.distanceTo(dest)) < 0.05:
+        elif math.fabs(initPos.distanceTo(currentState.getCurrentPos())) > 1.5:
             print 'Did not arrive at destination, but moved far enough'
             print 'deviation: ' + str(dest.distanceTo(currentState.getCurrentPos()))
             done = True
@@ -356,14 +360,14 @@ def updateState(msg):
         currentState.setGyro1Y(msg.value)
     elif msg.sensorID == 19:
         currentState.setGyro1Z(msg.value)
-    elif msg.sensorID == 23:
-        currentState.setDepLowerLimit(bool(msg.value))
-    elif msg.sensorID == 24:
-        currentState.setDepUpperLimit(bool(msg.value))
-    elif msg.sensorID == 27:
-        currentState.setBCArmLowerLimit(bool(msg.value))
-    elif msg.sensorID == 28:
-        currentState.setBCArmUpperLimit(bool(msg.value))
+   # elif msg.sensorID == 23:
+     #   currentState.setDepLowerLimit(bool(msg.value))
+    #elif msg.sensorID == 24:
+     #   currentState.setDepUpperLimit(bool(msg.value))
+    #elif msg.sensorID == 27:
+     #   currentState.setBCArmLowerLimit(bool(msg.value))
+    #elif msg.sensorID == 28:
+     #   currentState.setBCArmUpperLimit(bool(msg.value))
 
 def updateObstacle(msg):
     global currentState
@@ -371,7 +375,6 @@ def updateObstacle(msg):
     currentState.addObstcle(obs)
 
 def updatePos(msg):
-    print "loc data received"
     global currentState
     pos = pp.Position(msg.x, msg.y, msg.theta)
     currentState.setCurrentPos(pos)
@@ -396,7 +399,7 @@ def main():
                 simple_turn_test1, simple_turn_test2, simple_turn_test3,
                 transit_test1, transit_test2, transit_test3, deposition_align_test]
     routine = int(sys.argv[1])
-    rospy.init_node('Auonomy_Test')
+    rospy.init_node('Autonomy_Test')
     subscribe()
     rospy.on_shutdown(testShutdown)
     waitForLocalization()
