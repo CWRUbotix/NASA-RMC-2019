@@ -3,11 +3,13 @@
   <arg name="debug" default="false"/>
   <arg name="device_0" default="/dev/video0" />
   <arg name="device_1" default="/dev/video1" />
+  <arg name="device_2" default="/dev/video2" />
   
   <!-- Activate Image Processing Node -->
   <!-- refer to: http://wiki.ros.org/image_proc  -->
   <node ns="usb_cam_0" pkg="image_proc" type="image_proc" name="image_proc_0"/>  
   <node ns="usb_cam_1" pkg="image_proc" type="image_proc" name="image_proc_1"/> 
+  <node ns="usb_cam_2" pkg="image_proc" type="image_proc" name="image_proc_2"/> 
 
   <!-- Activate Camera Driver Node -->
   <include file="$(find usb_cam)/launch/camera.launch">
@@ -20,6 +22,11 @@
     <arg name="device" value="$(arg device_1)" />
     <arg name="name" value="1" />
   </include>
+  <include file="$(find usb_cam)/launch/camera.launch">
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="device" value="$(arg device_2)" />
+    <arg name="name" value="2" />
+  </include>
 
   <!-- show image for debug -->
   <group  if="$(arg debug)">
@@ -29,6 +36,10 @@
 	</node>
     <node pkg="image_view" type="image_view" name="image_rect_1" if="$(arg debug)">
     <remap from="image" to="/usb_cam_1/image_rect_color" />
+    <param name="autosize" type="bool" value="true" />
+  </node>
+    <node pkg="image_view" type="image_view" name="image_rect_2" if="$(arg debug)">
+    <remap from="image" to="/usb_cam_2/image_rect_color" />
     <param name="autosize" type="bool" value="true" />
   </node>
   </group>

@@ -25,7 +25,7 @@ class AprilTagDescription{
 
 class AprilTagDetector{
  public:
-  AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& pnh);
+  AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& nh1, ros::NodeHandle& pnh);
   ~AprilTagDetector();
  private:
   void imageCb(const sensor_msgs::ImageConstPtr& msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
@@ -35,12 +35,16 @@ class AprilTagDetector{
   std::map<int, AprilTagDescription> descriptions_;
   std::string sensor_frame_id_;
   image_transport::ImageTransport it_;
+  image_transport::ImageTransport it_1;
   image_transport::CameraSubscriber image_sub_;
+  image_transport::CameraSubscriber image_sub_1;
+  image_transport::CameraSubscriber image_sub_2;
   image_transport::Publisher image_pub_;
   ros::Publisher detections_pub_;
   ros::Publisher pose_pub_;
   ros::Publisher localization_pub_;
   ros::Publisher localization_1_pub_;
+  ros::Publisher motor_commands_;
   tf::TransformBroadcaster tf_pub_;
   boost::shared_ptr<AprilTags::TagDetector> tag_detector_;
   bool projected_optics_;
