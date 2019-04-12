@@ -111,8 +111,11 @@ class MyPlugin(Plugin):
         self._widget.d_button.pressed.connect(self.d_pressed)
 
         self._widget.zero_locomotion_button.pressed.connect(self.zero_locomotion_speeds)
+        
         self._widget.start_shift_button.pressed.connect(self.setup_translate_shift_timer)
         self._widget.translate_cancel_button.pressed.connect(self.cancel_shift)
+        self._widget.attitude_shift_button.pressed.connect(self.setup_attitude_timer)
+        self._widget.attitude_shift_cancel_button.pressed.connect(self.cancel_attitude_shift)
 
         # ROS Connection Fields
         """
@@ -139,9 +142,10 @@ class MyPlugin(Plugin):
         ### Keyboard teleop setup
         self._widget.keyPressEvent = self.keyPressEvent
         self._widget.keyReleaseEvent = self.keyReleaseEvent
+
         # timer to consecutively send service messages
-        
         self._update_translate_timer = QTimer(self)
+        self._update_attitude_timer = QTimer(self)
         """
         self._update_parameter_timer = QTimer(self)
         self._update_parameter_timer.timeout.connect(
@@ -313,6 +317,7 @@ class MyPlugin(Plugin):
     def motor5_spinbox_changed(self):
         val = int(self.motor_widgets.get(5).value())
         self.send_spinbox_value(5, val)
+        self._widget.attitude_slider.setValue(val)
 
     ### Looky Spinboxes
 
@@ -344,12 +349,32 @@ class MyPlugin(Plugin):
             self._widget.motor4_spinbox.setValue(currentValue + delta)
             self._widget.translate_cancel_button.setEnabled(True)
 
+    def setup_attitude_timer(self):
+        updatesPerSec = int(self._widget.steps_attitude_spinbox.value())
+        msUpdate = int(1000/updatesPerSec)
+        self._update_attitude_timer = QTimer()
+        self._update_attitude_timer.timeout.connect(self.shift_timer_attitude_func)
+        self._update_attitude_timer.start(msUpdate)
+
+    def shift_timer_attitude_func(self):
+        currentValue = self._widget.motor5_spinbox.value()
+        targetValue = int(self._widget.target_attitude_spinbox.value())
+        if(targetValue == currentValue):
+            self._update_attitude_timer = QTimer(self)
+            self._widget.attitude_shift_cancel_button.setEnabled(False)
+        else:
+            delta = (targetValue - currentValue)/abs(targetValue - currentValue)
+            self._widget.motor5_spinbox.setValue(currentValue + delta)
+            self._widget.attitude_shift_cancel_button.setEnabled(True)
     
     # Cancel the 'shift' by just setting the reference to a new QTimer
     def cancel_shift(self):
         self._update_translate_timer.stop()
         self._widget.translate_cancel_button.setEnabled(False)
 
+    def cancel_attitude_shift(self):
+        self._update_attitude_timer.stop()
+        self._widget.attitude_shift_cancel_button.setEnabled(False)
 
     """
     Grouped Motor Control Functions

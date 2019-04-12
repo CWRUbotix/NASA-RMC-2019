@@ -358,10 +358,10 @@
     <enum>Qt::NoFocus</enum>
    </property>
    <property name="minimum">
-    <number>-100</number>
+    <number>-30</number>
    </property>
    <property name="maximum">
-    <number>100</number>
+    <number>30</number>
    </property>
   </widget>
   <widget class="QSpinBox" name="motor3_spinbox">
@@ -899,7 +899,7 @@ Attitude:o/l</string>
     </rect>
    </property>
    <property name="maximum">
-    <number>1780</number>
+    <number>1000</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_20">
@@ -963,7 +963,7 @@ Attitude:o/l</string>
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QSlider" name="verticalSlider">
+  <widget class="QSlider" name="attitude_slider">
    <property name="geometry">
     <rect>
      <x>510</x>
@@ -984,6 +984,9 @@ Attitude:o/l</string>
      <width>71</width>
      <height>26</height>
     </rect>
+   </property>
+   <property name="maximum">
+    <number>60</number>
    </property>
   </widget>
   <widget class="QSpinBox" name="steps_attitude_spinbox">
