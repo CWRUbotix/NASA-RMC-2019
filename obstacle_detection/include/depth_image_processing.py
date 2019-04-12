@@ -1,3 +1,26 @@
+"""
+This module contains functions which process the depth data from a Kinect v2 sensor and prepares the data for obstacle detection
+
+Attributes:
+-----------
+
+Attributes:
+
+    CameraParams : Parameters of Kinect v2 sensor used for conversion between depth values and cartesian coordinates:
+
+        +---------+---------+---------+---------+-----------+----------+-----------+
+        | cx      | cy      | fx      | fy      | k1        | k2       | k3        |
+        +=========+=========+=========+=========+===========+==========+===========+
+        | 254.878 | 205.395 | 365.456 | 365.456 | 0.0905474 | -0.26819 | 0.0950862 |
+        +---------+---------+---------+---------+-----------+----------+-----------+
+
+    CameraPosition : Parameters describing the 3D position and orientation of the Kinect. Used for properly orienting the point cloud.
+        Initially all values are 0, but are updated as the obstacle detection node estumates the ground plane
+
+Functions:
+----------
+
+"""
 import numpy as np
 import math
 import cv2
@@ -6,9 +29,6 @@ import sys
 import time
 import pandas as pd
 import random
-
-path = 'C:/Users/jumpr_000/Desktop/ransac_obstacle_detection/saved'
-frames_dir = "kinect_data/" #the directory holding the saved depth images in .npy format
 
 #camera information based on the Kinect v2 hardware
 CameraParams = {
@@ -34,16 +54,22 @@ CameraPosition = {
 }
 
 
-def depthMatrixToPointCloudPos(z, scale=1000):
+def depth_matrix_to_point_cloud(z, scale=1000):
     """
-    xyz_arr = depthMatrixToPointCloudPos(depth_frame)
+    Transforms an entire depth frame into a 3D point cloud using the Kinect parameters defined in ``CameraParams``
 
-    Given a depth image, converts each
-    point to an XYZ coordinate and returns
-    an array of these points.
-    The scale is a conversion factor.
-    Default converts from milimeter
-    depth data to meters.
+    Args:
+        z (:obj:`numpy.float32`) : A depth frame, generally of millimeter values
+        scale (:obj:`int`) : the conversion scale to use.  If the depth frame has millimeter units, then by default they will be converted to meters
+
+    Returns:
+        A point cloud represented as an [N, 3] Numpy array where each entry on axis 0 represent an XYZ coordinate
+
+    Examples:
+        .. highlight:: python
+        .. code-block:: python
+
+            xyz_arr = depth_matrix_to_point_cloud(depth_frame)
     """
     C, R = np.indices(z.shape)
 
@@ -58,17 +84,24 @@ def depthMatrixToPointCloudPos(z, scale=1000):
     return np.column_stack((z.ravel() / scale, R.ravel(), -C.ravel()))
 
 
-def depthToPointCloudPos(x_d, y_d, z, scale=1000):
+def depth_to_point_cloud_pos(x_d, y_d, z, scale=1000):
     """
-    x, y, z = (row, col, depth)
-    
-    Given a point from a depth image
-    and its position in the image,
-    returns the x, y, and z coordinates
-    relative to the camera location.
-    The scale is a conversion factor.
-    Default converts from milimeter
-    depth data to meters.
+    Transforms a single depth value to an XYZ coordinate using the Kinect parameters defined in ``CameraParams``
+
+    Args:
+        x_d (:obj:`int`) : the row index of the depth value in the depth frame
+        y_d (:obj:`int`) : the column index of the depth value in the depth frame
+        z (:obj:`float`) : the depth value at index [x_d, y_d]
+        scale (:obj:`int`) : the conversion scale to use.  If the depth frame has millimeter units, then by default they will be converted to meters
+
+    Returns:
+        A tuple (X, Y, Z) representing the cartesian coordinates of the given point in the point cloud
+
+    Examples:
+        .. highlight:: python
+        .. code-block:: python
+
+            x, y, z = (row, col, depth)
     """
     x = (x_d - CameraParams['cx']) * z / CameraParams['fx']
     y = (y_d - CameraParams['cy']) * z / CameraParams['fy']
@@ -76,8 +109,17 @@ def depthToPointCloudPos(x_d, y_d, z, scale=1000):
     return x / scale, y / scale, z / scale
 
 
-def applyCameraOrientation(pt):
-    # Kinect Sensor Orientation Compensation
+def apply_camera_orientation(pt, CameraPosition=CameraPosition):
+    """
+    Transforms a single XYZ coordinate according to the position of the Kinect
+
+    Args:
+        pt (:obj:`numpy.float32`) : an XYZ coordinate of a point in the point cloud
+        CameraPosition (:obj:`dict`) : the current position and orientation of the Kinect sensor.  Either hardcoded in the ``CameraPosition`` dictionary, or computed from the best-fit ground plane
+
+    Returns:
+        An updated XYZ coordinate where the input point has been transformed to correspond with the current camera position and orientation
+    """
     # This runs slowly in Python as it is required to be called within a loop, but it is a more intuitive example than it's vertorized alternative (Purly for example)
     # use trig to rotate a vertex around a gimbal.
     def rotatePoints(ax1, ax2, deg):
@@ -100,7 +142,17 @@ def applyCameraOrientation(pt):
     return pt
 
 
-def applyCameraMatrixOrientation(pt):
+def apply_camera_matrix_orientation(pt, CameraPosition):
+    """
+    Transforms the entire 3D point cloud according to the position of the Kinect.  Basically an efficient vectorized version of ``apply_camera_orientation``
+
+    Args:
+        pt (:obj:`numpy.float32`) : 3D point cloud represented by an [N, 3] Numpy array
+        CameraPosition (:obj:`dict`) : the current position and orientation of the Kinect sensor.  Either hardcoded in the ``CameraPosition`` dictionary, or computed from the best-fit ground plane
+
+    Returns:
+        Updated point cloud represented as an [N, 3] numpy array in correct orientation to the Kinect
+    """
     # Kinect Sensor Orientation Compensation
     # bacically this is a vectorized version of applyCameraOrientation()
     # uses same trig to rotate a vertex around a gimbal.
@@ -124,15 +176,47 @@ def applyCameraMatrixOrientation(pt):
     return pt
 
 
+def create_circular_mask(h, w, center=None, radius=None):
+    """
+    Creates a circular mask for defining the ROI for plane fitting
+
+    Args:
+        h (:obj:`int`) : height of frame (depth frame is 424)
+        w (:obj:`int`) : width of frame (depth frame is 512)
+        center (:obj:`int`) : (x, y) coordinates of the center of the circle.  If no value is given, center is assumed to be the center of the frame
+        radius (:obj:`int`) : radius of the circle in pixels
+
+    Returns:
+        A [h, w] boolean Numpy array defining the circular mask
+    """
+    if center is None: # use the middle of the image
+        center = [int(w/2), int(h/2)]
+    if radius is None: # use the smallest distance between the center and image walls
+        radius = min(center[0], center[1], w-center[0], h-center[1])
+
+    Y, X = np.ogrid[:h, :w]
+    dist_from_center = np.sqrt((X - center[0])**2 + (Y-center[1])**2)
+
+    mask = dist_from_center <= radius
+    return mask
+
+
 def plane_fit(points):
     """
-    p, n = plane_fit(points)
+    Fits a plane to the input point cloud by minimizing the orthogonal distance between each point and the plane using the method of least-squares
 
-    Given an array, points, of shape (d,...)
-    representing points in d-dimensional space,
-    fit an d-dimensional plane to the points.
-    Return a point, p, on the plane (the point-cloud centroid),
-    and the normal, n.
+    Args:
+        points (:obj:`numpy.float32`) : point cloud represented as an [N, 3] Numpy array
+
+    Returns:
+        A tuple defining the center of the plane
+
+    Examples:
+        .. highlight:: python
+        .. code-block:: python
+
+            center, plane = plane_fit(points)
+
     """
     from numpy.linalg import svd
     points = np.reshape(points, (np.shape(points)[0], -1)) # Collapse trialing dimensions
@@ -145,29 +229,41 @@ def plane_fit(points):
 
 def get_orientation(xyz_arr, num_points, n_iter):
     """
-    center, plane, theta = get_orientation(xyz_arr, num_points)
+    Estimates the best fit ground plane by iteratively fitting a plane to a set of random points using the ``plane_fit`` function
 
-    Given an array, points, of shape (d,...)
-    representing points in d-dimensional space,
-    fits a plane to the array n_iter times and
-    returns the average of the planes centers,
-    norms, and pitch degrees.
+    Args:
+        xyz_arr (:obj:`numpy.float32`) : 3D point cloud represented as an [N, 3] Numpy array
+        num_points (:obj:`int`) : number of points to consider for each plane
+        n_iter (:obj:`int`) : number of planes to fit before taking the average as the best estimate
+
+    Returns:
+        Tuple containing the center, normal, pitch, and azimuth of the Kinect sensor as estimated by the ground plane
+
+    Examples:
+        .. highlight:: python
+        .. code-block:: python
+
+            center, plane, phi, theta = get_orientation(xyz_arr, num_points)
     """
     pitch = []
+    azimuth = []
     planes = []
     centers = []
     for _ in range(0, n_iter):
-        rand_points = []
+        indices = np.random.choice(np.arange(0, len(xyz_arr)), size=len(xyz_arr), replace=False)
+        rand_points = xyz_arr[random.randrange(0, len(xyz_arr))]
+        i = 0
         while len(rand_points) < num_points:
-            index = random.randrange(0,len(xyz_arr))
-            if not xyz_arr[index].all() == np.zeros(3).all():
-                rand_points.append(xyz_arr[index])
+            if not xyz_arr[indices[i]].all() == 0:
+                rand_points = np.vstack((rand_points, xyz_arr[indices[i]]))
+            i += 1
         rand_points = np.array(rand_points).T
         ctr, P = plane_fit(rand_points)
         r = math.sqrt(P[0]**2 + P[1]**2 + P[2]**2)
         theta = math.acos(P[2]/r) * 180 / math.pi
-        phi = math.atan(P[1]/P[0]) * 180 / math.pi
-        pitch.append(theta)
+        phi = math.atan2(P[1], P[0]) * 180 / math.pi
+        pitch.append(phi)
+        azimuth.append(theta)
         planes.append(P)
         centers.append(ctr)
-    return np.mean(centers, axis = 0), np.mean(planes, axis = 0), np.mean(pitch)
+    return np.mean(centers, axis=0), np.mean(planes, axis=0), np.mean(pitch), np.mean(azimuth)

@@ -62,15 +62,57 @@ principal_y = device.getIrCameraParams().cy  # principal point y
 undistorted = Frame(h, w, 4)
 registered = Frame(h, w, 4)
 
+thetas = np.array([])
+phis = np.array([])
+obstacle_list = []
+obstacle_id = 0
+
+visualize = False
+save_test_data = True
+
+frames_dir = 'test_frames/'
+if save_test_data:
+	try:
+	    os.mkdir(frames_dir)
+	except Exception as e:
+	    pass
+	for f in os.listdir(frames_dir):
+	    os.remove(frames_dir + f)
+
+print(os.getcwd())
+
+frame_i = 0
+
 while True:
     frames = listener.waitForNewFrame()
     depth_frame = frames["depth"]
     color = frames["color"]
     registration.apply(color, depth_frame, undistorted, registered)
     img = depth_frame.asarray(np.float32) / 4500.
+    color_frame = registered.asarray(np.uint8)
+
+    if save_test_data:
+    	np.save(frames_dir + str(frame_i) + ".npy", depth_frame.asarray(np.float32))
+
+    frame_i += 1
+        
     output = get_obstacles_with_plane(img,
-                                      num_planes=46,
-                                      num_points=45,
-                                      dist_thresh=0.1,
-                                      visualize=False,
-                                      send_data=True)
+                                      color_frame,
+                                      obstacle_list,
+                                      thetas,
+                                      phis,
+                                      obstacle_id,
+                                      send_data=True,
+                                      visualize=visualize,
+                                      save_frames=True)
+    
+    if visualize:
+        key = cv2.waitKey(delay=1)
+        if key == ord('q'):
+            break
+    listener.release(frames)
+
+device.stop()
+device.close()
+
+sys.exit(0)
