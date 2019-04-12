@@ -221,25 +221,25 @@ class MyPlugin(Plugin):
     def w_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
-        self.set_locomotion_speeds(motor_speed, motor_speed)
+        robotInterface.sendDriveCommand(0, motor_speed) 
         print("w key pressed")
 
     def a_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
-        self.set_locomotion_speeds(-motor_speed, motor_speed)
+        robotInterface.sendDriveCommand(3, motor_speed) 
         print("a key pressed")
 
     def s_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
-        self.set_locomotion_speeds(-motor_speed, -motor_speed)
+        robotInterface.sendDriveCommand(1, motor_speed)
         print("s key pressed")
 
     def d_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
-        self.set_locomotion_speeds(motor_speed, -motor_speed)
+        robotInterface.sendDriveCommand(2, motor_speed)
         print("d key pressed")
 
     def estop_pressed(self):
@@ -318,6 +318,9 @@ class MyPlugin(Plugin):
         val = int(self.motor_widgets.get(5).value())
         self.send_spinbox_value(5, val)
         self._widget.attitude_slider.setValue(val)
+
+    def motor5_slider_changed(self):
+        val = int(self._widget.attitude_slider.value())
 
     ### Looky Spinboxes
 
