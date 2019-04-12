@@ -43,12 +43,17 @@ void update_sensors(){
 						sensor->prev_values[sensor->val_ind] = sensor->value;
 						sensor->val_ind++;
 						if(sensor->val_ind >= NUM_PREV_VALUES){
-							sensor->val_ind = 0;}
-						float max_value = max_in_array(sensor->prev_values, NUM_PREV_VALUES);
+							sensor->val_ind = 0;
+							// Use this opportunity to re-calculate our baseline
+							float new_baseline 		= 0.5*faverage(sensor->prev_values, NUM_PREV_VALUES) + 0.3*sensor->baseline + 0.2*sensor->last_baseline;
+							sensor->last_baseline 	= sensor->baseline;
+							sensor->baseline 		= new_baseline;
+						}
+						sensor->peak_value = max_in_array(sensor->prev_values, NUM_PREV_VALUES);
 						if(i == EXC_LOAD_CELL){
 							debug(String(sensor->name)+":"+
 								String(f_temp, 3)+":"+
-								String(max_value, 3)+":"+
+								String(sensor->peak_value, 3)+":"+
 								String(ratio, 2));
 						}
 					}else{
@@ -276,8 +281,23 @@ void maintain_motors(){
 
 					power = motor->kp*err + motor->ki*motor->integ;
 				}else{
-					power = 0.0; 						// stop the fucker
+					power = 0.0; 						// STOP
 				}
+
+				// CHANGE MAX-POWER BASED ON SENSOR READINGS
+				SensorInfo* sensor = &(sensor_infos[EXC_LOAD_CELL]);
+				if(sensor->peak_value > sensor->baseline + 0.1){ 	// if too much load is detected
+					motor->max_power -= 1.5; 						// begin to decrement max_power
+					if(motor->max_power < 25.0){
+						motor->max_power = 25; 						// make sure it doesn't get too small
+					}
+				}else{ 												// if we're not under heavy load
+					motor->max_power += 0.1; 						// increment motor->max_power until we're back to normal
+					if(motor->max_power > EXC_NORMAL_POWER){
+						motor->max_power = EXC_NORMAL_POWER;
+					}
+				}
+
 				// ACCOUNT FOR DEADBAND
 				int dir = get_sign(power); 				
 				if(dir > 0){
@@ -286,6 +306,7 @@ void maintain_motors(){
 					power = fmap(power, motor->min_power, 0, motor->min_power, -motor->deadband);
 				}else{}
 
+				// FINAL CONSTRAIN in-case something happened
 				power = fconstrain(power, motor->min_power, motor->max_power);
 
 				dir 		= get_sign(power);
@@ -300,8 +321,9 @@ void maintain_motors(){
 					}
 					motor->sensor->value = motor->limit_2->offset;  // what is the position at this limit
 				}
+
 				motor->power = power; 
-				debug(String(motor->name)+String(i,DEC)+" : "+String(power,1));
+				debug(String(motor->name)+":"+String(power,1));
 				int pulse_width = power + 1500.0 + 0.5;
 				digitalWrite(motor->device->spi_cs, HIGH);
 				delayMicroseconds(pulse_width);

@@ -393,7 +393,7 @@ void setup_motors(void){
 	motor->deadband 	= 75.0; 	// at least
 	motor->err_margin 	= 1.0; 
 	motor->min_power 	= -500.0;
-	motor->max_power 	= 300.0;
+	motor->max_power 	= EXC_NORMAL_POWER;
 
 	// Exc Rot Port (DAC 2)
 	motor 				= &(motor_infos[EXC_ROT_PORT]);

@@ -53,6 +53,9 @@
 #define DEP_UPPER_LIM_PIN 		37
 #define ESTOP_SENSE_PIN 		39
 
+#define EXC_NORMAL_POWER 		300.0
+#define EXC_LOW_POWER 			200.0
+
 #define LIN_ACT_ERR_MARGIN 		0.5
 #define LIN_ACT_KP				400.0
 #define LIN_ACT_KI 				0.0
@@ -222,6 +225,9 @@ struct SensorInfo{
 	float value; 				// holds the value to be sent over USB, updated at t_stamp
 	float last_value; 			// holds the last value for whatever
 	float* prev_values; 		// points to an array of previous values, for filtering, etc.
+	float baseline; 			// 
+	float last_baseline; 		// 
+	float peak_value; 			// 
 	uint8_t val_ind 	= 0; 	// index in this array
 	bool value_good;
 	int t_stamp; 				// update time-stamp
@@ -348,6 +354,14 @@ float max_in_array(float* arr, int len){
 		}
 	}
 	return max;
+}
+
+float faverage(float* arr, int len){
+	float avg = 0.0;
+	for(int i = 0; i<len; i++){
+		avg += arr[i]/len;
+	}
+	return avg;
 }
 
 #endif

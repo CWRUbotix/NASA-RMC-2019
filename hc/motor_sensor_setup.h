@@ -91,6 +91,20 @@ void init_sensors(){
 					device->adc->setup(CONFIG_FOR_LOAD_CELL);
 					device->adc->set_mux_input(diff_1_2);
 					device->adc->set_gain(7); 	// 7 is the max gain
+					for(int i = 0; i<NUM_PREV_VALUES; i++){
+		        		uint16_t temp 		= 0;
+		        		int16_t signed_temp = 0;
+		        		float f_temp 		= 0.0;
+						sensor->value_good = sensor->device->adc->read_channel(sensor->adc_channel_config, &temp);
+						if(sensor->value_good){
+							memcpy(&signed_temp, &temp, 2);
+							f_temp 			= (signed_temp/32767.0)*5.0; 				// voltage
+							sensor->value 	= sensor->slope*f_temp + sensor->offset;	// apply linear correction
+							sensor->prev_values[i] = sensor->value;
+							sensor->baseline += sensor->value/NUM_PREV_VALUES; 			// for generating an average value
+						}
+						delay(5);
+					}
 					device->is_setup = true;
 				}
 				break;}
