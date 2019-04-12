@@ -5,13 +5,16 @@ import rospy
 #from client.msg import sensorValue
 from hci.msg import sensorValue
 from hci.msg import motorCommand
+from hci.msg import driveCommand
 
 
 node_name = 'robotInterface'
 motorCommandTopic = 'motorCommand'
+driveCommandTopic = 'driveCommand'
 sensorValueTopic = 'sensorValue'
 
 motorCommandPub = None
+driveCommandPub = None
 
 sensorValueMap = {
 	0:0,
@@ -58,6 +61,14 @@ def sendMotorCommand(motorID, value):
 	motorCommandPub.publish(motorID, value)
 	return True
 
+def sendDriveCommand(direction, value):
+	global driveCommandPub
+	if driveCommandPub == None:
+		driveCommandPub = rospy.Publisher(driveCommandTopic, driveCommand, queue_size=10)
+		print("why are you like this2")
+	driveCommandPub.publish(direction, value)
+	return True
+
 def sensorValueCallback(data):
 	rospy.loginfo("Sensor %u has value %f", data.sensorID, data.value)
 	sensorValueMap[data.sensorID] = data.value;
@@ -69,5 +80,6 @@ def initializeRobotInterface():
 	#rospy.init_node(node_name,disable_signals=True)
 
 	motorCommandPub = rospy.Publisher(motorCommandTopic, motorCommand, queue_size=10)
+	driveCommandPub = rospy.Publisher(driveCommandTopic, driveCommand, queue_size=10)
 	rospy.Subscriber(sensorValueTopic,sensorValue,sensorValueCallback)
 	#rospy.spin()

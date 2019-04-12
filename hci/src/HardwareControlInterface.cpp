@@ -3,6 +3,7 @@
 map<uint8_t, float> motorValues;
 ros::Publisher sensorPublisher;
 ros::Subscriber motorSubscriber;
+ros::Subscriber driveSubscriber;
 
 serial::Serial hcSerial;
 unsigned long baud = 115200; 
@@ -23,6 +24,29 @@ bool addMotorValue(int ID, float value){
 
 void addMotorCallback(const hci::motorCommand& msg){
     addMotorValue(msg.motorID, msg.value);
+}
+
+void driveCommandCallback(const hci::driveCommand& msg){
+    if(msg.direction == 0){
+    	//forward
+    	addMotorValue(0, msg.value);
+    	addMotorValue(1, msg.value);
+    }
+    else if(msg.direction == 1){
+    	//backward
+    	addMotorValue(0, -msg.value);
+    	addMotorValue(1, -msg.value);
+    }
+    else if(msg.direction == 2){
+    	//rightward
+    	addMotorValue(0, msg.value);
+    	addMotorValue(1, -msg.value);
+    }
+    else if(msg.direction == 3){
+    	//leftward
+    	addMotorValue(0, -msg.value);
+    	addMotorValue(1, msg.value);
+    }
 }
 
 void enumeratePorts(void){
@@ -174,6 +198,7 @@ int main(int argc, char** argv) {
     ros::NodeHandle n; 
     sensorPublisher = n.advertise<hci::sensorValue>("sensorValue", 32);
     motorSubscriber = n.subscribe("motorCommand",10,addMotorCallback); 
+    driveSubscriber = n.subscribe("driveCommand",10,driveCommandCallback);
 
     /*string port = "0";
     while(port == "0"){

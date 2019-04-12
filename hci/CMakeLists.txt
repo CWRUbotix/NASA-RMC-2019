@@ -52,6 +52,7 @@ add_message_files(
 	FILES
 	sensorValue.msg
 	motorCommand.msg
+	driveCommand.msg
 )
 
 ## Generate services in the 'srv' folder
