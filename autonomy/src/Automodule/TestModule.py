@@ -124,6 +124,7 @@ class Robot_state:
 #Current position of the robot
 currentState = Robot_state()
 logfile = None
+gyrolog = None
 motor_pub = rospy.Publisher('motorCommand', motorCommand, queue_size=100)
 
 ROBOT_SPEED_DRIVE = 30.0
@@ -148,8 +149,10 @@ def logTurnData(direction, value, goal, theo_angle_moved, actual_angle_moved, dt
         log = 'Turn:Clockwise Value:' + str(value)
 
     log += 'goal:' + str(goal) + ' angle_calculated:' + str(theo_angle_moved) + ' angle_moved:' + str(actual_angle_moved) + ' delta_t:' + str(dt)
-    log +=  'Gyro_z:' + str(currentState.getGyroZ())
     logfile.write(log + '\n')
+
+def logGyroData(gyro_z, left_rpm, right_rpm, cum_angle, time):
+    gyrolog.write('gyro:' + str(gyro_z) + ' left_rpm:' + str(left_rpm) + ' right_rpm:' + str(right_rpm) + ' cum_angle:' + str(cum_angle) + ' time:' + str(time))
 
 def conservative_drive(dest, forward, distance, deceleration):
     global motor_pub
@@ -170,7 +173,7 @@ def conservative_drive(dest, forward, distance, deceleration):
             done = True
             exit(-1)
         else:
-            if math.fabs(initPos.distanceTo(currentState.getCurrentPos())) > distance * 0.75:
+            if math.fabs(initPos.distanceTo(currentState.getCurrentPos())) > distance * 0.75    :
                 speed -= speed * deceleration
                 speed = max(0, speed)
 
@@ -199,6 +202,7 @@ def conservative_turn(goal, counter, deceleration):
     while not (done or rospy.is_shutdown()):
         rospy.loginfo('Gyro:' + str(currentState.getGyroZ()))
         currentTime = time.time()
+        logGyroData(currentState.getGyroZ(), currentState.getPortRPM(), currentState.getStarRPM(), cum_angle_turn, currentTime - initTime)
         if lastTime is not None:
             cum_angle_turn += angle_moved(currentState.getGyroZ(), currentTime - lastTime)
             cum_angle_turn = min(cum_angle_turn, goal)
@@ -379,8 +383,9 @@ def testShutdown():
 
 def main():
     print "setting up logging"
-    global logfile
+    global logfile, gyrolog
     logfile = open(str(sys.path[1]) + '/logs/' +time.strftime("%b-%a-%d-%H-%M-%S.txt"), "w")
+    gyrolog = open(str(sys.path[1]) + '/logs/gyro_' + time.strftime("%b-%a-%d-%H-%M-%S.txt"), 'w')
 
     routines = [simple_drive_test1, simple_drive_test2, simple_drive_test3,
                 simple_turn_test1, simple_turn_test2, simple_turn_test3,
