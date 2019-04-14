@@ -166,6 +166,8 @@ def process_obstacle(color, cx, cy, box, x, y, obj_length, obj_height, obj_depth
     coords = depth_to_point_cloud_pos(cx, cy, obj_depth)  # convert obstacle depth to XYZ coordinate
     mm_diameter = equi_diameter * (1.0 / CameraParams['fx']) * obj_depth  # convert pixel diameter to mm
 
+    print(coords)
+
     if 100 < mm_diameter < 400:
         new_obstacle = True
         current_obstacle = None
@@ -285,7 +287,7 @@ def get_obstacles_with_plane(depth_frame,
 
     """
     obstacles = np.zeros(depth_frame.shape)  # empty image that will store the locations of detected obstacles
-    img = np.uint8(depth_frame / 4500. * 255.)  # image representation of depth frame
+    img = np.uint8(depth_frame / 4.5 * 255)  # image representation of depth frame
     # crop the depth frame and apply a circular mask
     ground_plane_roi = get_ground_plane_roi(depth_frame, depth_cutoff, y_cutoff, roi_x, roi_y)
 
@@ -361,8 +363,9 @@ def get_obstacles_with_plane(depth_frame,
 
         if visualize:
             cv2.imshow('detected_obstacles', color)
-            #cv2.imshow('plane', plane_img)
-            #cv2.imshow('roi', np.uint8(ground_plane_roi / 4500. * 255.))
+            cv2.imshow('plane', plane_img)
+            cv2.imshow('deph frame', depth_frame)
+            cv2.imshow('roi', np.uint8(ground_plane_roi / 4500. * 255.))
 
         remove_dead_obstacles(obstacle_list)
 
