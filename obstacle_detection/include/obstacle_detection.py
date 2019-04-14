@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from depth_image_processing import *
 from obstacle import Obstacle
 from ros_publish import send_obstacle_data
+from localization_listener import update_position
 
 saved_dir = 'saved_frames/'
 
@@ -68,6 +69,7 @@ def orient_point_cloud_to_ground_plane(xyz_arr, roi_point_cloud, thetas, phis, n
         thetas = thetas[1:]
     if phis.size > memory:
         phis = phis[1:]
+    update_position()
     center = apply_camera_orientation(center, CameraPosition)
     plane = apply_camera_orientation(plane, CameraPosition)
     xyz_arr = apply_camera_matrix_orientation(xyz_arr, CameraPosition)
