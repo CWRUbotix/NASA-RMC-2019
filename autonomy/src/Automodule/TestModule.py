@@ -152,7 +152,7 @@ def logTurnData(direction, value, goal, theo_angle_moved, actual_angle_moved, dt
     logfile.write(log + '\n')
 
 def logGyroData(gyro_z, left_rpm, right_rpm, cum_angle, time):
-    gyrolog.write('gyro:' + str(gyro_z) + ' left_rpm:' + str(left_rpm) + ' right_rpm:' + str(right_rpm) + ' cum_angle:' + str(cum_angle) + ' time:' + str(time))
+    gyrolog.write('gyro:' + str(gyro_z) + ' left_rpm:' + str(left_rpm) + ' right_rpm:' + str(right_rpm) + ' cum_angle:' + str(cum_angle) + ' time:' + str(time)+'\n')
 
 def conservative_drive(dest, forward, distance, deceleration):
     global motor_pub
