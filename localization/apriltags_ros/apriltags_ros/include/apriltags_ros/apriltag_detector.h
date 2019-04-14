@@ -29,6 +29,9 @@ class AprilTagDetector{
   ~AprilTagDetector();
  private:
   void imageCb(const sensor_msgs::ImageConstPtr& msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
+  void imageCb_1(const sensor_msgs::ImageConstPtr& msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
+  void imageCb_2(const sensor_msgs::ImageConstPtr& msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
+  float rawAngle(float position_x, float position_y, float position_z, float orientation_x, float orientation_y, float orientation_z, float orientation_w);
   std::map<int, AprilTagDescription> parse_tag_descriptions(XmlRpc::XmlRpcValue& april_tag_descriptions);
 
  private:
@@ -44,7 +47,9 @@ class AprilTagDetector{
   ros::Publisher pose_pub_;
   ros::Publisher localization_pub_;
   ros::Publisher localization_1_pub_;
+  ros::Publisher localization_2_pub_;
   ros::Publisher motor_commands_;
+  ros::Subscriber sensor_value_sub_;
   tf::TransformBroadcaster tf_pub_;
   boost::shared_ptr<AprilTags::TagDetector> tag_detector_;
   bool projected_optics_;

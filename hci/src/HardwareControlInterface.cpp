@@ -251,7 +251,7 @@ int main(int argc, char** argv) {
 
         //now move on to asking about the sensors
 
-        /*vector<uint8_t> sensorRequestMessage = generateSensorRequestMessage();
+        vector<uint8_t> sensorRequestMessage = generateSensorRequestMessage();
         ROS_INFO("NEW SENSOR MESSAGE");
         for (std::vector<uint8_t>::const_iterator i = sensorRequestMessage.begin(); i != sensorRequestMessage.end(); ++i){
             ROS_INFO("%u", *i);
@@ -265,7 +265,7 @@ int main(int argc, char** argv) {
 
         //ROS_INFO("SENSOR RESPONSE LENGTH: %lu" , sensorRequestResponse.size());
 
-        parseSensorResponseMessage(sensorRequestResponse);*/
+        parseSensorResponseMessage(sensorRequestResponse);
         
 
 
