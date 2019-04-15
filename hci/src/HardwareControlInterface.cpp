@@ -79,6 +79,12 @@ string findHardwareControllerPort(void){
 vector<uint8_t> generateMotorCommandMessage(void){
     vector<uint8_t> commandMessage;
     commandMessage.push_back(setOutputsByte);
+
+
+    if(abs(motorValues[0]) != abs(motorValues[1])){
+    	ROS_WARN("MISMATCH");
+    }
+
     uint16_t checksum = 0;
 
     if(abs(motorValues[0]) != abs(motorValues[1])){
@@ -197,7 +203,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "hci");
     ros::NodeHandle n; 
     sensorPublisher = n.advertise<hci::sensorValue>("sensorValue", 32);
-    motorSubscriber = n.subscribe("motorCommand",10,addMotorCallback); 
+    motorSubscriber = n.subscribe("motorCommand",100,addMotorCallback); 
     driveSubscriber = n.subscribe("driveCommand",10,driveCommandCallback);
 
     string port = "0";
@@ -260,6 +266,7 @@ int main(int argc, char** argv) {
         //ROS_INFO("SENSOR RESPONSE LENGTH: %lu" , sensorRequestResponse.size());
 
         parseSensorResponseMessage(sensorRequestResponse);
+        
 
 
 
