@@ -161,9 +161,9 @@ def conservative_drive(dest, forward, distance, deceleration):
     done = False
     initPos = currentState.getCurrentPos()
     if distance > 1.85:
-    	speed = ROBOT_SPEED_DRIVE
+        speed = ROBOT_SPEED_DRIVE
     else:
-	speed = math.sqrt(distance * 0.5 / 0.0010265)
+        speed = math.sqrt(distance * 0.5 / 0.0010265)
     stop_distance = distance - 0.001265 * speed ** 2
     print str(speed)
     print str(stop_distance)
@@ -174,7 +174,7 @@ def conservative_drive(dest, forward, distance, deceleration):
         rospy.loginfo('distance to destination ' + str(currentState.getCurrentPos().distanceTo(dest)))
         if currentState.getCurrentPos() == dest or\
            initPos.distanceTo(currentState.getCurrentPos()) > stop_distance:
-	    print 'stopping'
+            print 'stopping'
             done = True
         elif math.fabs(initPos.distanceTo(currentState.getCurrentPos())) > distance:
             rospy.loginfo('Did not arrive at destination, but moved far enough')
@@ -195,6 +195,53 @@ def conservative_drive(dest, forward, distance, deceleration):
     mc.drive_right_motor(motor_pub, 0)
     mc.drive_left_motor(motor_pub, 0)
 
+def turn_algo_2(goal, counter):
+    cum_angle = 0
+    stop_angle = 0
+    goal = toRadian(goal)
+    flag = False
+    done = True
+    initTime = time.time()
+    lastTime = None
+    if counter:
+        mc.drive_left_motor(motor_pub, -ROBOT_SPEED_TURN)
+        mc.drive_right_motor(motor_pub, ROBOT_SPEED_TURN)
+    else:
+        mc.drive_left_motor(motor_pub, ROBOT_SPEED_TURN)
+        mc.drive_right_motor(motor_pub, -ROBOT_SPEED_TURN)
+    while not done:
+        w = currentState.getGyroZ()
+        if not flag:
+            if math.fabs(currentState.getPortRPM() + currentState.getStarRPM()) / 2 - ROBOT_SPEED_TURN < 1.0:
+                stop_angle = goal - cum_angle
+                flag = True
+            elif cum_angle >= goal / 2:
+                stop_angle = cum_angle
+                flag = True
+
+        if lastTime is None:
+            lastTime = time.time()
+        else:
+            currentTime = time.time()
+            deltaT = currentTime - lastTime
+            cum_angle += math.fabs(toRadian(w)) * deltaT
+            lastTime = currentTime
+
+        if flag and cum_angle >= stop_angle:
+            mc.drive_right_motor(motor_pub, 0)
+            mc.drive_left_motor(motor_pub, 0)
+            done = True
+        elif math.fabs(currentState.getPortRPM() + currentState.getStarRPM()) / 2 < 1:
+            logfile.write('Robot stopped before reaching the goal in math\n')
+            done = True
+
+        if rospy.is_shutdown():
+            exit(-1)
+
+    measure = raw_input('How much did it turn? (in deg): ')
+    logTurnData(counter, ROBOT_SPEED_TURN, goal, toDegree(cum_angle), float(measure), lastTime - initTime)
+
+
 def conservative_turn(goal, counter, deceleration):
     global motor_pub
     done = False
@@ -205,13 +252,13 @@ def conservative_turn(goal, counter, deceleration):
     goal = goal * math.pi / 180.0 / 0.3
     speed = ROBOT_SPEED_TURN
     if goal > 1.85:
-	speed = ROBOT_SPEED_TURN
+        speed = ROBOT_SPEED_TURN
     else:
-	speed = math.sqrt(distance * 0.5 / 0.0010265)
+        speed = math.sqrt(goal * 0.5 / 0.0010265)
     while not (done or rospy.is_shutdown()):
-	stop_distance = goal - 0.001265 * speed ** 2
-	print str(speed)
-	print str(stop_distance)
+        stop_distance = goal - 0.001265 * speed ** 2
+        print str(speed)
+        print str(stop_distance)
         rospy.loginfo('Gyro:' + str(currentState.getGyroZ()))
         currentTime = time.time()
         logGyroData(currentState.getGyroZ(), currentState.getPortRPM(), currentState.getStarRPM(), cum_angle_turn, currentTime - initTime)
@@ -238,6 +285,16 @@ def conservative_turn(goal, counter, deceleration):
         exit(-1)
     measure = raw_input('How much did it turn? (in deg): ')
     logTurnData(counter, ROBOT_SPEED_TURN, goal, cum_angle_turn, float(measure), lastTime - initTime)
+
+def convert_axis(pos, dx, dy):
+    return pp.Position(pos.getY() + dy, dx - pos.getX(), (pos.getOrientation() + 3 * math.pi / 2) % (2 * math.pi))
+
+DELTA_X = 1.23
+DELTA_Y = 0.825
+
+def looky_turn(goal):
+
+    pass
 
 def angle_moved(angular_velocity, t):
     print 'time ' +  str(t)
@@ -312,7 +369,20 @@ def toDegree(rad):
     return rad * 180 / math.pi
 
 def simple_turn_test2():
-    print 'not implemented'
+    rospy.loginfo('This test routine attempts to turn in place given degrees')
+    while True:
+        print 'current position: ' + str(currentState.getCurrentPos())
+        answer = raw_input('Start testing?  y/n ')
+        if answer == 'y':
+            break
+    goal = float(raw_input('Enter how much to turn in degrees. input should be less than 360'))
+    direction = True
+    if goal > 0:
+        direction = True
+    else:
+        direction = False
+    turn_algo_2(goal, direction)
+    print 'testing successful'
     exit(0)
 
 def simple_turn_test3():
