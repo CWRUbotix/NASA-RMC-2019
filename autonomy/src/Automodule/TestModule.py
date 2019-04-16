@@ -200,7 +200,7 @@ def turn_algo_2(goal, counter):
     stop_angle = 0
     goal = toRadian(goal)
     flag = False
-    done = True
+    done = False
     initTime = time.time()
     lastTime = None
     if counter:
