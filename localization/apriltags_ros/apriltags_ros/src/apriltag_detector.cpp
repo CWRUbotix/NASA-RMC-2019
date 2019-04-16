@@ -465,7 +465,7 @@ void AprilTagDetector::imageCb_1(const sensor_msgs::ImageConstPtr& msg, const se
     }
     lookie_msg_left.motorID = 6;
     lookie_msg_left.value = lookie_motor_left;
-    motor_commands_.publish(lookie_msg_left);
+    //motor_commands_.publish(lookie_msg_left);
   }
 }
 
@@ -607,7 +607,7 @@ void AprilTagDetector::imageCb_2(const sensor_msgs::ImageConstPtr& msg, const se
     }
     lookie_msg_right.motorID = 7;
     lookie_msg_right.value = lookie_motor_right;
-    motor_commands_.publish(lookie_msg_right);
+    //motor_commands_.publish(lookie_msg_right);
   }
   
 }

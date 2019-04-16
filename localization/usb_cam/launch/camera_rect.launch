@@ -1,9 +1,9 @@
 <launch>
   <!-- Define Arguments of Launch File -->
   <arg name="debug" default="false"/>
-  <arg name="device_0" default="/dev/video0" />
+  <arg name="device_0" default="/dev/video2" />
   <arg name="device_1" default="/dev/video1" />
-  <arg name="device_2" default="/dev/video2" />
+  <arg name="device_2" default="/dev/video0" />
   
   <!-- Activate Image Processing Node -->
   <!-- refer to: http://wiki.ros.org/image_proc  -->

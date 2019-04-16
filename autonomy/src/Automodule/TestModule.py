@@ -127,10 +127,12 @@ logfile = None
 gyrolog = None
 motor_pub = rospy.Publisher('motorCommand', motorCommand, queue_size=100)
 
-ROBOT_SPEED_DRIVE = 30.0
-ROBOT_SPEED_TURN = 10.0
+ROBOT_SPEED_DRIVE = 20.0
+ROBOT_SPEED_TURN = 15.0
 CONTROL_RATE = 0.005
 DECELARATE_RATE = 35 #IN RPM/SEC
+WHEEL_RADIUS = 0.2286 # IN M
+TURN_RADIUS = 0.3 # IN M
 #15 rpm, 0.4m, 30 rpm, 0.6m
 def logDriveData(direction, value):
     log = ''
@@ -158,14 +160,21 @@ def conservative_drive(dest, forward, distance, deceleration):
     global motor_pub
     done = False
     initPos = currentState.getCurrentPos()
-    speed = ROBOT_SPEED_DRIVE
-
-    while not done:
+    if distance > 1.85:
+    	speed = ROBOT_SPEED_DRIVE
+    else:
+	speed = math.sqrt(distance * 0.5 / 0.0010265)
+    stop_distance = distance - 0.001265 * speed ** 2
+    print str(speed)
+    print str(stop_distance)
+    while not done:	
         if rospy.is_shutdown():
             exit(-1)
         rospy.loginfo('current pos ' + str(currentState.getCurrentPos()))
         rospy.loginfo('distance to destination ' + str(currentState.getCurrentPos().distanceTo(dest)))
-        if currentState.getCurrentPos() == dest:
+        if currentState.getCurrentPos() == dest or\
+           initPos.distanceTo(currentState.getCurrentPos()) > stop_distance:
+	    print 'stopping'
             done = True
         elif math.fabs(initPos.distanceTo(currentState.getCurrentPos())) > distance:
             rospy.loginfo('Did not arrive at destination, but moved far enough')
@@ -173,10 +182,6 @@ def conservative_drive(dest, forward, distance, deceleration):
             done = True
             exit(-1)
         else:
-            if math.fabs(initPos.distanceTo(currentState.getCurrentPos())) > distance * 0.75    :
-                speed -= speed * deceleration
-                speed = max(0, speed)
-
             if forward:
                 mc.drive_left_motor(motor_pub, speed)
                 mc.drive_right_motor(motor_pub, speed)
@@ -185,7 +190,6 @@ def conservative_drive(dest, forward, distance, deceleration):
                 mc.drive_left_motor(motor_pub, -speed)
                 mc.drive_right_motor(motor_pub, -speed)
                 logDriveData(False, speed)
-            print 'sent motorCommand'
         rospy.sleep(0.005)
 
     mc.drive_right_motor(motor_pub, 0)
@@ -198,8 +202,16 @@ def conservative_turn(goal, counter, deceleration):
     cum_angle_turn = 0
     lastTime = None
     initTime = time.time()
+    goal = goal * math.pi / 180.0 / 0.3
     speed = ROBOT_SPEED_TURN
+    if goal > 1.85:
+	speed = ROBOT_SPEED_TURN
+    else:
+	speed = math.sqrt(distance * 0.5 / 0.0010265)
     while not (done or rospy.is_shutdown()):
+	stop_distance = goal - 0.001265 * speed ** 2
+	print str(speed)
+	print str(stop_distance)
         rospy.loginfo('Gyro:' + str(currentState.getGyroZ()))
         currentTime = time.time()
         logGyroData(currentState.getGyroZ(), currentState.getPortRPM(), currentState.getStarRPM(), cum_angle_turn, currentTime - initTime)
@@ -208,11 +220,9 @@ def conservative_turn(goal, counter, deceleration):
             cum_angle_turn = min(cum_angle_turn, goal)
         print str(cum_angle_turn)
         rospy.loginfo('cum_angle:' + str(cum_angle_turn) + ' time:' + str(currentTime - initTime))
-        angleLeft = goal - cum_angle_turn
-        if angleLeft < 0.25 * goal:
-            speed -= speed * deceleration
-            speed = max(0, speed)
-        if counter:
+        if cum_angle_turn > stop_distance :
+            done = True
+        elif counter:
             mc.drive_left_motor(motor_pub, -speed)
             mc.drive_right_motor(motor_pub, speed)
         else:
@@ -231,7 +241,7 @@ def conservative_turn(goal, counter, deceleration):
 
 def angle_moved(angular_velocity, t):
     print 'time ' +  str(t)
-    return math.fabs(angular_velocity * t)
+    return math.fabs(toRadian(angular_velocity) * t / 0.3)
 
 def toRadian(deg):
     return deg * math.pi / 180
@@ -287,7 +297,7 @@ def simple_turn_test1():
     destination = pp.Position(currentPos.getX_pos(), currentPos.getY_pos(),
                               (currentPos.getOrientation() + goal_in_rad) % (2 * math.pi))
     direction = True
-    if goal < 0:
+    if goal > 0:
         direction = True
     else:
         direction = False

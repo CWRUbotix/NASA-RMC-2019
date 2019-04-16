@@ -270,7 +270,7 @@ int main(int argc, char** argv) {
 
 
 
-        ros::Duration(.05).sleep();
+        ros::Duration(.005).sleep();
         ros::spinOnce();
 
     }
