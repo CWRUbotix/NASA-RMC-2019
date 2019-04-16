@@ -116,9 +116,9 @@ AprilTagDetector::AprilTagDetector(ros::NodeHandle& nh, ros::NodeHandle& nh1, ro
   image_pub_ = it_.advertise("tag_detections_image", 1);
   detections_pub_ = nh.advertise<AprilTagDetectionArray>("tag_detections", 1);
   pose_pub_ = nh.advertise<geometry_msgs::PoseArray>("tag_detections_pose", 1);
-  localization_pub_ = nh.advertise<geometry_msgs::Pose2D>("localization_data", 1);
-  localization_1_pub_ = nh.advertise<geometry_msgs::Pose2D>("localization_data_1", 1);
-  localization_2_pub_ = nh.advertise<geometry_msgs::Pose2D>("localization_data_2", 1);
+  localization_pub_ = nh.advertise<apriltags_ros::Localization>("localization_data", 1);
+  localization_1_pub_ = nh.advertise<apriltags_ros::Localization>("localization_data_1", 1);
+  localization_2_pub_ = nh.advertise<apriltags_ros::Localization>("localization_data_2", 1);
   motor_commands_ = nh.advertise<hci::motorCommand>("motorCommand", 100);
   sensor_value_sub_ = nh.subscribe("sensorValue", 100, sensorCallback);
 }
@@ -301,10 +301,11 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
      tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w);
     
 
-    geometry_msgs::Pose2D localization_data;
+    apriltags_ros::Localization localization_data;
     localization_data.x = -1 * tag_pose.pose.position.x;
     localization_data.y = tag_pose.pose.position.z;
     localization_data.theta = (-1 * ((-1 * angle_approach) + (PI / 2)));
+    localization_data.cameraID = 0;
     localization_pub_.publish(localization_data);
 
     //geometry_msgs::Pose2D localization_data_1;
@@ -431,10 +432,11 @@ void AprilTagDetector::imageCb_1(const sensor_msgs::ImageConstPtr& msg, const se
      tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w);
     
 
-    geometry_msgs::Pose2D localization_data_1;
+    apriltags_ros::Localization localization_data_1;
     localization_data_1.x = -1 * tag_pose.pose.position.x;
     localization_data_1.y = tag_pose.pose.position.y;
     localization_data_1.theta = (float)lookie_angle_left;//(-1 * ((-1 * angle_approach_1) + (PI / 2)));
+    localization_data_1.cameraID = 1;
     localization_1_pub_.publish(localization_data_1);
 
     tf::Stamped<tf::Transform> tag_transform;
@@ -573,10 +575,11 @@ void AprilTagDetector::imageCb_2(const sensor_msgs::ImageConstPtr& msg, const se
      tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w);
     
 
-    geometry_msgs::Pose2D localization_data_2;
+    apriltags_ros::Localization localization_data_2;
     localization_data_2.x = -1 * tag_pose.pose.position.x;
     localization_data_2.y = tag_pose.pose.position.y;
     localization_data_2.theta = (float)lookie_angle_right;//(-1 * ((-1 * angle_approach_2) + (PI / 2)));
+    localization_data_2.cameraID = 2;
     localization_2_pub_.publish(localization_data_2);
 
     tf::Stamped<tf::Transform> tag_transform;
