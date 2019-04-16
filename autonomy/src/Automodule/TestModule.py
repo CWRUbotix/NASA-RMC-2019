@@ -7,7 +7,7 @@ import math
 import PathPlanning.PathPlanning as pp
 import DriveControl.MotorCommand as mc
 
-from geometry_msgs.msg import Pose2D
+from apriltags_ros.msg import Localization
 from hci.msg import sensorValue, motorCommand
 from obstacle_detection.msg import Obstacle
 
@@ -293,8 +293,10 @@ DELTA_X = 1.23
 DELTA_Y = 0.825
 
 def looky_turn(goal):
-
     pass
+
+def lookyToRobotAngle(langle, id):
+
 
 def angle_moved(angular_velocity, t):
     print 'time ' +  str(t)
@@ -452,7 +454,7 @@ def updatePos(msg):
 
 def subscribe():
     rospy.Subscriber('sensorValue', sensorValue, updateState)
-    rospy.Subscriber('localization_data', Pose2D, updatePos)
+    rospy.Subscriber('localization_data', Localization, updatePos)
     rospy.Subscriber('Obstacle', Obstacle, updateObstacle)
 
 def testShutdown():
