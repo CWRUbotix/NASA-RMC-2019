@@ -124,198 +124,199 @@ class Robot_state:
 #Current position of the robot
 currentState = Robot_state()
 logfile = None
+gyrolog = None
 motor_pub = rospy.Publisher('motorCommand', motorCommand, queue_size=100)
 
-
-
-
-ROBOT_SPEED = 30.0
-
-def logData(drive, direction, value):
-    log = ""
-    if drive:
-        if direction:
-            log = 'Drive, Forward, Value: ' + str(value)
-        else:
-            log = 'Drive, Backward, Value: ' + str(value)
+ROBOT_SPEED_DRIVE = 20.0
+ROBOT_SPEED_TURN = 15.0
+CONTROL_RATE = 0.005
+DECELARATE_RATE = 35 #IN RPM/SEC
+WHEEL_RADIUS = 0.2286 # IN M
+TURN_RADIUS = 0.3 # IN M
+#15 rpm, 0.4m, 30 rpm, 0.6m
+def logDriveData(direction, value):
+    log = ''
+    if direction:
+        log = 'Drive:Forward Value:' + str(value)
     else:
-        if direction:
-            log = 'Turn, Counter, Value: ' + str(value)
-        else:
-            log = 'Turn, Clockwise, Value: ' + str(value)
+        log = 'Drive:Backward Value:' + str(value)
 
-    log += ' Gyro_x: ' + str(currentState.getGyroX()) + 'Gyro_y:' + str(currentState.getGyroY()) + 'Gyro_z' + str(currentState.getGyroZ())
+    log += ' Left RPM:' + str(currentState.getPortRPM()) + ' right RPM:' + str(currentState.getStarRPM())
     logfile.write(log + '\n')
 
-def conservative_drive(dest, forward):
+def logTurnData(direction, value, goal, theo_angle_moved, actual_angle_moved, dt):
+    if direction:
+        log = 'Turn:Counter Value:' + str(value)
+    else:
+        log = 'Turn:Clockwise Value:' + str(value)
+
+    log += 'goal:' + str(goal) + ' angle_calculated:' + str(theo_angle_moved) + ' angle_moved:' + str(actual_angle_moved) + ' delta_t:' + str(dt)
+    logfile.write(log + '\n')
+
+def logGyroData(gyro_z, left_rpm, right_rpm, cum_angle, time):
+    gyrolog.write('gyro:' + str(gyro_z) + ' left_rpm:' + str(left_rpm) + ' right_rpm:' + str(right_rpm) + ' cum_angle:' + str(cum_angle) + ' time:' + str(time)+'\n')
+
+def conservative_drive(dest, forward, distance, deceleration):
     global motor_pub
     done = False
     initPos = currentState.getCurrentPos()
-    while not done:
-        print 'current pos ' + str(currentState.getCurrentPos())
-        print 'distance to destination ' + str(currentState.getCurrentPos().distanceTo(dest))
-        if currentState.getCurrentPos() == dest:
+    if distance > 1.85:
+    	speed = ROBOT_SPEED_DRIVE
+    else:
+	speed = math.sqrt(distance * 0.5 / 0.0010265)
+    stop_distance = distance - 0.001265 * speed ** 2
+    print str(speed)
+    print str(stop_distance)
+    while not done:	
+        if rospy.is_shutdown():
+            exit(-1)
+        rospy.loginfo('current pos ' + str(currentState.getCurrentPos()))
+        rospy.loginfo('distance to destination ' + str(currentState.getCurrentPos().distanceTo(dest)))
+        if currentState.getCurrentPos() == dest or\
+           initPos.distanceTo(currentState.getCurrentPos()) > stop_distance:
+	    print 'stopping'
             done = True
-        elif math.fabs(initPos.distanceTo(currentState.getCurrentPos())) > 1.5:
-            print 'Did not arrive at destination, but moved far enough'
-            print 'deviation: ' + str(dest.distanceTo(currentState.getCurrentPos()))
+        elif math.fabs(initPos.distanceTo(currentState.getCurrentPos())) > distance:
+            rospy.loginfo('Did not arrive at destination, but moved far enough')
+            rospy.loginfo('deviation: ' + str(dest.distanceTo(currentState.getCurrentPos())))
             done = True
             exit(-1)
         else:
-            speed = ROBOT_SPEED
-            if dest.distanceTo(currentState.getCurrentPos()) < 0.2:
-                speed = 0.5 * speed
-
             if forward:
                 mc.drive_left_motor(motor_pub, speed)
                 mc.drive_right_motor(motor_pub, speed)
-                logData(True, True, speed)
+                logDriveData(True, speed)
             else:
                 mc.drive_left_motor(motor_pub, -speed)
                 mc.drive_right_motor(motor_pub, -speed)
-                logData(True, False, speed)
-            print 'sent motorCommand'
+                logDriveData(False, speed)
         rospy.sleep(0.005)
+
     mc.drive_right_motor(motor_pub, 0)
     mc.drive_left_motor(motor_pub, 0)
 
-def conservative_turn(dest, clockwise):
+def conservative_turn(goal, counter, deceleration):
     global motor_pub
     done = False
-    while not done:
-        print 'current angle in degrees: ' + str((currentState.getCurrentPos().getOrientation())/math.pi*180)
-        print 'turns left in degrees: ' + str((currentState.getCurrentPos().angleToFace(dest))/math.pi*180)
-
-        if currentState.getCurrentPos().angleToFace(dest) < math.pi/ 180 * 5: #5 degrees within
+    r = rospy.Rate(1/CONTROL_RATE)
+    cum_angle_turn = 0
+    lastTime = None
+    initTime = time.time()
+    goal = goal * math.pi / 180.0 / 0.3
+    speed = ROBOT_SPEED_TURN
+    if goal > 1.85:
+	speed = ROBOT_SPEED_TURN
+    else:
+	speed = math.sqrt(distance * 0.5 / 0.0010265)
+    while not (done or rospy.is_shutdown()):
+	stop_distance = goal - 0.001265 * speed ** 2
+	print str(speed)
+	print str(stop_distance)
+        rospy.loginfo('Gyro:' + str(currentState.getGyroZ()))
+        currentTime = time.time()
+        logGyroData(currentState.getGyroZ(), currentState.getPortRPM(), currentState.getStarRPM(), cum_angle_turn, currentTime - initTime)
+        if lastTime is not None:
+            cum_angle_turn += angle_moved(currentState.getGyroZ(), currentTime - lastTime)
+            cum_angle_turn = min(cum_angle_turn, goal)
+        print str(cum_angle_turn)
+        rospy.loginfo('cum_angle:' + str(cum_angle_turn) + ' time:' + str(currentTime - initTime))
+        if cum_angle_turn > stop_distance :
             done = True
+        elif counter:
+            mc.drive_left_motor(motor_pub, -speed)
+            mc.drive_right_motor(motor_pub, speed)
         else:
-            speed = ROBOT_SPEED
-
-            #when within 25 degrees, slow down a bit
-            if currentState.getCurrentPos().angleToFace(dest) < math.pi / 180 * 25:
-                speed = 0.5 * speed
-            if clockwise:
-                mc.drive_left_motor(motor_pub, speed)
-                mc.drive_right_motor(motor_pub, -speed)
-                logData(False, False, speed)
-            else:
-                mc.drive_left_motor(motor_pub, -speed)
-                mc.drive_right_motor(motor_pub, speed)
-                logData(False, True, speed)
-        rospy.sleep(0.005)
+            mc.drive_left_motor(motor_pub, speed)
+            mc.drive_right_motor(motor_pub, -speed)
+        lastTime = currentTime
+        if math.fabs(goal - cum_angle_turn) < 5 or cum_angle_turn > goal:
+            done = True
+        r.sleep()
     mc.drive_right_motor(motor_pub, 0)
     mc.drive_left_motor(motor_pub, 0)
+    if rospy.is_shutdown():
+        exit(-1)
+    measure = raw_input('How much did it turn? (in deg): ')
+    logTurnData(counter, ROBOT_SPEED_TURN, goal, cum_angle_turn, float(measure), lastTime - initTime)
+
+def angle_moved(angular_velocity, t):
+    print 'time ' +  str(t)
+    return math.fabs(toRadian(angular_velocity) * t / 0.3)
+
+def toRadian(deg):
+    return deg * math.pi / 180
 
 def simple_drive_test1():
-    print 'This test routine attempts to drive 1.5 meter straight from is current position'
-
+    rospy.loginfo('This test routine attempts to drive straight from is current position')
+    distance = float(raw_input('Enter distance you want to travel'))
+    deceleration = float(raw_input('Enter deceleration factor you want'))
     while True:
+        if rospy.is_shutdown():
+            exit(-1)
         print 'current position: ' + str(currentState.getCurrentPos())
-        answer = raw_input('Make sure that robot is in a place okay to drive 1 meter forward. Start testing?  y/n ')
+        answer = raw_input('Make sure that robot is in a place okay to drive forward. Start testing?  y/n ')
         if answer == 'y':
             break
 
     currentPos = currentState.getCurrentPos()
-    destination = pp.Position(currentPos.getX_pos() + 1.5 * math.cos(currentPos.getOrientation()),
-                              currentPos.getY_pos() + 1.5 * math.sin(currentPos.getOrientation()),
+    destination = pp.Position(currentPos.getX_pos() + distance * math.cos(currentPos.getOrientation()),
+                              currentPos.getY_pos() + distance * math.sin(currentPos.getOrientation()),
                               currentPos.getOrientation())
 
-    conservative_drive(destination, True)
+    direction = True
+    if distance > 0 :
+        direction = True
+    else:
+        direction = False;
+
+    conservative_drive(destination, direction, math.fabs(distance), deceleration)
+    measure = float(raw_input('How much did it move? (in m): '))
+    rospy.loginfo('distance_travelled:' + str(measure) + ' distance_entered:' + str(distance))
     print 'testing successful'
     exit(0)
 
 def simple_drive_test2():
-    print 'This test routine attempts to drive 1.5 meter backward from is current position'
-
-    while True:
-        print 'current position: ' + str(currentState.getCurrentPos())
-        answer = raw_input('Make sure that robot is in a place okay to drive 1 meter forward. Start testing?  y/n ')
-        if answer == 'y':
-            break
-
-    currentPos = currentState.getCurrentPos()
-    destination = pp.Position(currentPos.getX_pos() - 1.5 * math.cos(currentPos.getOrientation()),
-                              currentPos.getY_pos() - 1.5 * math.sin(currentPos.getOrientation()),
-                              currentPos.getOrientation())
-
-    conservative_drive(destination, False)
-    print 'testing successful'
+    print 'testing not implemented'
     exit(0)
 
 def simple_drive_test3():
-    print 'This test routine attempts to drive 1.5 meter forward and backward from is current position'
-
-    while True:
-        print 'current position: ' + str(currentState.getCurrentPos())
-        answer = raw_input('Make sure that robot is in a place okay to drive 1 meter forward. Start testing?  y/n ')
-        if answer == 'y':
-            break
-
-    currentPos = currentState.getCurrentPos()
-    destination = pp.Position(currentPos.getX_pos() + 1.5 * math.cos(currentPos.getOrientation()),
-                              currentPos.getY_pos() + 1.5 * math.sin(currentPos.getOrientation()),
-                              currentPos.getOrientation())
-
-    conservative_drive(destination, True)
-    currentPos = currentState.getCurrentPos()
-    destination = pp.Position(currentPos.getX_pos() - 1.5 *math.cos(currentPos.getOrientation()),
-                              currentPos.getY_pos() - 1.5 * math.sin(currentPos.getOrientation()),
-                              currentPos.getOrientation())
-    conservative_drive(destination, False)
-    print 'testing successful'
+    print 'testing not implemented'
     exit(0)
 
 def simple_turn_test1():
-    print 'This test routine attempts to turn in place given degrees counter-clockwise'
+    rospy.loginfo('This test routine attempts to turn in place given degrees')
     while True:
         print 'current position: ' + str(currentState.getCurrentPos())
         answer = raw_input('Start testing?  y/n ')
         if answer == 'y':
             break
     goal = float(raw_input('Enter how much to turn in degrees. input should be less than 360'))
-    goal = goal * math.pi / 180.0
+    deceleration = float(raw_input('Enter deceleration factor you want'))
+    goal_in_rad = toRadian(goal)
     currentPos = currentState.getCurrentPos()
     destination = pp.Position(currentPos.getX_pos(), currentPos.getY_pos(),
-                              (currentPos.getOrientation() + goal) % (2 * math.pi))
-    conservative_turn(destination, False)
+                              (currentPos.getOrientation() + goal_in_rad) % (2 * math.pi))
+    direction = True
+    if goal > 0:
+        direction = True
+    else:
+        direction = False
+
+    conservative_turn(math.fabs(goal), direction, deceleration)
     print 'testing succesful'
+    rospy.loginfo('localization data:')
+    rospy.loginfo('start_angle:' + str(toDegree(currentPos.getOrientation())) + ' end_angle' + str(toDegree(currentState.getCurrentPos().getOrientation()))+ ' actual_goal:' + str(toDegree(destination.getOrientation())))
     exit(0)
 
+def toDegree(rad):
+    return rad * 180 / math.pi
+
 def simple_turn_test2():
-    print 'This test routine attempts to turn in place given degrees clockwise'
-    while True:
-        print 'current position: ' + str(currentState.getCurrentPos())
-        answer = raw_input('Start testing?  y/n ')
-        if answer == 'y':
-            break
-    goal = float(raw_input('Enter how much to turn in degrees. input should be less than 360'))
-    goal = goal * math.pi / 180.0
-    currentPos = currentState.getCurrentPos()
-    destination = pp.Position(currentPos.getX_pos(), currentPos.getY_pos(),
-                              (currentPos.getOrientation() - goal) % (2 * math.pi))
-    conservative_turn(destination, True)
-    print 'testing succesful'
+    print 'not implemented'
     exit(0)
 
 def simple_turn_test3():
-    print 'This test routine attempts to turn in place given degrees counter-clockwise and then clockwise'
-    while True:
-        print 'current position: ' + str(currentState.getCurrentPos())
-        answer = raw_input('Start testing?  y/n ')
-        if answer == 'y':
-            break
-    goal = float(raw_input('Enter how much to turn in degrees. input should be less than 360'))
-    goal = goal * math.pi / 180.0
-    currentPos = currentState.getCurrentPos()
-    destination = pp.Position(currentPos.getX_pos(), currentPos.getY_pos(),
-                              (currentPos.getOrientation() + goal) % (2 * math.pi))
-    conservative_turn(destination, False)
-
-    currentPos = currentState.getCurrentPos()
-    destination = pp.Position(currentPos.getX_pos(), currentPos.getY_pos(),
-                              (currentPos.getOrientation() - goal) % (2 * math.pi))
-    conservative_turn(destination, True)
-    print 'testing succesful'
+    print 'not implemented'
     exit(0)
 
 def transit_test1():
@@ -392,8 +393,9 @@ def testShutdown():
 
 def main():
     print "setting up logging"
-    global logfile
+    global logfile, gyrolog
     logfile = open(str(sys.path[1]) + '/logs/' +time.strftime("%b-%a-%d-%H-%M-%S.txt"), "w")
+    gyrolog = open(str(sys.path[1]) + '/logs/gyro_' + time.strftime("%b-%a-%d-%H-%M-%S.txt"), 'w')
 
     routines = [simple_drive_test1, simple_drive_test2, simple_drive_test3,
                 simple_turn_test1, simple_turn_test2, simple_turn_test3,

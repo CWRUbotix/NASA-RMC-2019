@@ -203,7 +203,7 @@ class MyPlugin(Plugin):
         if event.key() in (Qt.Key_W, Qt.Key_S, Qt.Key_A, Qt.Key_D):
             if not event.isAutoRepeat():
                 print("Key released")
-                self.set_locomotion_speeds(0,0)
+                robotInterface.sendDriveCommand(0, 0)
 
     def set_locomotion_speeds(self, port_speed, starboard_speed):
         robotInterface.sendDriveCommand(0,0)

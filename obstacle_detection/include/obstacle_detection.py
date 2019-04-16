@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from depth_image_processing import *
 from obstacle import Obstacle
 from ros_publish import send_obstacle_data
+from localization_listener import update_position
 
 saved_dir = 'saved_frames/'
 
@@ -68,6 +69,7 @@ def orient_point_cloud_to_ground_plane(xyz_arr, roi_point_cloud, thetas, phis, n
         thetas = thetas[1:]
     if phis.size > memory:
         phis = phis[1:]
+    update_position()
     center = apply_camera_orientation(center, CameraPosition)
     plane = apply_camera_orientation(plane, CameraPosition)
     xyz_arr = apply_camera_matrix_orientation(xyz_arr, CameraPosition)
@@ -163,6 +165,8 @@ def process_obstacle(color, cx, cy, box, x, y, obj_length, obj_height, obj_depth
     """
     coords = depth_to_point_cloud_pos(cx, cy, obj_depth)  # convert obstacle depth to XYZ coordinate
     mm_diameter = equi_diameter * (1.0 / CameraParams['fx']) * obj_depth  # convert pixel diameter to mm
+
+    print(coords)
 
     if 100 < mm_diameter < 400:
         new_obstacle = True
@@ -283,7 +287,7 @@ def get_obstacles_with_plane(depth_frame,
 
     """
     obstacles = np.zeros(depth_frame.shape)  # empty image that will store the locations of detected obstacles
-    img = np.uint8(depth_frame / 4500. * 255.)  # image representation of depth frame
+    img = np.uint8(depth_frame / 4500. * 255)  # image representation of depth frame
     # crop the depth frame and apply a circular mask
     ground_plane_roi = get_ground_plane_roi(depth_frame, depth_cutoff, y_cutoff, roi_x, roi_y)
 
@@ -358,8 +362,10 @@ def get_obstacles_with_plane(depth_frame,
             plt.imsave(saved_dir + '%d.png' % len(os.listdir(saved_dir)), rgb)
 
         if visualize:
-            cv2.imshow('detected_obstacles', color)
+            print('next frame...')
+            #cv2.imshow('detected_obstacles', color)
             #cv2.imshow('plane', plane_img)
+            #cv2.imshow('deph frame', depth_frame)
             #cv2.imshow('roi', np.uint8(ground_plane_roi / 4500. * 255.))
 
         remove_dead_obstacles(obstacle_list)

@@ -67,17 +67,17 @@ phis = np.array([])
 obstacle_list = []
 obstacle_id = 0
 
-visualize = False
+visualize = True
 save_test_data = True
 
 frames_dir = 'test_frames/'
 if save_test_data:
-	try:
-	    os.mkdir(frames_dir)
-	except Exception as e:
-	    pass
-	for f in os.listdir(frames_dir):
-	    os.remove(frames_dir + f)
+    try:
+        os.mkdir(frames_dir)
+    except Exception as e:
+        pass
+    for f in os.listdir(frames_dir):
+        os.remove(frames_dir + f)
 
 print(os.getcwd())
 
@@ -88,15 +88,14 @@ while True:
     depth_frame = frames["depth"]
     color = frames["color"]
     registration.apply(color, depth_frame, undistorted, registered)
-    img = depth_frame.asarray(np.float32) / 4500.
     color_frame = registered.asarray(np.uint8)
 
     if save_test_data:
-    	np.save(frames_dir + str(frame_i) + ".npy", depth_frame.asarray(np.float32))
+        np.save(frames_dir + str(frame_i) + ".npy", depth_frame.asarray(np.float32))
 
     frame_i += 1
-        
-    output = get_obstacles_with_plane(img,
+
+    output = get_obstacles_with_plane(depth_frame.asarray(np.float32),
                                       color_frame,
                                       obstacle_list,
                                       thetas,
@@ -105,7 +104,7 @@ while True:
                                       send_data=True,
                                       visualize=visualize,
                                       save_frames=True)
-    
+
     if visualize:
         key = cv2.waitKey(delay=1)
         if key == ord('q'):
