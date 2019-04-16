@@ -201,13 +201,13 @@ class MyPlugin(Plugin):
 
     def keyReleaseEvent(self, event):
         if event.key() in (Qt.Key_W, Qt.Key_S, Qt.Key_A, Qt.Key_D):
-            print("Key released")
-            self.set_locomotion_speeds(0,0)
+            if not event.isAutoRepeat():
+                print("Key released")
+                self.set_locomotion_speeds(0,0)
 
     def set_locomotion_speeds(self, port_speed, starboard_speed):
-        respPort = robotInterface.sendMotorCommand(0, port_speed)
-        respStarboard = robotInterface.sendMotorCommand(1, starboard_speed)
-        print("Set locomotion speeds: %s" % (respPort and respStarboard))
+        robotInterface.sendDriveCommand(0,0)
+        #print("Set locomotion speeds: %s" % (respPort and respStarboard))
 
     def zero_locomotion_speeds(self):
         self.motor_widgets.get(0).setValue(0)
