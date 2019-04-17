@@ -287,7 +287,7 @@ def get_obstacles_with_plane(depth_frame,
 
     """
     obstacles = np.zeros(depth_frame.shape)  # empty image that will store the locations of detected obstacles
-    img = np.uint8(depth_frame / 4.5 * 255)  # image representation of depth frame
+    img = np.uint8(depth_frame / 4500. * 255)  # image representation of depth frame
     # crop the depth frame and apply a circular mask
     ground_plane_roi = get_ground_plane_roi(depth_frame, depth_cutoff, y_cutoff, roi_x, roi_y)
 
@@ -362,10 +362,11 @@ def get_obstacles_with_plane(depth_frame,
             plt.imsave(saved_dir + '%d.png' % len(os.listdir(saved_dir)), rgb)
 
         if visualize:
-            cv2.imshow('detected_obstacles', color)
-            cv2.imshow('plane', plane_img)
-            cv2.imshow('deph frame', depth_frame)
-            cv2.imshow('roi', np.uint8(ground_plane_roi / 4500. * 255.))
+            print('next frame...')
+            #cv2.imshow('detected_obstacles', color)
+            #cv2.imshow('plane', plane_img)
+            #cv2.imshow('deph frame', depth_frame)
+            #cv2.imshow('roi', np.uint8(ground_plane_roi / 4500. * 255.))
 
         remove_dead_obstacles(obstacle_list)
 

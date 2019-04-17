@@ -1,3 +1,4 @@
-float64 x_pos
-float64 y_pos
-float64 angle
+float64 x
+float64 y
+float64 theta
+int8 cameraID
