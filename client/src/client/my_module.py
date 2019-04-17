@@ -17,8 +17,6 @@ node_name = 'robotInterface'
 motorCommandTopic = 'motorCommand'
 sensorValueTopic = 'sensorValue'
 
-ENABLE_DEBUGGING = False
-
 # --------------------------------------------------
 #
 # Heavily referenced from rosviz - rqt_robot_steering
@@ -76,32 +74,6 @@ class MyPlugin(Plugin):
             6:self._widget.motor6_spinbox,
             7:self._widget.motor7_spinbox
         }
-
-        self.sensor_widgets = {
-            0:self._widget.sensor0_lineedit,
-            1:self._widget.sensor1_lineedit,
-            2:self._widget.sensor2_lineedit,
-            4:self._widget.sensor4_lineedit,
-            5:self._widget.sensor5_lineedit,
-            6:self._widget.sensor6_lineedit,
-            7:self._widget.sensor7_lineedit,
-            8:self._widget.sensor8_lineedit,
-            9:self._widget.sensor9_lineedit,
-            10:self._widget.sensor10_lineedit,
-            13:self._widget.sensor13_lineedit,
-            19:self._widget.sensor19_lineedit,
-            23:self._widget.sensor23_lineedit,
-            24:self._widget.sensor24_lineedit,
-            25:self._widget.sensor25_lineedit,
-            26:self._widget.sensor26_lineedit,
-            27:self._widget.sensor27_lineedit,
-            28:self._widget.sensor28_lineedit,
-            29:self._widget.sensor29_lineedit,
-            30:self._widget.sensor30_lineedit,
-            31:self._widget.sensor31_lineedit,
-            32:self._widget.sensor32_lineedit,
-        }
-
         # Assigned zeros
         # TODO: update a most recent zero position for translation that is 'stopping'
 
@@ -145,9 +117,6 @@ class MyPlugin(Plugin):
         self._widget.attitude_shift_button.pressed.connect(self.setup_attitude_timer)
         self._widget.attitude_shift_cancel_button.pressed.connect(self.cancel_attitude_shift)
 
-        self._widget.update_sensors_button.pressed.connect(self._setup_timer_update_sensors)
-        self._widget.stop_sensor_update_button.pressed.connect(self._stop_update_timer)
-
         # ROS Connection Fields
         """
         self._widget.topic_line_edit.textChanged.connect(self._on_topic_changed)
@@ -177,7 +146,6 @@ class MyPlugin(Plugin):
         # timer to consecutively send service messages
         self._update_translate_timer = QTimer(self)
         self._update_attitude_timer = QTimer(self)
-        self._update_sensors_timer = QTimer(self)
         """
         self._update_parameter_timer = QTimer(self)
         self._update_parameter_timer.timeout.connect(
@@ -238,8 +206,9 @@ class MyPlugin(Plugin):
                 robotInterface.sendDriveCommand(0, 0)
 
     def set_locomotion_speeds(self, port_speed, starboard_speed):
-        robotInterface.sendDriveCommand(0,0)
-        #print("Set locomotion speeds: %s" % (respPort and respStarboard))
+        respPort = robotInterface.sendMotorCommand(0, port_speed)
+        respStarboard = robotInterface.sendMotorCommand(1, starboard_speed)
+        print("Set locomotion speeds: %s" % (respPort and respStarboard))
 
     def zero_locomotion_speeds(self):
         self.motor_widgets.get(0).setValue(0)
@@ -254,30 +223,26 @@ class MyPlugin(Plugin):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(0, motor_speed)
-        if ENABLE_DEBUGGING:
-            print("w key pressed")
+        print("w key pressed")
 
     def a_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
 
         robotInterface.sendDriveCommand(3, motor_speed)
-        if ENABLE_DEBUGGING:
-            print("a key pressed")
+        print("a key pressed")
 
     def s_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(1, motor_speed)
-        if ENABLE_DEBUGGING:
-            print("s key pressed")
+        print("s key pressed")
 
     def d_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(2, motor_speed)
-        if ENABLE_DEBUGGING:
-            print("d key pressed")
+        print("d key pressed")
 
     def estop_pressed(self):
         print("Attempting to zero all motors...")
@@ -433,7 +398,13 @@ class MyPlugin(Plugin):
         sliderValue = int(self._widget.general_speed_slider.value())
         self._widget.general_speed_spinbox.setValue(sliderValue)
         #print("Slider value is: %s" % sliderValue)
+
     
+    """
+    Update sensor values
+    """
+    
+
     """
      Sending messages
     """
@@ -454,29 +425,6 @@ class MyPlugin(Plugin):
             print("Sent motor command for motor: %s" % motor_id + " with value: %s" % val)
         except Exception as exc:
             print("There was a problem sending the motor command: " + str(exc))
-
-    """
-    Sensor value updating 
-    """
-    def _stop_update_timer(self):
-        self._update_sensors_timer = QTimer()
-
-    def _setup_timer_update_sensors(self):
-        updatesPerSec = 100
-        msUpdate = int(1000/updatesPerSec)
-        self._update_sensors_timer = QTimer()
-        self._update_sensors_timer.timeout.connect(self.try_update_sensors)
-        self._update_sensors_timer.start(msUpdate)
-
-    def try_update_sensors(self):
-        try:
-            for sensor_id, sensor_widget in self.sensor_widgets.items():
-                # Try to get value
-                sensorVal = robotInterface.sensorValueMap.get(sensor_id)
-                sensor_widget.setText(str(sensorVal))
-        except Exception as exc:
-            print("There was an unusual problem updating sensors: " + str(exc))
-
 
     def _set_status_text(self, text):
         self._widget.status_label.setText(text)
