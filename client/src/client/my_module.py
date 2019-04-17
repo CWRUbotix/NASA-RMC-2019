@@ -238,8 +238,9 @@ class MyPlugin(Plugin):
                 robotInterface.sendDriveCommand(0, 0)
 
     def set_locomotion_speeds(self, port_speed, starboard_speed):
-        robotInterface.sendDriveCommand(0,0)
-        #print("Set locomotion speeds: %s" % (respPort and respStarboard))
+        respPort = robotInterface.sendMotorCommand(0, port_speed)
+        respStarboard = robotInterface.sendMotorCommand(1, starboard_speed)
+        print("Set locomotion speeds: %s" % (respPort and respStarboard))
 
     def zero_locomotion_speeds(self):
         self.motor_widgets.get(0).setValue(0)
@@ -434,6 +435,11 @@ class MyPlugin(Plugin):
         self._widget.general_speed_spinbox.setValue(sliderValue)
         #print("Slider value is: %s" % sliderValue)
     
+    """
+    Update sensor values
+    """
+    
+
     """
      Sending messages
     """
