@@ -26,9 +26,9 @@
     * Connect the CLIENT computer to the same wireless network
     * On the CLIENT computer:
     * Find the URI the ROBOT computer is using, export this like:
-        * export ROS_MASTER_URI=http://172.20.40.232:11311
-    * Similarly, export the ROS_IP, like:
-        * export ROS_IP=172.20.37.25
+        * export ROS_MASTER_URI=http://192.168.0.100:11311
+    * Similarly, export the ROS_IP that your computer has, located under 'connection info'
+        * export ROS_IP=192.168.0.105
 - Finally, try to 'rosrun rqt_gui rqt_gui' and start the plugin.
 - Ensuring the robot is e-stopped, if debugging is enabled, you should observe changing values on the robot when WASD inputs are sent.
 
