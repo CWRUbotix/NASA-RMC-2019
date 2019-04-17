@@ -340,7 +340,7 @@
     <number>-100</number>
    </property>
    <property name="maximum">
-    <number>200</number>
+    <number>100</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_5">
@@ -1040,6 +1040,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::NoFocus</enum>
     </property>
     <property name="readOnly">
      <bool>true</bool>
