@@ -152,7 +152,7 @@ void parseSensorResponseMessage(vector<uint8_t> sensorResponse){
 	//but not now 
 	if(sensorResponse.size() < 6){
 		//test sensorResponse:
-		sensorResponse = vector<uint8_t>();
+		/*sensorResponse = vector<uint8_t>();
 		sensorResponse.push_back((uint8_t)0);
 		sensorResponse.push_back((uint8_t)0);
 		sensorResponse.push_back((uint8_t)0);
@@ -166,8 +166,8 @@ void parseSensorResponseMessage(vector<uint8_t> sensorResponse){
 		sensorResponse.push_back((uint8_t)1);
 		sensorResponse.push_back((uint8_t)0);
 		sensorResponse.push_back((uint8_t)0);
-		sensorResponse.push_back((uint8_t)0);
-		//return;
+		sensorResponse.push_back((uint8_t)0);*/
+		return;
 	}
 
 	vector<uint8_t>::iterator it = sensorResponse.begin() + 5;
@@ -183,7 +183,7 @@ void parseSensorResponseMessage(vector<uint8_t> sensorResponse){
  		data[1] = *it++;
  		data[2] = *it++;
  		data[3] = *it++;
- 		ROS_INFO("%u, %u, %u, %u", data[0],data[1],data[2],data[3]);
+ 		ROS_INFO("%d, %u, %u, %u, %u", sensorMessage.sensorID, data[0],data[1],data[2],data[3]);
  		float val = *reinterpret_cast<float*>(&data[0]);
  
  		ROS_INFO("sensorValue: %f", val);
@@ -235,12 +235,12 @@ int main(int argc, char** argv) {
             ROS_INFO("Serial port opened");
         }
         vector<uint8_t> motorCommandMessage = generateMotorCommandMessage();
-        ROS_INFO("NEW MOTOR MESSAGE");
-        for (std::vector<uint8_t>::const_iterator i = motorCommandMessage.begin(); i != motorCommandMessage.end(); ++i){
-            ROS_INFO("%u", *i);
-        }
+        //ROS_INFO("NEW MOTOR MESSAGE");
+        //for (std::vector<uint8_t>::const_iterator i = motorCommandMessage.begin(); i != motorCommandMessage.end(); ++i){
+        //    ROS_INFO("%u", *i);
+        //}
 
-        ROS_INFO("LENGTH OF MOTOR COMMAND: %u", (motorCommandMessage[1] << 8) + motorCommandMessage[2]);
+        //ROS_INFO("LENGTH OF MOTOR COMMAND: %u", (motorCommandMessage[1] << 8) + motorCommandMessage[2]);
 
 
         hcSerial.write(motorCommandMessage);
@@ -252,10 +252,10 @@ int main(int argc, char** argv) {
         //now move on to asking about the sensors
 
         vector<uint8_t> sensorRequestMessage = generateSensorRequestMessage();
-        ROS_INFO("NEW SENSOR MESSAGE");
-        for (std::vector<uint8_t>::const_iterator i = sensorRequestMessage.begin(); i != sensorRequestMessage.end(); ++i){
-            ROS_INFO("%u", *i);
-        }
+        //ROS_INFO("NEW SENSOR MESSAGE");
+        //for (std::vector<uint8_t>::const_iterator i = sensorRequestMessage.begin(); i != sensorRequestMessage.end(); ++i){
+        //    ROS_INFO("%u", *i);
+        //}
 
         hcSerial.write(sensorRequestMessage);
         vector<uint8_t> sensorRequestResponse;
