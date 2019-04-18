@@ -212,6 +212,8 @@ int main(int argc, char** argv) {
         ros::Duration(1).sleep();
     } 
     ROS_INFO("%s\n ", port.c_str());
+
+    ros::Rate loop_rate(200);
     
     while(ros::ok()){
         if(!hcSerial.isOpen()){
@@ -260,17 +262,17 @@ int main(int argc, char** argv) {
         hcSerial.write(sensorRequestMessage);
         vector<uint8_t> sensorRequestResponse;
         //jank cuz yolo
-        uint16_t sensorRequestResponseLength = (((sensorRequestResponse.size() - 5) * 9) + 5);
+        ROS_INFO("sensorRequest Size: %lu", sensorRequestMessage.size());
+        uint16_t sensorRequestResponseLength = (((sensorRequestMessage.size() - 5) * 9) + 5);
         hcSerial.read(sensorRequestResponse, sensorRequestResponseLength);
 
         //ROS_INFO("SENSOR RESPONSE LENGTH: %lu" , sensorRequestResponse.size());
 
         parseSensorResponseMessage(sensorRequestResponse);
         
-
-
-
-        ros::Duration(.005).sleep();
+        //ros::Duration(.005).sleep();
+        loop_rate.sleep();
+        ROS_INFO("test");
         ros::spinOnce();
 
     }
