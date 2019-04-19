@@ -173,15 +173,13 @@ def conservative_drive(dest, forward, distance, deceleration):
         rospy.loginfo('current pos ' + str(currentState.getCurrentPos()))
         rospy.loginfo('distance to destination ' + str(currentState.getCurrentPos().distanceTo(dest)))
         if currentState.getCurrentPos() == dest or\
-           initPos.distanceTo(currentState.getCurrentPos()) > stop_distance:
+            initPos.distanceTo(currentState.getCurrentPos()) > stop_distance:
             print 'stopping'
             done = True
         elif math.fabs(initPos.distanceTo(currentState.getCurrentPos())) > distance:
             rospy.loginfo('Did not arrive at destination, but moved far enough')
             rospy.loginfo('deviation: ' + str(dest.distanceTo(currentState.getCurrentPos())))
             done = True
-        if flag and cum_angle >= stop_angle:
-     	    exit(-1)
         else:
             if forward:
                 mc.drive_left_motor(motor_pub, speed)
@@ -216,8 +214,8 @@ def turn_algo_2(goal, counter):
         if not flag:
             if math.fabs( math.fabs(currentState.getStarRPM()) - ROBOT_SPEED_TURN) < 2.5:
                 print 'hi'
-	        stop_angle = goal - cum_angle
-		print str(stop_angle)
+                stop_angle = goal - cum_angle
+                print str(stop_angle)
                 flag = True
             elif cum_angle >= goal / 2:
                 stop_angle = cum_angle
@@ -230,7 +228,7 @@ def turn_algo_2(goal, counter):
             deltaT = currentTime - lastTime
             cum_angle += math.fabs(w) * deltaT
             lastTime = currentTime
-	#    print 'gyro: ' +  str(currentState.getGyroZ() - offset)
+    #    print 'gyro: ' +  str(currentState.getGyroZ() - offset)
 	#    print 'cum_angle: ' + str(cum_angle)
 	    logGyroData(currentState.getGyroZ() + offset, currentState.getPortRPM(), currentState.getStarRPM(), cum_angle, currentTime - initTime)
 
@@ -244,14 +242,14 @@ def turn_algo_2(goal, counter):
 
         if rospy.is_shutdown():
             exit(-1)
-    while currentState.getGyroZ() > 0:
-	w = currentState.getGyroZ() - offset
-	currentTime = time.time()
-	cum_angle += math.fabs(w  *  (currentTime - lastTime))
-	lastTime = currentTime
-#	print 'gyro: ' + str(currentState.getGyroZ() - offset)
-#	print 'cum_angle: ' + str(cum_angle)
-	rospy.sleep(0.005)
+    while currentState.getGyroZ() > 1:
+        w = currentState.getGyroZ() - offset
+        currentTime = time.time()
+        cum_angle += math.fabs(w  *  (currentTime - lastTime))
+        lastTime = currentTime
+#	    print 'gyro: ' + str(currentState.getGyroZ() - offset)
+#	    print 'cum_angle: ' + str(cum_angle)
+        rospy.sleep(0.005)
     measure = raw_input('How much did it turn? (in deg): ')
     logTurnData(counter, ROBOT_SPEED_TURN, goal, cum_angle, float(measure), lastTime - initTime)
 
