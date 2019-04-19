@@ -22,14 +22,14 @@ def softwareTest():
     print str(grid.unit_height)
     print str(grid.col_size)
     print str(grid.row_size)
-    obstacle = Obstacle(2.0, 2.0, 0.15)
-    grid.addObstacle(obstacle)
+#    obstacle = Obstacle(2.0, 2.0, 0.10)
+   # grid.addObstacle(obstacle)
     for i in range(grid.col_size - 1):
         for j in range(grid.row_size - 1):
             if grid.blocked(j, i):
                 print str(i) + ', ' + str(j)
 
-    path = create_path(p1, p2, 3.78, 7.38, [obstacle])
+    path = create_path(p1, p2, 3.78, 7.38, [])
     for p in path:
         print str(p)
 
