@@ -6,10 +6,10 @@ from collections import deque
 
 #Global Variables
 ERROR_BOUND = 0.05
-CLEARANCE = 0.75
+CLEARANCE = 0.375
 GRID_SIZE = 0.25
 
-class Position:
+class Position(object):
     def __init__(self, x_pos, y_pos, orientation=0.0):
         self.x_pos = x_pos
         self.y_pos = y_pos
@@ -51,7 +51,7 @@ class Position:
         return (math.atan2(p.getY() - self.getY(), p.getX() - self.getY()) + 2 * math.pi) % (2 * math.pi)
 
 
-class Grid:
+class Grid(object):
 
     def __init__(self, p1, p2, width, height, idealUnit=GRID_SIZE):
         col_size = math.floor(math.fabs((p2.getX() - p1.getX()) / idealUnit))
@@ -63,8 +63,8 @@ class Grid:
         self.p2 = Position(width - CLEARANCE - ((width - CLEARANCE - p2.getX()) % true_unit_width), height - CLEARANCE - ((height - CLEARANCE - p2.getY()) % true_unit_height))
         self.width = self.p2.getX() - self.p1.getX()
         self.height = self.p2.getY() - self.p2.getY()
-        self.col_size = math.floor(width / true_unit_width)
-        self.row_size = math.floor(height / true_unit_height)
+        self.col_size = int(math.floor(width / true_unit_width))
+        self.row_size = int(math.floor(height / true_unit_height))
         self.unit_width = true_unit_width
         self.unit_height = true_unit_height
         self.vertices = [[]]
@@ -81,33 +81,47 @@ class Grid:
                 self.vertices[i].append(Vertex(self.p1.getX() + i * self.unit_width, self.p1.getY() + j * self.unit_height))
 
     def getVertex(self, row_index, col_index):
-        return self.vertices[row_index][col_index]
+        return self.vertices[int(row_index)][int(col_index)]
 
     def getNeighbors(self, row_index, col_index):
         neighbors = []
         x_coords = [col_index - 1, col_index, col_index + 1]
         y_coords = [row_index - 1, row_index, row_index + 1]
 
-        for i in range(3):
-            for j in range(3):
-                if not (i == row_index and j == col_index) \
-                          and not (x_coords[i] < 0 or y_coords[i] < 0) \
-                          and not (x_coords [i] > self.width or y_coords[j] > self.height) \
-                          and not self.blocked(x_coords[i], y_coords[j]):
-                    neighbors.append(self.getVertex(x_coords[i], y_coords[j]))
+        left_top = x_coords[0] >= 0 and y_coords[0] >= 0 and not self.blocked(y_coords[0], x_coords[0])
+        left_bot = x_coords[0] >= 0 and y_coords[1] < self.row_size - 1 and not self.blocked(y_coords[1], x_coords[0])
+        right_top = x_coords[1] < self.col_size - 1 and y_coords[0] >= 0 and not self.blocked(y_coords[0], x_coords[1])
+        right_bot = x_coords[1] < self.col_size - 1 and y_coords[1] < self.row_size - 1 and not self.blocked(y_coords[1], x_coords[1])
+
+        if left_top:
+            neighbors.append(self.getVertex(y_coords[0], x_coords[0]))
+        if left_top and left_bot:
+            neighbors.append(self.getVertex(y_coords[1], x_coords[0]))
+        if left_bot:
+            neighbors.append(self.getVertex(y_coords[2], x_coords[0]))
+        if left_bot and right_bot:
+            neighbors.append(self.getVertex(y_coords[2], x_coords[1]))
+        if right_bot:
+            neighbors.append(self.getVertex(y_coords[2], x_coords[2]))
+        if right_bot and right_top:
+            neighbors.append(self.getVertex(y_coords[1], x_coords[2]))
+        if right_top:
+            neighbors.append(self.getVertex(y_coords[0], x_coords[2]))
+        if left_top and right_top:
+            neighbors.append(self.getVertex(y_coords[0], x_coords[1]))
 
         return neighbors
 
     def blocked(self, row_index, col_index):
-        return self.cells[row_index][col_index]
+        return self.cells[int(row_index)][int(col_index)]
 
     def addObstacle(self, obs):
         o1 = [max(0, math.floor((obs.getCenter()[0] - obs.getRadius() - CLEARANCE) / self.unit_width)),
               max(0, math.floor((obs.getCenter()[1] - obs.getRadius() - CLEARANCE) / self.unit_height))]
         o2 = [min(self.col_size - 2, math.ceil((obs.getCenter()[0] + obs.getRadius() + CLEARANCE) / self.unit_width)),
               min(self.row_size - 2, math.ceil((obs.getCenter()[1] + obs.getRadius() + CLEARANCE) / self.unit_height))]
-        for i in range(o1[1], o2[1] + 1):
-            for j in range(o1[0], o2[0] + 1):
+        for i in range(int(o1[1]), int(o2[1] + 1)):
+            for j in range(int(o1[0]), int(o2[0] + 1)):
                 self.cells[i][j] = True
 
     def getGridCoordinates(self, x_pos, y_pos):
@@ -174,8 +188,8 @@ class Vertex(Position):
     def __init__(self, x_pos, y_pos):
         super(Vertex, self).__init__(x_pos, y_pos, 0)
         self.parent = None
-        self.dist = math.inf
-        self.heuristic = math.inf
+        self.dist = float('inf')
+        self.heuristic = float('inf')
         self.visibleNeighbors = []
 
     def __lt__(self, other):
@@ -210,7 +224,7 @@ class Vertex(Position):
 
     def setDistance(self, dist, reset=False):
         if reset:
-            self.dist = math.inf
+            self.dist = float('inf')
         else:
             self.dist = dist
 
@@ -221,4 +235,4 @@ class Vertex(Position):
         if reset:
             self.heuristic = math.inf
         else:
-            self.heuristic = self.distanceTo(dest)
+            self.heuristic = dest
