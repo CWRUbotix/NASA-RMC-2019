@@ -6,7 +6,7 @@ import cv2
 import time
 import math
 import pandas as pd
-from obstacle_detection import get_obstacles_with_plane
+from obstacle_detection import get_obstacles_with_plane, plot_global_map
 from depth_image_processing import *
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
@@ -14,29 +14,29 @@ from pylibfreenect2 import createConsoleLogger, setGlobalLogger
 from pylibfreenect2 import LoggerLevel
 
 try:
-    from pylibfreenect2 import OpenCLPacketPipeline
+	from pylibfreenect2 import OpenCLPacketPipeline
 
-    pipeline = OpenCLPacketPipeline()
+	pipeline = OpenCLPacketPipeline()
 except:
-    try:
-        from pylibfreenect2 import OpenGLPacketPipeline
+	try:
+		from pylibfreenect2 import OpenGLPacketPipeline
 
-        pipeline = OpenGLPacketPipeline()
-    except:
-        from pylibfreenect2 import CpuPacketPipeline
+		pipeline = OpenGLPacketPipeline()
+	except:
+		from pylibfreenect2 import CpuPacketPipeline
 
-        pipeline = CpuPacketPipeline()
+		pipeline = CpuPacketPipeline()
 print("Packet pipeline:", type(pipeline).__name__)
 
 # Create and set logger
 logger = createConsoleLogger(LoggerLevel.Debug)
-setGlobalLogger(logger)
+setGlobalLogger(None)
 
 fn = Freenect2()
 num_devices = fn.enumerateDevices()
 if num_devices == 0:
-    print("No device connected!")
-    sys.exit(1)
+	print("No device connected!")
+	sys.exit(1)
 
 serial = fn.getDeviceSerialNumber(0)
 device = fn.openDevice(serial, pipeline=pipeline)
@@ -51,7 +51,7 @@ device.start()
 
 # NOTE: must be called after device.start()
 registration = Registration(device.getIrCameraParams(),
-                            device.getColorCameraParams())
+							device.getColorCameraParams())
 
 h, w = 512, 424
 FOVX = 1.232202  # horizontal FOV in radians
@@ -62,19 +62,58 @@ principal_y = device.getIrCameraParams().cy  # principal point y
 undistorted = Frame(h, w, 4)
 registered = Frame(h, w, 4)
 
+thetas = np.array([])
+phis = np.array([])
+obstacle_list = []
+obstacle_id = 0
+
+visualize = True
+save_test_data = True
+
+frames_dir = 'src/NASA-RMC-2019/obstacle_detection/data/test_frames/'
+if save_test_data:
+	try:
+		os.mkdir(frames_dir)
+	except Exception as e:
+		pass
+	for f in os.listdir(frames_dir):
+		os.remove(frames_dir + f)
+
+print(os.getcwd())
+
+frame_i = 0
+frame_limit = 50
+
 while True:
-    frames = listener.waitForNewFrame()
-    depth_frame = frames["depth"]
-    color = frames["color"]
-    registration.apply(color, depth_frame, undistorted, registered)
-    img = depth_frame.asarray(np.float32) / 4500.
-    output = get_obstacles_with_plane(img,
-                                      num_planes=46,
-                                      num_points=45,
-                                      dist_thresh=0.1,
-                                      visualize=False,
-                                      send_data=True)
-    listener.release(frames)
+	frames = listener.waitForNewFrame()
+	depth_frame = frames["depth"]
+	color = frames["color"]
+	registration.apply(color, depth_frame, undistorted, registered)
+	color_frame = registered.asarray(np.uint8)
+
+	if save_test_data:
+		np.save(frames_dir + str(frame_i) + ".npy", depth_frame.asarray(np.float32))
+
+	frame_i += 1
+	if frame_i == frame_limit:
+		break
+
+	output, obstacle_id = get_obstacles_with_plane(depth_frame.asarray(np.float32),
+									  color_frame,
+									  obstacle_list,
+									  thetas,
+									  phis,
+									  obstacle_id,
+									  send_data=True,
+									  visualize=visualize,
+									  save_frames=True)
+
+	if visualize:
+		plot_global_map(obstacle_list)
+		key = cv2.waitKey(delay=1)
+		if key == ord('q'):
+			break
+	listener.release(frames)
 
 device.stop()
 device.close()

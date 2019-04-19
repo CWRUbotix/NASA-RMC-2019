@@ -5,7 +5,8 @@
 
 #include <SPI.h>
 #include "VESC/VESC.h"
-#include "LSM6DS3.h"
+// #include "LSM6DS3.h"
+#include "SparkFunLSM6DS3.h"
 #include "ADS1120.h"
 #include "Herkulex.h"
 #include <inttypes.h>
@@ -52,6 +53,9 @@
 #define DEP_UPPER_LIM_PIN 		37
 #define ESTOP_SENSE_PIN 		39
 
+#define EXC_NORMAL_POWER 		300.0
+#define EXC_LOW_POWER 			200.0
+
 #define LIN_ACT_ERR_MARGIN 		0.5
 #define LIN_ACT_KP				400.0
 #define LIN_ACT_KI 				0.0
@@ -59,7 +63,7 @@
 #define MOTOR_ANLG_CENTER_V 	2.5
 #define DAC8551_SPEED 			2500000
 #define ADS1120_SPEED 			2500000
-#define IMU_SPEED 				1000000
+#define IMU_SPEED 				2500000
 #define ENCODER_SPEED 			1000000
 #define DEBUG_SPEED 			1000000
 
@@ -221,6 +225,9 @@ struct SensorInfo{
 	float value; 				// holds the value to be sent over USB, updated at t_stamp
 	float last_value; 			// holds the last value for whatever
 	float* prev_values; 		// points to an array of previous values, for filtering, etc.
+	float baseline; 			// 
+	float last_baseline; 		// 
+	float peak_value; 			// 
 	uint8_t val_ind 	= 0; 	// index in this array
 	bool value_good;
 	int t_stamp; 				// update time-stamp
@@ -241,12 +248,13 @@ struct MotorInfo{
 	SensorInfo* sensor;
 	SensorInfo* limit_1;
 	SensorInfo* limit_2;
+	char* name = "--- NO NAME ----";
 	float setpt 		= 0.0; 	
 	float last_setpt 	= 0.0;
 	float last_rpm 		= 0.0;
 	float rpm_factor 	= 1.0;
 	float volts 		= MOTOR_ANLG_CENTER_V;
-	int t_stamp 		= 0; 	// time-stamp of last update
+	long t_stamp 		= 0; 	// time-stamp of last update
 	float kp 			= 0.0;
 	float ki 			= 0.0;
 	float err_margin 	= 0.0;
@@ -257,6 +265,7 @@ struct MotorInfo{
 	float max_delta 	= 0.0;
 	float deadband 		= 0.0;
 	int looky_id 		= 0;
+	float power 		= 0.0;
 	float max_power 	= 0.0;
 	float min_power 	= 0.0;
 };
@@ -272,6 +281,19 @@ Device 		device_infos 	[NUM_DEVICES] 		= {};
 Device 		SPI_devices 	[NUM_SPI_DEVICES] 	= {};
 float 		exc_lc_values 	[NUM_PREV_VALUES] 	= {};
 float 		dep_lc_values 	[NUM_PREV_VALUES] 	= {};
+float 		accel_0_x_values[NUM_PREV_VALUES] 	= {};
+float 		accel_0_y_values[NUM_PREV_VALUES] 	= {};
+float 		accel_0_z_values[NUM_PREV_VALUES] 	= {};
+float 		accel_1_x_values[NUM_PREV_VALUES] 	= {};
+float 		accel_1_y_values[NUM_PREV_VALUES] 	= {};
+float 		accel_1_z_values[NUM_PREV_VALUES] 	= {};
+float 		gyro_0_x_values [NUM_PREV_VALUES] 	= {};
+float 		gyro_0_y_values [NUM_PREV_VALUES] 	= {};
+float 		gyro_0_z_values [NUM_PREV_VALUES] 	= {};
+float 		gyro_1_x_values [NUM_PREV_VALUES] 	= {};
+float 		gyro_1_y_values [NUM_PREV_VALUES] 	= {};
+float 		gyro_1_z_values [NUM_PREV_VALUES] 	= {};
+
 
 volatile int encoder_rots = 0;
 volatile int encoder_A_pulses = 0;
@@ -297,8 +319,8 @@ VESC vesc2(&Serial2);
 VESC vesc3(&Serial3);
 VESC vesc4(&Serial4);
 
-LSM6DS3 imu0(IMU_0_CS_PIN);
-LSM6DS3 imu1(IMU_1_CS_PIN);
+LSM6DS3 imu0(SPI_MODE, IMU_0_CS_PIN);
+LSM6DS3 imu1(SPI_MODE, IMU_1_CS_PIN);
 
 SPISettings DAC_SPI_settings(DAC8551_SPEED, MSBFIRST, SPI_MODE1);
 SPISettings ADC_SPI_settings(ADS1120_SPEED, MSBFIRST, SPI_MODE1);
@@ -322,6 +344,24 @@ float fconstrain(float f, float a, float b){
 	}else{
 		return f;
 	}
+}
+
+float max_in_array(float* arr, int len){
+	float max = 0.0;
+	for(int i = 0; i<len; i++){
+		if(arr[i] > max){
+			max = arr[i];
+		}
+	}
+	return max;
+}
+
+float faverage(float* arr, int len){
+	float avg = 0.0;
+	for(int i = 0; i<len; i++){
+		avg += arr[i]/len;
+	}
+	return avg;
 }
 
 #endif

@@ -1,10 +1,18 @@
 class Obstacle:
 
-    def __init__(self, x, y, z, diameter):
+    def __init__(self, obs_id, x, y, z, diameter, lifetime):
+        self.id = obs_id
         self.x = x
         self.y = y
         self.z = z
         self.diameter = diameter
+        self.lifetime = lifetime
 
     def __str__(self):
-        print(self.x, self.y, self.z, self.diameter)
+        return 'id: %d, x: %.2f, y: %.2f, z: %.2f, diameter(mm): %.2f, lifetime: %d' % (self.id,
+                                                                                        self.x,
+                                                                                        self.y,
+                                                                                        self.z,
+                                                                                        self.diameter,
+                                                                                        self.lifetime)
+

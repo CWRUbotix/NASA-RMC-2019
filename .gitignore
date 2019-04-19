@@ -1,9 +1,13 @@
 .idea
 venv/
+test_frames/
+saved_frames/
 __pycache__
+*.pyc
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 .idea
+*.swp

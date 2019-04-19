@@ -30,6 +30,7 @@ class Position:
     def __str__(self):
         return "x: " + str(self.x_pos) + " y: " + str(self.y_pos) + " angle: " + str(self.orientation) + " radians."
 
+
     def __eq__(self, p):
         if self.distanceTo(p) < ERROR_BOUND:
             return True
@@ -48,6 +49,7 @@ class Position:
 
     def angleToFace(self, p):
         return (math.atan2(p.getY() - self.getY(), p.getX() - self.getY()) + 2 * math.pi) % (2 * math.pi)
+
 
 class Grid:
 

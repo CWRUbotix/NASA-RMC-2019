@@ -33,4 +33,4 @@ int8 angDisplacementY = 31
 int8 angdisplacementZ = 32
 
 int8 sensorID
-float64 value
+float32 value

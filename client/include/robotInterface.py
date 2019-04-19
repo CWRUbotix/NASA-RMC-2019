@@ -1,8 +1,6 @@
 #!/usr/bin/env python 
 import rospy
 
-#from client.srv import motorCommand
-#from client.msg import sensorValue
 from hci.msg import sensorValue
 from hci.srv import motorCommand
 

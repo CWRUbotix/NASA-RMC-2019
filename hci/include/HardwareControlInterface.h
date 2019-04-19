@@ -5,6 +5,7 @@
 #include <serial/serial.h>
 #include <hci/sensorValue.h>
 #include <hci/motorCommand.h>
+#include <hci/driveCommand.h>
 #include <map>
 #include <string>
 
