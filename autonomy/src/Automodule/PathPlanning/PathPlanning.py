@@ -6,8 +6,8 @@ from collections import deque
 
 #Global Variables
 ERROR_BOUND = 0.05
-CLEARANCE = 0.375
-GRID_SIZE = 0.25
+CLEARANCE = 0.75
+GRID_SIZE = 0.1
 
 class Position(object):
     def __init__(self, x_pos, y_pos, orientation=0.0):
@@ -57,10 +57,10 @@ class Grid(object):
         col_size = math.floor(math.fabs((p2.getX() - p1.getX()) / idealUnit))
         row_size = math.floor(math.fabs((p2.getY() - p1.getY()) / idealUnit))
         true_unit_width = math.fabs((p1.getX() - p2.getX()) / col_size)
-        true_unit_height = math.fabs((p1.getX() - p2.getX()) / row_size)
+        true_unit_height = math.fabs((p1.getY() - p2.getY()) / row_size)
 
-        self.p1 = Position(CLEARANCE + ((p1.getX() - CLEARANCE) % true_unit_width), CLEARANCE + ((p1.getY() - CLEARANCE) % true_unit_height))
-        self.p2 = Position(width - CLEARANCE - ((width - CLEARANCE - p2.getX()) % true_unit_width), height - CLEARANCE - ((height - CLEARANCE - p2.getY()) % true_unit_height))
+        self.p1 = p1
+        self.p2 = p2
         self.width = self.p2.getX() - self.p1.getX()
         self.height = self.p2.getY() - self.p2.getY()
         self.col_size = int(math.floor(width / true_unit_width))
@@ -78,7 +78,7 @@ class Grid(object):
 
         for i in range(self.row_size):
             for j in range(self.col_size):
-                self.vertices[i].append(Vertex(self.p1.getX() + i * self.unit_width, self.p1.getY() + j * self.unit_height))
+                self.vertices[i].append(Vertex(self.p1.getX() + j * self.unit_width, self.p1.getY() + i * self.unit_height))
 
     def getVertex(self, row_index, col_index):
         return self.vertices[int(row_index)][int(col_index)]
@@ -113,6 +113,11 @@ class Grid(object):
         return neighbors
 
     def blocked(self, row_index, col_index):
+        if row_index < 0 or row_index >= self.row_size - 1:
+            return True
+        if col_index < 0 or col_index >= self.col_size - 1:
+            return True
+
         return self.cells[int(row_index)][int(col_index)]
 
     def addObstacle(self, obs):
@@ -166,8 +171,8 @@ class Path(collections.Sequence):
     def insert(self, newPositions):
         self.path.append(newPositions)
 
-    def get_Position(self):
-        return self.path.pop()
+    def getPosition(self):
+        return self.path.popleft()
 
     def __getitem__(self, item):
         return item
@@ -203,6 +208,12 @@ class Vertex(Position):
 
     def __ge__(self, other):
         return self.dist + self.heuristic >= other.getDistance() + other.getHeuristic()
+
+    def __eq__(self, other):
+        return self.getX() == other.getX() and self.getY() == other.getY()
+
+    def __str__(self):
+        return 'x: ' + '%.4f' % self.getX() + ' y :' + '%.4f' % self.getY()
 
     def getParent(self):
         return self.parent

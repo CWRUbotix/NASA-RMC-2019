@@ -25,15 +25,17 @@ def thetaStar(start, end, grid):
     startVertex.setDistance(0)
     endVertex = grid.getVertex(int(end[0]), int(end[1]))
     updateHeuristic(endVertex, grid)
+
+    print str(startVertex)
+    print str(endVertex)
+
     openList = []
     closedList = []
 
     h.heappush(openList, startVertex)
     while len(openList) != 0:
-        print str(len(openList))
-        print str(len(closedList))
         currentVertex = h.heappop(openList)
-
+        #print str(currentVertex)
         if currentVertex == endVertex:
             return postProcess(reconstructPath(currentVertex), grid)
 
@@ -71,8 +73,20 @@ def updateHeuristic(end, grid):
             v.setHeuristic(v.distanceTo(end))
 
 def postProcess(path, grid):
+    length = len(path)
+    done = False
+    while not done:
+        path = postProcess_iter(path, grid)
+        if len(path) == length:
+            done = True
+        else:
+            length = len(path)
+    return path
+
+def postProcess_iter(path, grid):
     current = 0
     done = False
+    print len(path)
     while not done:
         if len(path.path) >= current + 3:
             if not checkBlocked(path.path[current], path.path[current + 2], grid):
@@ -83,13 +97,14 @@ def postProcess(path, grid):
         else:
             done = True
 
+    print len(path)
     return path
 
 def checkBlocked(p1, p2, grid):
     v1 = grid.getGridCoordinates(p1.getX(), p1.getY())
     v2 = grid.getGridCoordinates(p2.getX(), p2.getY())
-    for i in range(min(v1[0], v2[0]), max(v1[0], v2[0]) + 1):
-        for j in range(min(v1[1], v2[1]), max(v1[1], v2[1]) + 1):
+    for i in range(int(min(v1[0], v2[0])), int(max(v1[0], v2[0]))):
+        for j in range(int(min(v1[1], v2[1])), int(max(v1[1], v2[1]))):
             if grid.blocked(j, i):
                 return True
     return False
