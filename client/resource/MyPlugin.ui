@@ -16,25 +16,12 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QPushButton" name="connect_button">
-   <property name="geometry">
-    <rect>
-     <x>740</x>
-     <y>140</y>
-     <width>131</width>
-     <height>25</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Connect</string>
-   </property>
-  </widget>
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
      <x>20</x>
      <y>50</y>
-     <width>691</width>
+     <width>961</width>
      <height>121</height>
     </rect>
    </property>
@@ -55,7 +42,7 @@
       </property>
       <property name="text">
        <string>Manual Control Client 
- v0.3.0 
+ v1.0.0 
  CWRUbotix Software Team</string>
       </property>
      </widget>
@@ -107,19 +94,6 @@
    </property>
    <property name="text">
     <string>NOT CONNECTED</string>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="service_name_textbox">
-   <property name="geometry">
-    <rect>
-     <x>740</x>
-     <y>60</y>
-     <width>231</width>
-     <height>25</height>
-    </rect>
-   </property>
-   <property name="readOnly">
-    <bool>true</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="emergency_stop_button">
@@ -277,7 +251,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::WheelFocus</enum>
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="minimum">
     <number>-100</number>
@@ -296,7 +270,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::WheelFocus</enum>
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="minimum">
     <number>-100</number>
@@ -315,7 +289,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::WheelFocus</enum>
+    <enum>Qt::TabFocus</enum>
    </property>
    <property name="minimum">
     <number>-30</number>
@@ -334,7 +308,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::WheelFocus</enum>
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="minimum">
     <number>-100</number>
@@ -354,42 +328,6 @@
    </property>
    <property name="text">
     <string>Status:</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_7">
-   <property name="geometry">
-    <rect>
-     <x>740</x>
-     <y>40</y>
-     <width>201</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Motor Command Topic</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_8">
-   <property name="geometry">
-    <rect>
-     <x>740</x>
-     <y>90</y>
-     <width>161</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Sensor Value Topic</string>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="lineEdit">
-   <property name="geometry">
-    <rect>
-     <x>740</x>
-     <y>110</y>
-     <width>231</width>
-     <height>25</height>
-    </rect>
    </property>
   </widget>
   <widget class="QLabel" name="label_10">
@@ -611,7 +549,7 @@ bcTranslation</string>
     <number>800</number>
    </property>
    <property name="singleStep">
-    <number>10</number>
+    <number>1</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_13">
@@ -819,8 +757,15 @@ Attitude:o/l</string>
      <height>91</height>
     </rect>
    </property>
+   <property name="focusPolicy">
+    <enum>Qt::StrongFocus</enum>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
    <property name="text">
-    <string>Zero Locomotion</string>
+    <string>Zero Locomotion 
+(Reset Focus)</string>
    </property>
   </widget>
   <widget class="QPushButton" name="start_shift_button">
@@ -844,6 +789,9 @@ Attitude:o/l</string>
      <width>111</width>
      <height>26</height>
     </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="maximum">
     <number>1000</number>
@@ -870,6 +818,9 @@ Attitude:o/l</string>
      <width>111</width>
      <height>26</height>
     </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="minimum">
     <number>1</number>
@@ -932,6 +883,9 @@ Attitude:o/l</string>
      <height>26</height>
     </rect>
    </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
    <property name="maximum">
     <number>60</number>
    </property>
@@ -944,6 +898,9 @@ Attitude:o/l</string>
      <width>71</width>
      <height>26</height>
     </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="minimum">
     <number>1</number>
@@ -1016,6 +973,9 @@ Attitude:o/l</string>
      <height>271</height>
     </rect>
    </property>
+   <property name="focusPolicy">
+    <enum>Qt::StrongFocus</enum>
+   </property>
    <property name="title">
     <string>Sensor Values</string>
    </property>
@@ -1064,7 +1024,7 @@ Attitude:o/l</string>
    <widget class="QLineEdit" name="sensor1_lineedit">
     <property name="geometry">
      <rect>
-      <x>150</x>
+      <x>160</x>
       <y>60</y>
       <width>113</width>
       <height>25</height>
@@ -1666,6 +1626,19 @@ Attitude:o/l</string>
    </property>
    <property name="text">
     <string>Stop Updating</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="debug_checkbox">
+   <property name="geometry">
+    <rect>
+     <x>820</x>
+     <y>20</y>
+     <width>171</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Debugging Messages</string>
    </property>
   </widget>
  </widget>
