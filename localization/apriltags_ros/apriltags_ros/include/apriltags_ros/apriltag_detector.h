@@ -38,7 +38,6 @@ class AprilTagDetector{
   std::map<int, AprilTagDescription> descriptions_;
   std::string sensor_frame_id_;
   image_transport::ImageTransport it_;
-  image_transport::ImageTransport it_1;
   image_transport::CameraSubscriber image_sub_;
   image_transport::CameraSubscriber image_sub_1;
   image_transport::CameraSubscriber image_sub_2;

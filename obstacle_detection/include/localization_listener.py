@@ -7,10 +7,10 @@ import rospy
 from depth_image_processing import CameraPosition
 
 #remove or add the message type
-from geometry_msgs.msg import Pose2D
+from apriltags_ros.msg import Localization
 
 topic = 'localization_data'
-node_name = 'master'
+node_name = 'obstacleDetection'
 
 
 def position_callback(msg):
@@ -21,5 +21,5 @@ def position_callback(msg):
 
 def update_position():
     #subscribe to a topic using rospy.Subscriber class
-    sub=rospy.Subscriber(topic, Pose2D, position_callback)
+    sub=rospy.Subscriber(topic, Localization, position_callback)
     #rospy.spin()

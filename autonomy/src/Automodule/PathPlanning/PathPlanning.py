@@ -5,77 +5,115 @@ import collections
 from collections import deque
 
 #Global Variables
-Error_bound = 0.10
-
+ERROR_BOUND = 0.05
+CLEARANCE = 0.75
+GRID_SIZE = 0.25
 
 class Position:
-    def __init__(self, X_pos, Y_pos, Orientation):
-        self.X_pos = X_pos
-        self.Y_pos = Y_pos
-        self.Orientation = Orientation
+    def __init__(self, x_pos, y_pos, orientation=0.0):
+        self.x_pos = x_pos
+        self.y_pos = y_pos
+        self.orientation = orientation
 
-    def getX_pos(self):
-        return self.X_pos
+    def getX(self):
+        return self.x_pos
 
-    def getY_pos(self):
-        return self.Y_pos
+    def getY(self):
+        return self.y_pos
 
     def getOrientation(self):
-        return self.Orientation
+        return self.orientation
 
     def setOrientation(self, o):
-        self.Orientation = o
+        self.orientation = o
 
     def __str__(self):
-        return "x: " + str(self.X_pos) + " y: " + str(self.Y_pos) + " angle: " + str(self.Orientation) + " radians."
+        return "x: " + str(self.x_pos) + " y: " + str(self.y_pos) + " angle: " + str(self.orientation) + " radians."
+
 
     def __eq__(self, p):
-        if self.distanceTo(p) < Error_bound:
+        if self.distanceTo(p) < ERROR_BOUND:
             return True
         return False
 
     def distanceTo(self, p):
-        x = abs(p.getX_pos() - self.X_pos)
-        y = abs(p.getY_pos() - self.Y_pos)
+        x = abs(p.getX() - self.x_pos)
+        y = abs(p.getY() - self.y_pos)
         return (x ** 2 + y ** 2) ** .5
 
+    def angleTurnTo(self, p):
+        if p.getOrientation() - self.orientation > 0:
+            return (p.getOrientation() - self.orientation) % (2 * math.pi)
+        else:
+            return ((p.getOrientation() - self.orientation) % (2 * math.pi)) - 2 * math.pi
+
     def angleToFace(self, p):
-        return p.getOrientation() - self.Orientation
+        return (math.atan2(p.getY() - self.getY(), p.getX() - self.getY()) + 2 * math.pi) % (2 * math.pi)
+
 
 class Grid:
 
-    def __init__(self, vertices, obstacles, unitScale):
-        self.vertices = vertices
-        self.obstacles = obstacles
-        self.unitScale = unitScale
+    def __init__(self, p1, p2, width, height, idealUnit=GRID_SIZE):
+        col_size = math.floor(math.fabs((p2.getX() - p1.getX()) / idealUnit))
+        row_size = math.floor(math.fabs((p2.getY() - p1.getY()) / idealUnit))
+        true_unit_width = math.fabs((p1.getX() - p2.getX()) / col_size)
+        true_unit_height = math.fabs((p1.getX() - p2.getX()) / row_size)
 
-    def getVertices(self):
-        return self.vertices
+        self.p1 = Position(CLEARANCE + ((p1.getX() - CLEARANCE) % true_unit_width), CLEARANCE + ((p1.getY() - CLEARANCE) % true_unit_height))
+        self.p2 = Position(width - CLEARANCE - ((width - CLEARANCE - p2.getX()) % true_unit_width), height - CLEARANCE - ((height - CLEARANCE - p2.getY()) % true_unit_height))
+        self.width = self.p2.getX() - self.p1.getX()
+        self.height = self.p2.getY() - self.p2.getY()
+        self.col_size = math.floor(width / true_unit_width)
+        self.row_size = math.floor(height / true_unit_height)
+        self.unit_width = true_unit_width
+        self.unit_height = true_unit_height
+        self.vertices = [[]]
+        self.cells = []
 
-    def removeVertex(self, vertex):
-        self.vertices.remove(vertex)
+        for i in range(self.row_size - 1):
+            self.vertices.append([])
+            self.cells.append([])
+            for j in range(self.col_size - 1):
+                self.cells[i].append(False)
 
-    def addVertex(self, vertex):
-        self.vertices.append(vertex)
+        for i in range(self.row_size):
+            for j in range(self.col_size):
+                self.vertices[i].append(Vertex(self.p1.getX() + i * self.unit_width, self.p1.getY() + j * self.unit_height))
 
-    def addObstacle(self, obstacle):
-        self.obstacles.append(obstacle)
+    def getVertex(self, row_index, col_index):
+        return self.vertices[row_index][col_index]
 
-    # returns true if the grid space with lower left vertex at (Xpos, Ypos) is obstructed by an obstacle
-    @staticmethod
-    def gridBlocked(Xpos, Ypos, obstacles, unitScale):
-        xBlocked = False
-        yBlocked = False
-        for obstacle in obstacles:
-            if obstacle.center_x >= Xpos:
-                xBlocked = (obstacle.getCenter()[0] - obstacle.getRadius()) < (Xpos + unitScale)
-            else:
-                xBlocked = (obstacle.getCenter()[0] + obstacle.getRadius()) > Xpos
-            if obstacle.center_y >= Ypos:
-                yBlocked = (obstacle.getCenter()[1] - obstacle.getRadius()) < (Ypos + unitScale)
-            else:
-                yBlocked = (obstacle.getCenter()[1] + obstacle.getRadius()) > (Ypos)
-        return (xBlocked and yBlocked)
+    def getNeighbors(self, row_index, col_index):
+        neighbors = []
+        x_coords = [col_index - 1, col_index, col_index + 1]
+        y_coords = [row_index - 1, row_index, row_index + 1]
+
+        for i in range(3):
+            for j in range(3):
+                if not (i == row_index and j == col_index) \
+                          and not (x_coords[i] < 0 or y_coords[i] < 0) \
+                          and not (x_coords [i] > self.width or y_coords[j] > self.height) \
+                          and not self.blocked(x_coords[i], y_coords[j]):
+                    neighbors.append(self.getVertex(x_coords[i], y_coords[j]))
+
+        return neighbors
+
+    def blocked(self, row_index, col_index):
+        return self.cells[row_index][col_index]
+
+    def addObstacle(self, obs):
+        o1 = [max(0, math.floor((obs.getCenter()[0] - obs.getRadius() - CLEARANCE) / self.unit_width)),
+              max(0, math.floor((obs.getCenter()[1] - obs.getRadius() - CLEARANCE) / self.unit_height))]
+        o2 = [min(self.col_size - 2, math.ceil((obs.getCenter()[0] + obs.getRadius() + CLEARANCE) / self.unit_width)),
+              min(self.row_size - 2, math.ceil((obs.getCenter()[1] + obs.getRadius() + CLEARANCE) / self.unit_height))]
+        for i in range(o1[1], o2[1] + 1):
+            for j in range(o1[0], o2[0] + 1):
+                self.cells[i][j] = True
+
+    def getGridCoordinates(self, x_pos, y_pos):
+        col_index = min(self.col_size - 1, max(round((x_pos - self.p1.getX()) / self.unit_width), 0))
+        row_index = min(self.row_size - 1, max(round((y_pos - self.p1.getY()) / self.unit_height), 0))
+        return row_index, col_index
 
 class Obstacle:
     def __init__(self, center_x, center_y, radius):
@@ -132,31 +170,31 @@ class Path(collections.Sequence):
             print ("Y: %s" %(position.getY_pos()))
             print ("Orientation: %s\n" %(position.getOrientation()))
 
-class Vertex:
-    def __init__(self, parent, startDistance, endDistance, visibleNeighbors, position):
-        self.parent = parent
-        self.startDistance = startDistance
-        self.endDistance = endDistance
-        self.visibleNeighbors = visibleNeighbors
-        self.position = position
+class Vertex(Position):
+    def __init__(self, x_pos, y_pos):
+        super(Vertex, self).__init__(x_pos, y_pos, 0)
+        self.parent = None
+        self.dist = math.inf
+        self.heuristic = math.inf
+        self.visibleNeighbors = []
+
+    def __lt__(self, other):
+        return self.dist + self.heuristic < other.getDistance() + other.getHeuristic()
+
+    def __gt__(self, other):
+        return self.dist + self.heuristic > other.getDistance() + other.getHeuristic()
+
+    def __le__(self, other):
+        return self.dist + self.heuristic <= other.getDistance() + other.getHeuristic()
+
+    def __ge__(self, other):
+        return self.dist + self.heuristic >= other.getDistance() + other.getHeuristic()
 
     def getParent(self):
         return self.parent
 
     def setParent(self, parent):
         self.parent = parent
-
-    def getStartDistance(self):
-        return self.startDistance
-
-    def setStartDistance(self, startDistance):
-        self.startDistance = startDistance
-
-    def getEndDistance(self):
-        return self.endDistance
-
-    def setEndDistance(self, endDistance):
-        self.endDistance = endDistance
 
     def getVisibleNeighbors(self):
         return self.visibleNeighbors
@@ -167,8 +205,20 @@ class Vertex:
     def addNeighbor(self, vertex):
         self.visibleNeighbors.append(vertex)
 
-    def __eq__(self, vertex):
-        return self.position == vertex.position
+    def getDistance(self):
+        return self.dist
 
-    def getPosition(self):
-        return self.position
+    def setDistance(self, dist, reset=False):
+        if reset:
+            self.dist = math.inf
+        else:
+            self.dist = dist
+
+    def getHeuristic(self):
+        return self.heuristic
+
+    def setHeuristic(self, dest, reset=False):
+        if reset:
+            self.heuristic = math.inf
+        else:
+            self.heuristic = self.distanceTo(dest)
