@@ -58,9 +58,8 @@ class Grid:
         row_size = math.floor(math.fabs((p2.getY() - p1.getY()) / idealUnit))
         true_unit_width = math.fabs((p1.getX() - p2.getX()) / col_size)
         true_unit_height = math.fabs((p1.getX() - p2.getX()) / row_size)
-
-        self.p1 = Position(CLEARANCE + ((p1.getX() - CLEARANCE) % true_unit_width), CLEARANCE + ((p1.getY() - CLEARANCE) % true_unit_height))
-        self.p2 = Position(width - CLEARANCE - ((width - CLEARANCE - p2.getX()) % true_unit_width), height - CLEARANCE - ((height - CLEARANCE - p2.getY()) % true_unit_height))
+        self.p1 = p1
+        self.p2 = p2
         self.width = self.p2.getX() - self.p1.getX()
         self.height = self.p2.getY() - self.p2.getY()
         self.col_size = math.floor(width / true_unit_width)
