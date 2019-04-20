@@ -289,7 +289,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::TabFocus</enum>
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="minimum">
     <number>-30</number>
@@ -328,22 +328,6 @@
    </property>
    <property name="text">
     <string>Status:</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_10">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>200</y>
-     <width>571</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="frameShape">
-    <enum>QFrame::StyledPanel</enum>
-   </property>
-   <property name="text">
-    <string>Motor Control Settings</string>
    </property>
   </widget>
   <widget class="QLabel" name="label">
@@ -619,7 +603,7 @@ Keyboard up arrow and down arrow work here</string>
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>620</y>
+     <y>600</y>
      <width>81</width>
      <height>31</height>
     </rect>
@@ -633,7 +617,7 @@ portLooky</string>
    <property name="geometry">
     <rect>
      <x>150</x>
-     <y>620</y>
+     <y>600</y>
      <width>141</width>
      <height>31</height>
     </rect>
@@ -647,7 +631,7 @@ starboardLooky</string>
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>660</y>
+     <y>640</y>
      <width>48</width>
      <height>26</height>
     </rect>
@@ -663,7 +647,7 @@ starboardLooky</string>
    <property name="geometry">
     <rect>
      <x>150</x>
-     <y>660</y>
+     <y>640</y>
      <width>48</width>
      <height>26</height>
     </rect>
@@ -695,22 +679,6 @@ Attitude:o/l</string>
    </property>
    <property name="wordWrap">
     <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="enable_winchbelt_checkbox">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>590</y>
-     <width>261</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Enable Winch/Belt Control (TODO)</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_18">
@@ -1563,8 +1531,8 @@ Attitude:o/l</string>
   <widget class="QLineEdit" name="sensor7_lineedit">
    <property name="geometry">
     <rect>
-     <x>500</x>
-     <y>620</y>
+     <x>600</x>
+     <y>640</y>
      <width>113</width>
      <height>25</height>
     </rect>
@@ -1576,10 +1544,10 @@ Attitude:o/l</string>
   <widget class="QLabel" name="sensor5_label_12">
    <property name="geometry">
     <rect>
-     <x>340</x>
-     <y>620</y>
-     <width>151</width>
-     <height>17</height>
+     <x>460</x>
+     <y>640</y>
+     <width>131</width>
+     <height>20</height>
     </rect>
    </property>
    <property name="text">
@@ -1589,8 +1557,8 @@ Attitude:o/l</string>
   <widget class="QLineEdit" name="sensor8_lineedit">
    <property name="geometry">
     <rect>
-     <x>500</x>
-     <y>650</y>
+     <x>600</x>
+     <y>670</y>
      <width>113</width>
      <height>25</height>
     </rect>
@@ -1605,14 +1573,14 @@ Attitude:o/l</string>
   <widget class="QLabel" name="sensor5_label_13">
    <property name="geometry">
     <rect>
-     <x>340</x>
-     <y>650</y>
-     <width>151</width>
-     <height>17</height>
+     <x>460</x>
+     <y>670</y>
+     <width>131</width>
+     <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>8: PortLooky</string>
+    <string>8: StarboardLooky</string>
    </property>
   </widget>
   <widget class="QPushButton" name="stop_sensor_update_button">
@@ -1641,6 +1609,100 @@ Attitude:o/l</string>
     <string>Debugging Messages</string>
    </property>
   </widget>
+  <widget class="QGroupBox" name="groupBox_2">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>190</y>
+     <width>701</width>
+     <height>521</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::StrongFocus</enum>
+   </property>
+   <property name="title">
+    <string>Motor Controls</string>
+   </property>
+  </widget>
+  <widget class="QFrame" name="frame">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1091</width>
+     <height>1001</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::StrongFocus</enum>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+  </widget>
+  <zorder>frame</zorder>
+  <zorder>groupBox_2</zorder>
+  <zorder>horizontalLayoutWidget</zorder>
+  <zorder>general_speed_slider</zorder>
+  <zorder>status_label</zorder>
+  <zorder>emergency_stop_button</zorder>
+  <zorder>label_vertical_max</zorder>
+  <zorder>label_vertical_min</zorder>
+  <zorder>motor0_spinbox</zorder>
+  <zorder>motor1_spinbox</zorder>
+  <zorder>motor2_spinbox</zorder>
+  <zorder>motor3_spinbox</zorder>
+  <zorder>label_5</zorder>
+  <zorder>label</zorder>
+  <zorder>label_3</zorder>
+  <zorder>label_4</zorder>
+  <zorder>label_2</zorder>
+  <zorder>w_button</zorder>
+  <zorder>a_button</zorder>
+  <zorder>s_button</zorder>
+  <zorder>d_button</zorder>
+  <zorder>label_11</zorder>
+  <zorder>label_6</zorder>
+  <zorder>general_speed_spinbox</zorder>
+  <zorder>label_12</zorder>
+  <zorder>motor4_spinbox</zorder>
+  <zorder>label_13</zorder>
+  <zorder>motor5_spinbox</zorder>
+  <zorder>label_14</zorder>
+  <zorder>general_assign_checkbox</zorder>
+  <zorder>label_15</zorder>
+  <zorder>label_16</zorder>
+  <zorder>motor6_spinbox</zorder>
+  <zorder>motor7_spinbox</zorder>
+  <zorder>label_17</zorder>
+  <zorder>label_18</zorder>
+  <zorder>label_19</zorder>
+  <zorder>zero_locomotion_button</zorder>
+  <zorder>start_shift_button</zorder>
+  <zorder>target_translate_spinbox</zorder>
+  <zorder>label_20</zorder>
+  <zorder>steps_per_sec_spinbox</zorder>
+  <zorder>label_21</zorder>
+  <zorder>translate_cancel_button</zorder>
+  <zorder>attitude_slider</zorder>
+  <zorder>target_attitude_spinbox</zorder>
+  <zorder>steps_attitude_spinbox</zorder>
+  <zorder>label_22</zorder>
+  <zorder>label_23</zorder>
+  <zorder>attitude_shift_button</zorder>
+  <zorder>attitude_shift_cancel_button</zorder>
+  <zorder>groupBox</zorder>
+  <zorder>update_sensors_button</zorder>
+  <zorder>sensor7_lineedit</zorder>
+  <zorder>sensor5_label_12</zorder>
+  <zorder>sensor8_lineedit</zorder>
+  <zorder>sensor5_label_13</zorder>
+  <zorder>stop_sensor_update_button</zorder>
+  <zorder>debug_checkbox</zorder>
  </widget>
  <resources/>
  <connections/>
