@@ -304,7 +304,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     apriltags_ros::Localization localization_data;
     localization_data.x = -1 * tag_pose.pose.position.x;
     localization_data.y = tag_pose.pose.position.z;
-    localization_data.theta = (-1 * ((-1 * angle_approach) + (PI / 2)));
+    localization_data.theta = (-1 * ((-1 * angle_approach) + (PI / 2))) + (PI/2);
     localization_data.cameraID = 0;
     localization_pub_.publish(localization_data);
 

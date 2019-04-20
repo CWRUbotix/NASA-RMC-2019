@@ -222,26 +222,26 @@ class MyPlugin(Plugin):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(0, motor_speed)
-        print("w key pressed")
+        #print("w key pressed")
 
     def a_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
 
         robotInterface.sendDriveCommand(3, motor_speed)
-        print("a key pressed")
+        #print("a key pressed")
 
     def s_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(1, motor_speed)
-        print("s key pressed")
+        #print("s key pressed")
 
     def d_pressed(self, motor_speed=None):
         if motor_speed is None:
             motor_speed = self.get_general_motor_val()
         robotInterface.sendDriveCommand(2, motor_speed)
-        print("d key pressed")
+        #print("d key pressed")
 
     def estop_pressed(self):
         print("Attempting to zero all motors...")
