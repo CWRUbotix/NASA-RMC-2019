@@ -194,16 +194,19 @@ def process_obstacle(color, cx, cy, box, x, y, obj_length, obj_height, obj_depth
 		of drawing the bounding box and measured values on each obstacle
 		send_data (`bool`) : boolean value specifying if detected obstacles should be published to the ``obstacleDetection`` topic
 	"""
-	coords = depth_to_point_cloud_pos(cx, cy, obj_depth)  # convert obstacle depth to XYZ coordinate
-	coords = apply_camera_orientation(list(coords), CameraPosition)
+	coords = list(depth_to_point_cloud_pos(cx, cy, obj_depth))  # convert obstacle depth to XYZ coordinate
+
+	theta = CameraPosition['azimuth'] * math.pi / 180  # get robot pitch angle in radians
+	coords[0] = CameraPosition['y'] + coords[0] * math.sin(theta)  # convert relative obstacle position to global
+	coords[2] = CameraPosition['x'] - coords[2] * math.cos(theta)
 	mm_diameter = equi_diameter * (1.0 / CameraParams['fx']) * obj_depth  # convert pixel diameter to mm
 
 	if 100 < mm_diameter < 400:
 		new_obstacle = True
 		current_obstacle = None
 		for obstacle in obstacle_list:
-			x_match = abs(obstacle.x - coords[0]) < 0.3
-			y_match = abs(obstacle.y - coords[2]) < 0.3
+			x_match = abs(obstacle.x - coords[2]) < 0.3
+			y_match = abs(obstacle.y - coords[0]) < 0.3
 			z_match = abs(obstacle.z - coords[1]) < 0.5
 			diameter_match = abs(obstacle.diameter - mm_diameter) / 1000. < 0.5
 			if x_match and y_match:
@@ -245,7 +248,7 @@ def process_obstacle(color, cx, cy, box, x, y, obj_length, obj_height, obj_depth
 						1, cv2.LINE_AA)
 			cv2.putText(color, "x = %.2f" % coords[0], (cx, cy + 30), font, 0.4, (0, 0, 255), 1,
 						cv2.LINE_AA)
-			cv2.putText(color, "y = %.2f" % coords[1], (cx, cy + 45), font, 0.4, (0, 255, 0), 1,
+			cv2.putText(color, "y = %.2f" % coords[2], (cx, cy + 45), font, 0.4, (0, 255, 0), 1,
 						cv2.LINE_AA)
 			cv2.putText(color, "z = %.2f" % (obj_depth / 1000), (cx, cy + 60), font, 0.4, (255, 0, 127),
 						1, cv2.LINE_AA)
@@ -275,11 +278,13 @@ def plot_global_map(obstacle_list):
 	fig = plt.figure(figsize=(8, 8))
 	ax = plt.subplot(111)
 	for obstacle in obstacle_list:
-		ax.scatter(obstacle.x, obstacle.y, s=obstacle.diameter * 1000, alpha=obstacle.lifetime / 5., label=obstacle.id)
+		ax.scatter(obstacle.x, obstacle.y, s=obstacle.diameter * 1000, alpha=obstacle.lifetime / 5.)
+		ax.text(obstacle.x + .1, obstacle.y + .1, s=obstacle.id, fontsize=8)
 	x = CameraPosition['x']
 	y = CameraPosition['y']
 	theta = CameraPosition['azimuth'] * math.pi / 180
-	ax.arrow(x, y, 0.2 * math.cos(theta), 0.1 * math.sin(theta), linewidth=2)
+	ax.arrow(x, y, 0.2 * math.cos(theta), 0.2 * math.sin(theta), linewidth=2)
+	ax.text(x + .1, y + .1, s='Robot')
 	ax.set_ylim(0, 6.2)
 	ax.set_xlim(0, 4.5)
 	fig.savefig(global_map_dir + '%d.png' % len(os.listdir(global_map_dir)))

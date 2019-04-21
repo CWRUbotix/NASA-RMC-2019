@@ -192,7 +192,10 @@ def conservative_drive(dest, forward, distance):
                 logDriveData(False, speed)
         if not done:
             next_distance = distance_moved((currentState.getStarRPM() + currentState.getPortRPM()) / 2, currentState.getAcceX(), 0.005)
-            looky_turn(currentState.getCurrentPos(), next_distance)
+            if forward:
+	        looky_turn(currentState.getCurrentPos(), next_distance)
+	    else:
+		looky_turn(currentState.getCurrentPos(), -next_distance)
 
         rospy.sleep(0.005)
 
@@ -284,8 +287,9 @@ def looky_turn(currentPos, next_distance):
         mc.port_looky(motor_pub, -150)
 
 def looky_turn_2(currentPos, next_pos):
-    looky_angle = (currentPos.angleToFace(next_pos)) % (2 * math.pi)
-    if looky_angle >= (toRadian(-150) % 2 * math.pi) or looky_angle <= toRadian(150):
+    looky_angle = (currentPos.angleToFace(pp.Position(0,0,0))) % (2 * math.pi)
+    print str(looky_angle)
+    if looky_angle >= (toRadian(-150) % (2 * math.pi)) or looky_angle <= toRadian(150):
         if looky_angle <= toRadian(150):
             mc.star_looky(motor_pub, toDegree(looky_angle))
         else:
@@ -304,7 +308,7 @@ def angle_moved(angular_velocity, t):
 def distance_moved(rpm, acce, t):
     rps = rpm / 60
     speed = rps * WHEEL_RADIUS * 2 * math.pi
-    distance = speed * t + 0.5 * acce * t ** 2
+    distance = math.fabs(speed) * t + 0.5 * acce * t ** 2
     return math.fabs(distance)
 
 def toRadian(deg):
@@ -433,14 +437,14 @@ def updateState(msg):
         currentState.setGyro1Z(msg.value)
     elif msg.sensorID == 20:
         pass
-    elif msg.sensorID == 23:
-        currentState.setDepLowerLimit(bool(msg.value))
-    elif msg.sensorID == 24:
-        currentState.setDepUpperLimit(bool(msg.value))
-    elif msg.sensorID == 27:
-        currentState.setBCArmLowerLimit(bool(msg.value))
-    elif msg.sensorID == 28:
-        currentState.setBCArmUpperLimit(bool(msg.value))
+#    elif msg.sensorID == 23:
+ #       currentState.setDepLowerLimit(bool(msg.value))
+ #   elif msg.sensorID == 24:
+ #       currentState.setDepUpperLimit(bool(msg.value))
+ #   elif msg.sensorID == 27:
+ #       currentState.setBCArmLowerLimit(bool(msg.value))
+ #   elif msg.sensorID == 28:
+ #       currentState.setBCArmUpperLimit(bool(msg.value))
 
 def updateObstacle(msg):
     global currentState

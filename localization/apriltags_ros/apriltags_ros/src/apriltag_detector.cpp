@@ -318,8 +318,8 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
 
     //correcting for center of rotation
     float theta = std::fmod(((angle_approach - PI - 0.16) + (2 * PI)), (2 * PI));
-    float actual_x = tag_pose.pose.position.z + (0.47*cos(theta) + 0.15*sin(theta));
-    float actual_y = tag_pose.pose.position.x + (0.47*sin(theta) - 0.15*cos(theta));
+    float actual_x = corrected_x + (0.47*cos(theta) + 0.15*sin(theta));
+    float actual_y = corrected_y + (0.47*sin(theta) - 0.15*cos(theta));
 
     apriltags_ros::Localization localization_data;
     localization_data.y = actual_x;//tag_pose.pose.position.x;
@@ -468,8 +468,8 @@ void AprilTagDetector::imageCb_1(const sensor_msgs::ImageConstPtr& msg, const se
     ROS_INFO("%f, %f, %f", tag_pose.pose.position.z, tag_pose.pose.position.x, angle_approach);
 
     float theta = std::fmod(((angle_approach + PI/2 - lookie_angle_right * PI/180) + (2 * PI)), (2 * PI));
-    float actual_x = tag_pose.pose.position.z + (0.20*cos(theta) - 0.30*sin(theta));
-    float actual_y = tag_pose.pose.position.x + (0.20*sin(theta) + 0.30*cos(theta));
+    float actual_x = corrected_x + (0.20*cos(theta) - 0.30*sin(theta));
+    float actual_y = corrected_y + (0.20*sin(theta) + 0.30*cos(theta));
 
     apriltags_ros::Localization localization_data_1;
     localization_data_1.y = actual_x;//corrected_x;//tag_pose.pose.position.x;
@@ -630,8 +630,8 @@ void AprilTagDetector::imageCb_2(const sensor_msgs::ImageConstPtr& msg, const se
     ROS_INFO("%f, %f, %f", tag_pose.pose.position.z, tag_pose.pose.position.x, angle_approach);
 
     float theta = std::fmod(((angle_approach - PI/2 - lookie_angle_left * PI/180) + (2 * PI)), (2 * PI));
-    float actual_x = tag_pose.pose.position.z + (0.20*cos(theta) + 0.30*sin(theta));
-    float actual_y = tag_pose.pose.position.x + (0.20*sin(theta) - 0.30*cos(theta));
+    float actual_x = corrected_x + (0.20*cos(theta) + 0.30*sin(theta));
+    float actual_y = corrected_y + (0.20*sin(theta) - 0.30*cos(theta));
 
     apriltags_ros::Localization localization_data_2;
     localization_data_2.y = corrected_x;//tag_pose.pose.position.x;
