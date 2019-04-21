@@ -25,3 +25,11 @@ def bucket_translation_motor(pub, value):
 def bucket_angle_actuator(pub, value):
     pub.publish(motorID = 5, value = value)
 
+def port_looky(pub, value):
+    pub.publish(motorID = 6, value = value)
+
+def star_looky(pub, value):
+    pub.publish(motorID = 7, value = value)
+
+
+

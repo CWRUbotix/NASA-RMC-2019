@@ -15,12 +15,10 @@ from obstacle_detection.msg import Obstacle
 class Robot_state:
     def __init__(self):
         self.currentPos = None
-        self.gyro_0x = 0.0
-        self.gyro_0y = 0.0
         self.gyro_0z = 0.0
-        self.gyro_1x = 0.0
-        self.gyro_1y = 0.0
         self.gyro_1z = 0.0
+        self.acce_0x = 0.0
+        self.acce_1x = 0.0
         self.port_drive_rpm = 0.0
         self.starboard_drive_rpm = 0.0
         self.dep_load_cell = 0.0
@@ -28,33 +26,16 @@ class Robot_state:
         self.dep_upper_limit_switch = False
         self.bcarm_lower_limit_switch = False # When translated all the way up
         self.bcarm_upper_limit_switch = False # When translated all the way down
-        #self.bc_fore_limit_switch = False
-        #self.bc_alt_limit_switch = False
-        self.obstacles = []
+        self.bc_fore_limit_switch = False
+        self.bc_alt_limit_switch = False
+        self.obstacles = {}
+        self.obstacle_found = False
 
     def getCurrentPos(self):
         return self.currentPos
 
     def setCurrentPos(self, currentPos):
         self.currentPos = currentPos
-
-    def getGyroX(self):
-        return (self.gyro_0x + self.gyro_1x) / 2.0
-
-    def setGyro0X(self, gyro_x):
-        self.gyro_0x = gyro_x
-
-    def setGyro1X(self, gyro_x):
-        self.gyro_1x = gyro_x
-
-    def getGyroY(self):
-        return (self.gyro_0y + self.gyro_1y) / 2.0
-
-    def setGyro0Y(self, gyro_y):
-        self.gyro_0y = gyro_y
-
-    def setGyro1Y(self, gyro_y):
-        self.gyro_1y = gyro_y
 
     def getGyroZ(self):
         return (self.gyro_0z + self.gyro_1z) /2
@@ -64,6 +45,15 @@ class Robot_state:
 
     def setGyro1Z(self, gyro_z):
         self.gyro_1z = gyro_z
+
+    def getAcceX(self):
+        return (self.acce_1x + self.acce_0x) / 2
+
+    def setAcce0X(self, acce_0x):
+        self.acce_0x = acce_0x
+
+    def setAcce1X(self, acce_1x):
+        self.acce_1x = acce_1x
 
     def getPortRPM(self):
         return self.port_drive_rpm
@@ -101,24 +91,35 @@ class Robot_state:
     def setBCArmLowerLimit(self, bcarm_lower_limit_switch):
         self.bcarm_lower_limit_switch = bcarm_lower_limit_switch
 
-  # def getBCForeLimit(self):
-      # return self.bc_fore_limit_switch
+    def getBCForeLimit(self):
+       return self.bc_fore_limit_switch
 
-  # def setBCTransForeLimit(self, bc_fore_limit_switch):
-      # self.bc_fore_limit_switch = bc_fore_limit_switch
+    def setBCTransForeLimit(self, bc_fore_limit_switch):
+        self.bc_fore_limit_switch = bc_fore_limit_switch
 
-  # def getBCAltLimit(self):
-  #     return self.bc_alt_limit_switch
+    def getBCAltLimit(self):
+       return self.bc_alt_limit_switch
 
-  # def setBCAltLimit(self, bc_alt_limit_switch):
-  #     self.bc_alt_limit_switch = bc_alt_limit_switch
+    def setBCAltLimit(self, bc_alt_limit_switch):
+       self.bc_alt_limit_switch = bc_alt_limit_switch
 
     def getObstacles(self):
         return self.obstacles
 
-    def addObstacle(self, obs):
-        if obs not in self.obstacles:
-            self.obstacles.append(obs)
+    def addObstacle(self, id, obs):
+        if id not in self.obstacles.keys():
+            self.obstacles[id] = obs
+            self.setObstacleFound(True)
+            return True
+        elif math.fabs(obs.getRadius() - self.obstacles[id].getRadius()) > 0.1:
+            self.obstacles[id] = obs
+            self.setObstacleFound(True)
+            return True
+        else:
+            return False
+
+    def setObstacleFound(self, found):
+        self.obstacle_found = found
 
 
 #Current position of the robot
@@ -128,7 +129,9 @@ gyrolog = None
 motor_pub = rospy.Publisher('motorCommand', motorCommand, queue_size=100)
 
 ROBOT_SPEED_DRIVE = 20.0
+ROBOT_SPEED_DRIVE_LOAD = 30.0
 ROBOT_SPEED_TURN = 15.0
+ROBOT_SPPED_TURN = 25.0
 CONTROL_RATE = 0.005
 DECELARATE_RATE = 35 #IN RPM/SEC
 WHEEL_RADIUS = 0.2286 # IN M
@@ -156,7 +159,7 @@ def logTurnData(direction, value, goal, theo_angle_moved, actual_angle_moved, dt
 def logGyroData(gyro_z, left_rpm, right_rpm, cum_angle, time):
     gyrolog.write('gyro:' + str(gyro_z) + ' left_rpm:' + str(left_rpm) + ' right_rpm:' + str(right_rpm) + ' cum_angle:' + str(cum_angle) + ' time:' + str(time)+'\n')
 
-def conservative_drive(dest, forward, distance, deceleration):
+def conservative_drive(dest, forward, distance):
     global motor_pub
     done = False
     initPos = currentState.getCurrentPos()
@@ -165,9 +168,7 @@ def conservative_drive(dest, forward, distance, deceleration):
     else:
         speed = math.sqrt(distance * 0.5 / 0.0010265)
     stop_distance = distance - 0.001265 * speed ** 2
-    print str(speed)
-    print str(stop_distance)
-    while not done:	
+    while not done:
         if rospy.is_shutdown():
             exit(-1)
         rospy.loginfo('current pos ' + str(currentState.getCurrentPos()))
@@ -189,6 +190,10 @@ def conservative_drive(dest, forward, distance, deceleration):
                 mc.drive_left_motor(motor_pub, -speed)
                 mc.drive_right_motor(motor_pub, -speed)
                 logDriveData(False, speed)
+        if not done:
+            next_distance = distance_moved((currentState.getStarRPM() + currentState.getPortRPM()) / 2, currentState.getAcceX(), 0.005)
+            looky_turn(currentState.getCurrentPos(), next_distance)
+
         rospy.sleep(0.005)
 
     mc.drive_right_motor(motor_pub, 0)
@@ -202,6 +207,9 @@ def turn_algo_2(goal, counter):
     done = False
     initTime = time.time()
     lastTime = None
+    goal_orientation = (currentState.getCurrentPos().getOrientation() + toRadian(goal)) % (2 * math.pi)
+    goal_pos = pp.Position(currentState.getCurrentPos().getX(), currentState.getCurrentPos().getY(), goal_orientation)
+    looky_turn_2(currentState.getCurrentPos(), goal_pos)
     if counter:
         mc.drive_left_motor(motor_pub, -ROBOT_SPEED_TURN)
         mc.drive_right_motor(motor_pub, ROBOT_SPEED_TURN)
@@ -228,17 +236,12 @@ def turn_algo_2(goal, counter):
             deltaT = currentTime - lastTime
             cum_angle += math.fabs(w) * deltaT
             lastTime = currentTime
-    #    print 'gyro: ' +  str(currentState.getGyroZ() - offset)
-	#    print 'cum_angle: ' + str(cum_angle)
-	    logGyroData(currentState.getGyroZ() + offset, currentState.getPortRPM(), currentState.getStarRPM(), cum_angle, currentTime - initTime)
+            logGyroData(currentState.getGyroZ() + offset, currentState.getPortRPM(), currentState.getStarRPM(), cum_angle, currentTime - initTime)
 
         if flag and cum_angle >= stop_angle:
             mc.drive_right_motor(motor_pub, 0)
             mc.drive_left_motor(motor_pub, 0)
             done = True
-#        elif (math.fabs(currentState.getPortRPM()) + math.fabs(currentState.getStarRPM())) / 2 < 1:
-#            logfile.write('Robot stopped before reaching the goal in math\n')
-#            done = True
 
         if rospy.is_shutdown():
             exit(-1)
@@ -247,56 +250,9 @@ def turn_algo_2(goal, counter):
         currentTime = time.time()
         cum_angle += math.fabs(w  *  (currentTime - lastTime))
         lastTime = currentTime
-#	    print 'gyro: ' + str(currentState.getGyroZ() - offset)
-#	    print 'cum_angle: ' + str(cum_angle)
         rospy.sleep(0.005)
     measure = raw_input('How much did it turn? (in deg): ')
     logTurnData(counter, ROBOT_SPEED_TURN, goal, cum_angle, float(measure), lastTime - initTime)
-
-
-def conservative_turn(goal, counter, deceleration):
-    global motor_pub
-    done = False
-    r = rospy.Rate(1/CONTROL_RATE)
-    cum_angle_turn = 0
-    lastTime = None
-    initTime = time.time()
-    goal = goal * math.pi / 180.0 / 0.3
-    speed = ROBOT_SPEED_TURN
-    if goal > 1.85:
-        speed = ROBOT_SPEED_TURN
-    else:
-        speed = math.sqrt(goal * 0.5 / 0.0010265)
-    while not (done or rospy.is_shutdown()):
-        stop_distance = goal - 0.001265 * speed ** 2
-        print str(speed)
-        print str(stop_distance)
-        rospy.loginfo('Gyro:' + str(currentState.getGyroZ()))
-        currentTime = time.time()
-        logGyroData(currentState.getGyroZ(), currentState.getPortRPM(), currentState.getStarRPM(), cum_angle_turn, currentTime - initTime)
-        if lastTime is not None:
-            cum_angle_turn += angle_moved(currentState.getGyroZ(), currentTime - lastTime)
-            cum_angle_turn = min(cum_angle_turn, goal)
-        print str(cum_angle_turn)
-        rospy.loginfo('cum_angle:' + str(cum_angle_turn) + ' time:' + str(currentTime - initTime))
-        if cum_angle_turn > stop_distance :
-            done = True
-        elif counter:
-            mc.drive_left_motor(motor_pub, -speed)
-            mc.drive_right_motor(motor_pub, speed)
-        else:
-            mc.drive_left_motor(motor_pub, speed)
-            mc.drive_right_motor(motor_pub, -speed)
-        lastTime = currentTime
-        if math.fabs(goal - cum_angle_turn) < 5 or cum_angle_turn > goal:
-            done = True
-        r.sleep()
-    mc.drive_right_motor(motor_pub, 0)
-    mc.drive_left_motor(motor_pub, 0)
-    if rospy.is_shutdown():
-        exit(-1)
-    measure = raw_input('How much did it turn? (in deg): ')
-    logTurnData(counter, ROBOT_SPEED_TURN, goal, cum_angle_turn, float(measure), lastTime - initTime)
 
 def convert_axis(pos, dx, dy):
     return pp.Position(pos.getY() + dy, dx - pos.getX(), (pos.getOrientation() + 3 * math.pi / 2) % (2 * math.pi))
@@ -304,15 +260,52 @@ def convert_axis(pos, dx, dy):
 DELTA_X = 1.23
 DELTA_Y = 0.825
 
-def looky_turn(goal):
-    pass
 
-def lookyToRobotAngle(langle, id):
-    pass
+"""
+ID 0 : Port
+ID 1 : Star
+ID 2 : Back
+"""
+def looky_turn(currentPos, next_distance):
+    nextX = currentPos.getX() + next_distance * math.cos(currentPos.getOrientation())
+    nextY = currentPos.getY() + next_distance * math.sin(currentPos.getOrientation())
+    nextPos = pp.Position(nextX, nextY, currentPos.getOrientation())
+    looky_angle = (nextPos.angleToFace(pp.Position(0,0,0))) % (2 * math.pi)
+    if looky_angle >= (toRadian(-150) % 2 * math.pi) or looky_angle <= toRadian(150):
+        if looky_angle <= toRadian(150):
+            mc.star_looky(motor_pub, toDegree(looky_angle))
+        else:
+            mc.star_looky(motor_pub, toDegree(looky_angle - 2*math.pi))
+    elif looky_angle >= ((toRadian(-150) + math.pi) % (2 * math.pi)) \
+        and looky_angle <= ((toRadian(150) + math.pi) % (2 * math.pi)):
+        mc.port_looky(motor_pub, toDegree(looky_angle - math.pi))
+    else:
+        mc.star_looky(motor_pub, 150)
+        mc.port_looky(motor_pub, -150)
+
+def looky_turn_2(currentPos, next_pos):
+    looky_angle = (currentPos.angleToFace(next_pos)) % (2 * math.pi)
+    if looky_angle >= (toRadian(-150) % 2 * math.pi) or looky_angle <= toRadian(150):
+        if looky_angle <= toRadian(150):
+            mc.star_looky(motor_pub, toDegree(looky_angle))
+        else:
+            mc.star_looky(motor_pub, toDegree(looky_angle - 2 * math.pi))
+    elif looky_angle >= ((toRadian(-150) + math.pi) % (2 * math.pi)) \
+            and looky_angle <= ((toRadian(150) + math.pi) % (2 * math.pi)):
+        mc.port_looky(motor_pub, toDegree(looky_angle - math.pi))
+    else:
+        mc.star_looky(motor_pub, 150)
+        mc.port_looky(motor_pub, -150)
 
 def angle_moved(angular_velocity, t):
     print 'time ' +  str(t)
     return math.fabs(toRadian(angular_velocity) * t / 0.3)
+
+def distance_moved(rpm, acce, t):
+    rps = rpm / 60
+    speed = rps * WHEEL_RADIUS * 2 * math.pi
+    distance = speed * t + 0.5 * acce * t ** 2
+    return math.fabs(distance)
 
 def toRadian(deg):
     return deg * math.pi / 180
@@ -320,7 +313,6 @@ def toRadian(deg):
 def simple_drive_test1():
     rospy.loginfo('This test routine attempts to drive straight from is current position')
     distance = float(raw_input('Enter distance you want to travel'))
-    deceleration = float(raw_input('Enter deceleration factor you want'))
     while True:
         if rospy.is_shutdown():
             exit(-1)
@@ -330,8 +322,8 @@ def simple_drive_test1():
             break
 
     currentPos = currentState.getCurrentPos()
-    destination = pp.Position(currentPos.getX_pos() + distance * math.cos(currentPos.getOrientation()),
-                              currentPos.getY_pos() + distance * math.sin(currentPos.getOrientation()),
+    destination = pp.Position(currentPos.getX() + distance * math.cos(currentPos.getOrientation()),
+                              currentPos.getY() + distance * math.sin(currentPos.getOrientation()),
                               currentPos.getOrientation())
 
     direction = True
@@ -340,14 +332,15 @@ def simple_drive_test1():
     else:
         direction = False;
 
-    conservative_drive(destination, direction, math.fabs(distance), deceleration)
+    conservative_drive(destination, direction, math.fabs(distance))
     measure = float(raw_input('How much did it move? (in m): '))
     rospy.loginfo('distance_travelled:' + str(measure) + ' distance_entered:' + str(distance))
     print 'testing successful'
     exit(0)
 
 def simple_drive_test2():
-    print 'testing not implemented'
+    print 'testing tracking lookys while driving'
+
     exit(0)
 
 def simple_drive_test3():
@@ -362,10 +355,9 @@ def simple_turn_test1():
         if answer == 'y':
             break
     goal = float(raw_input('Enter how much to turn in degrees. input should be less than 360'))
-    deceleration = float(raw_input('Enter deceleration factor you want'))
     goal_in_rad = toRadian(goal)
     currentPos = currentState.getCurrentPos()
-    destination = pp.Position(currentPos.getX_pos(), currentPos.getY_pos(),
+    destination = pp.Position(currentPos.getX(), currentPos.getY(),
                               (currentPos.getOrientation() + goal_in_rad) % (2 * math.pi))
     direction = True
     if goal > 0:
@@ -373,7 +365,7 @@ def simple_turn_test1():
     else:
         direction = False
 
-    conservative_turn(math.fabs(goal), direction, deceleration)
+    turn_algo_2(math.fabs(goal), direction)
     print 'testing succesful'
     rospy.loginfo('localization data:')
     rospy.loginfo('start_angle:' + str(toDegree(currentPos.getOrientation())) + ' end_angle' + str(toDegree(currentState.getCurrentPos().getOrientation()))+ ' actual_goal:' + str(toDegree(destination.getOrientation())))
@@ -433,31 +425,29 @@ def updateState(msg):
         currentState.setStarRPM(msg.value)
     elif msg.sensorID == 9:
         currentState.setDepLoad(msg.value)
-    elif msg.sensorID == 11:
-        currentState.setGyro0X(msg.value)
-    elif msg.sensorID == 12:
-        currentState.setGyro0Y(msg.value)
     elif msg.sensorID == 13:
         currentState.setGyro0Z(msg.value)
-    elif msg.sensorID == 17:
-        currentState.setGyro1X(msg.value)
-    elif msg.sensorID == 18:
-        currentState.setGyro1Y(msg.value)
+    elif msg.sensorID == 14:
+        pass
     elif msg.sensorID == 19:
         currentState.setGyro1Z(msg.value)
-   # elif msg.sensorID == 23:
-     #   currentState.setDepLowerLimit(bool(msg.value))
-    #elif msg.sensorID == 24:
-     #   currentState.setDepUpperLimit(bool(msg.value))
-    #elif msg.sensorID == 27:
-     #   currentState.setBCArmLowerLimit(bool(msg.value))
-    #elif msg.sensorID == 28:
-     #   currentState.setBCArmUpperLimit(bool(msg.value))
+    elif msg.sensorID == 20:
+        pass
+    elif msg.sensorID == 23:
+        currentState.setDepLowerLimit(bool(msg.value))
+    elif msg.sensorID == 24:
+        currentState.setDepUpperLimit(bool(msg.value))
+    elif msg.sensorID == 27:
+        currentState.setBCArmLowerLimit(bool(msg.value))
+    elif msg.sensorID == 28:
+        currentState.setBCArmUpperLimit(bool(msg.value))
 
 def updateObstacle(msg):
     global currentState
     obs = pp.Obstacle(msg.x, msg.y, msg.diameter / 2)
-    currentState.addObstcle(obs)
+    if currentState.addObstcle(obs):
+        mc.drive_left_motor(motor_pub, 0)
+        mc.drive_right_motor(motor_pub, 0)
 
 def updatePos(msg):
     global currentState
