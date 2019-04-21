@@ -325,7 +325,6 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     localization_data.y = actual_x;//tag_pose.pose.position.x;
     localization_data.x = actual_y;//tag_pose.pose.position.z;
     localization_data.theta = theta; //0.16 from offset of camera from frame
-
     localization_data.cameraID = 0;
     localization_pub_.publish(localization_data);
 
