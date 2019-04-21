@@ -81,6 +81,22 @@ def postProcess(path, grid):
             done = True
         else:
             length = len(path)
+    path = remove_adjacents(path)
+
+    return path
+
+def remove_adjacents(path):
+    current = 0
+    done = False
+    while not done:
+        pos = path.path[current]
+        if current + 1 < len(path):
+            if pos.distanceTo(path.path[current + 1]) < 0.15:
+                path.delete(pos)
+            else:
+                current += 1
+        else:
+            done = True
     return path
 
 def postProcess_iter(path, grid):
