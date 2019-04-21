@@ -212,7 +212,7 @@ def turn_algo_2(goal, counter):
     while not done:
         w = currentState.getGyroZ() - offset
         if not flag:
-            if math.fabs( math.fabs(currentState.getStarRPM()) - ROBOT_SPEED_TURN) < 2.5:
+            if math.fabs(( math.fabs(currentState.getStarRPM())+ math.fabs(currentState.getPortRPM())) / 2 - ROBOT_SPEED_TURN) < 1:
                 print 'hi'
                 stop_angle = goal - cum_angle
                 print str(stop_angle)
@@ -330,8 +330,8 @@ def simple_drive_test1():
             break
 
     currentPos = currentState.getCurrentPos()
-    destination = pp.Position(currentPos.getX_pos() + distance * math.cos(currentPos.getOrientation()),
-                              currentPos.getY_pos() + distance * math.sin(currentPos.getOrientation()),
+    destination = pp.Position(currentPos.getX() + distance * math.cos(currentPos.getOrientation()),
+                              currentPos.getY() + distance * math.sin(currentPos.getOrientation()),
                               currentPos.getOrientation())
 
     direction = True
@@ -395,7 +395,7 @@ def simple_turn_test2():
         direction = True
     else:
         direction = False
-    turn_algo_2(goal, direction)
+    turn_algo_2(math.fabs(goal), direction)
     print 'testing successful'
     exit(0)
 

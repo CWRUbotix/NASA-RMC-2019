@@ -1,4 +1,5 @@
 import os
+import math
 import numpy as np
 import cv2
 import json
@@ -16,12 +17,12 @@ try:
 	os.mkdir(localization_dir)
 except Exception as e:
 	pass
-	
+
 try:
 	os.mkdir(saved_dir)
 except Exception as e:
 	pass
-	
+
 try:
 	os.mkdir(global_map_dir)
 except Exception as e:
@@ -32,7 +33,7 @@ for f in os.listdir(saved_dir):
 
 for f in os.listdir(localization_dir):
 	os.remove(localization_dir + f)
-	
+
 for f in os.listdir(global_map_dir):
 	os.remove(global_map_dir + f)
 
@@ -91,18 +92,18 @@ def orient_point_cloud_to_ground_plane(xyz_arr, roi_point_cloud, thetas, phis, n
 	phis = np.append(phis, phi)
 	# print(center, plane, np.median(theta), np.median(phis))
 	CameraPosition['elevation'] = np.median(thetas)
-	CameraPosition['azimuth'] = np.median(phis)
+	#CameraPosition['azimuth'] = np.median(phis)
 	if thetas.size > memory:
 		thetas = thetas[1:]
 	if phis.size > memory:
 		phis = phis[1:]
-	update_position()
 	f = open(localization_dir + '%d.json' % len(os.listdir(localization_dir)),'w')
 	f.write(json.dumps(CameraPosition))
 	f.close()
 	center = apply_camera_orientation(center, CameraPosition)
 	plane = apply_camera_orientation(plane, CameraPosition)
 	xyz_arr = apply_camera_matrix_orientation(xyz_arr, CameraPosition)
+	update_position()
 	return xyz_arr, roi_point_cloud, center
 
 
@@ -194,22 +195,21 @@ def process_obstacle(color, cx, cy, box, x, y, obj_length, obj_height, obj_depth
 		send_data (`bool`) : boolean value specifying if detected obstacles should be published to the ``obstacleDetection`` topic
 	"""
 	coords = depth_to_point_cloud_pos(cx, cy, obj_depth)  # convert obstacle depth to XYZ coordinate
+	coords = apply_camera_orientation(list(coords), CameraPosition)
 	mm_diameter = equi_diameter * (1.0 / CameraParams['fx']) * obj_depth  # convert pixel diameter to mm
-
-	print(coords)
 
 	if 100 < mm_diameter < 400:
 		new_obstacle = True
 		current_obstacle = None
 		for obstacle in obstacle_list:
 			x_match = abs(obstacle.x - coords[0]) < 0.3
-			y_match = abs(obstacle.y - coords[1]) < 0.3
-			z_match = abs(obstacle.z - obj_depth) < 0.5
+			y_match = abs(obstacle.y - coords[2]) < 0.3
+			z_match = abs(obstacle.z - coords[1]) < 0.5
 			diameter_match = abs(obstacle.diameter - mm_diameter) / 1000. < 0.5
 			if x_match and y_match:
 				obstacle.x = coords[0]
-				obstacle.y = coords[1]
-				obstacle.z = coords[2]
+				obstacle.y = coords[2]
+				obstacle.z = coords[1]
 				obstacle.diameter = mm_diameter / 1000.
 				new_obstacle = False
 				obstacle.lifetime = obstacle_lifetime
@@ -227,8 +227,8 @@ def process_obstacle(color, cx, cy, box, x, y, obj_length, obj_height, obj_depth
 		if new_obstacle:
 			current_obstacle = Obstacle(obstacle_id,
 										coords[0],
-										coords[1],
 										coords[2],
+										coords[1],
 										mm_diameter / 1000.,
 										obstacle_lifetime)
 			obstacle_id += 1
@@ -269,15 +269,19 @@ def remove_dead_obstacles(obstacle_list):
 		if obstacle.lifetime == 0:
 			obstacle_list.remove(obstacle)
 		print(obstacle)
-		
+
 
 def plot_global_map(obstacle_list):
 	fig = plt.figure(figsize=(8, 8))
 	ax = plt.subplot(111)
 	for obstacle in obstacle_list:
-		ax.scatter(obstacle.x, obstacle.z, s=obstacle.diameter * 1000, alpha=obstacle.lifetime / 5., label=obstacle.id)
-	ax.set_ylim(-1.5, 1.5)
-	ax.set_xlim(-1.5, 1.5)
+		ax.scatter(obstacle.x, obstacle.y, s=obstacle.diameter * 1000, alpha=obstacle.lifetime / 5., label=obstacle.id)
+	x = CameraPosition['x']
+	y = CameraPosition['y']
+	theta = CameraPosition['azimuth'] * math.pi / 180
+	ax.arrow(x, y, 0.2 * math.cos(theta), 0.1 * math.sin(theta), linewidth=2)
+	ax.set_ylim(0, 6.2)
+	ax.set_xlim(0, 4.5)
 	fig.savefig(global_map_dir + '%d.png' % len(os.listdir(global_map_dir)))
 	plt.close()
 

@@ -183,10 +183,10 @@ void parseSensorResponseMessage(vector<uint8_t> sensorResponse){
  		data[1] = *it++;
  		data[2] = *it++;
  		data[3] = *it++;
- 		ROS_INFO("%d, %u, %u, %u, %u", sensorMessage.sensorID, data[0],data[1],data[2],data[3]);
+ 		//ROS_INFO("%d, %u, %u, %u, %u", sensorMessage.sensorID, data[0],data[1],data[2],data[3]);
  		float val = *reinterpret_cast<float*>(&data[0]);
  
- 		ROS_INFO("sensorValue: %f", val);
+ 		//ROS_INFO("sensorValue: %f", val);
  		sensorMessage.value = val;
 
  		it += 3;
@@ -237,10 +237,10 @@ int main(int argc, char** argv) {
             ROS_INFO("Serial port opened");
         }
         vector<uint8_t> motorCommandMessage = generateMotorCommandMessage();
-        //ROS_INFO("NEW MOTOR MESSAGE");
-        //for (std::vector<uint8_t>::const_iterator i = motorCommandMessage.begin(); i != motorCommandMessage.end(); ++i){
-        //    ROS_INFO("%u", *i);
-        //}
+        ROS_INFO("NEW MOTOR MESSAGE");
+        for (std::vector<uint8_t>::const_iterator i = motorCommandMessage.begin(); i != motorCommandMessage.end(); ++i){
+            ROS_INFO("%u", *i);
+        }
 
         //ROS_INFO("LENGTH OF MOTOR COMMAND: %u", (motorCommandMessage[1] << 8) + motorCommandMessage[2]);
 
@@ -262,7 +262,7 @@ int main(int argc, char** argv) {
         hcSerial.write(sensorRequestMessage);
         vector<uint8_t> sensorRequestResponse;
         //jank cuz yolo
-        ROS_INFO("sensorRequest Size: %lu", sensorRequestMessage.size());
+        //ROS_INFO("sensorRequest Size: %lu", sensorRequestMessage.size());
         uint16_t sensorRequestResponseLength = (((sensorRequestMessage.size() - 5) * 9) + 5);
         hcSerial.read(sensorRequestResponse, sensorRequestResponseLength);
 
@@ -272,7 +272,7 @@ int main(int argc, char** argv) {
         
         //ros::Duration(.005).sleep();
         loop_rate.sleep();
-        ROS_INFO("test");
+        //ROS_INFO("test");
         ros::spinOnce();
 
     }
