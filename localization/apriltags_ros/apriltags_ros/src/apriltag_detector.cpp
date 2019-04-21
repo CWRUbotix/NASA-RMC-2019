@@ -304,7 +304,6 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     localization_data.x = -1 * tag_pose.pose.position.x;
     localization_data.y = tag_pose.pose.position.z;
     localization_data.theta = std::fmod(((angle_approach - PI - 0.16) + (2 * PI)), (2 * PI)); //0.16 from offset of camera from frame
-
     localization_data.cameraID = 0;
     localization_pub_.publish(localization_data);
 
