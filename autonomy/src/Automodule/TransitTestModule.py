@@ -3,6 +3,7 @@ import sys
 #import rospy
 from PathPlanning.PathPlanning import Grid, Obstacle, Position
 from PathPlanning.ThetaStar import create_path
+from PathPlanning.PathTesting import drawPath
 #from TestModule import turn_algo_2, conservative_drive, testShutdown
 
 ARENA_WIDTH = 3.78
@@ -22,16 +23,10 @@ def softwareTest():
     print str(grid.unit_height)
     print str(grid.col_size)
     print str(grid.row_size)
-#    obstacle = Obstacle(2.0, 2.0, 0.10)
-   # grid.addObstacle(obstacle)
-    for i in range(grid.col_size - 1):
-        for j in range(grid.row_size - 1):
-            if grid.blocked(j, i):
-                print str(i) + ', ' + str(j)
+    obstacles = [Obstacle(2.0, 2.0, 0.15), Obstacle(1.0, 3.0, 0.15)]
 
-    path = create_path(p1, p2, 3.78, 7.38, [])
-    for p in path:
-        print str(p)
+    path = create_path(p1, p2, 3.78, 7.38, obstacles)
+    drawPath(path, obstacles, [])
 
 def main():
     if sys.argv[1] == '0':

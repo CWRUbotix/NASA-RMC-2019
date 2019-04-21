@@ -7,6 +7,7 @@ import math
 import PathPlanning.PathPlanning as pp
 import DriveControl.MotorCommand as mc
 
+from PathPlanning.ThetaStar import create_path
 from apriltags_ros.msg import Localization
 from hci.msg import sensorValue, motorCommand
 from obstacle_detection.msg import Obstacle
@@ -395,8 +396,37 @@ def simple_turn_test3():
     print 'not implemented'
     exit(0)
 
+def converToCommands(path):
+    commands = []
+    for position in path.path:
+        currentPos = currentState.getCurrentPos()
+        angle_to_face = currentPos.angleToFace(position)
+        angle_turn = angle_to_face - currentPos.getOrientation()
+        distance = currentPos.distanceTo(position)
+        commands.append((angle_turn, distance))
+    return commands
+
 def transit_test1():
-    print 'trasit_Test1 not ready yet'
+    print 'simple path following stuff'
+    print 'currentPos: ' + str(currentState.getCurrentPos())
+    dest_x = float(raw_input('enter destination x pos'))
+    dest_y = float(raw_input('enter destination y pos'))
+    dest = pp.Position(dest_x, dest_y)
+    path = create_path(currentState.getCurrentPos(), dest, 4.2672, 6.096, currentState.getObstacles().values())
+    commands = converToCommands(path)
+    for command in commands:
+        if command[0] > 0:
+            turn_algo_2(command[0], True)
+        else:
+            turn_algo_2(math.fabs(command[0]), False)
+        dest_x = currentState.getCurrentPos().getX() + command[1] * math.cos(currentState.getCurrentPos().getOrientation())
+        dest_y = currentState.getCurrentPos().getY() + command[1] * math.sin(currentState.getCurrentPos().getOrientation())
+        dest = pp.Position(dest_x, dest_y, currentState.getCurrentPos().getOrientation())
+        if command[1] > 0:
+            conservative_drive(dest, True, command[1])
+        else:
+            conservative_drive(dest, False, math.fabs(command[1]))
+    print 'testing done'
     exit(0)
 
 def transit_test2():
@@ -478,7 +508,8 @@ def main():
     rospy.init_node('Autonomy_Test')
     subscribe()
     rospy.on_shutdown(testShutdown)
-    #waitForLocalization()
+    print 'waiting on localization data'
+    waitForLocalization()
     print "Testing ready"
     print "Routine " + str(sys.argv[1])
     while True:
