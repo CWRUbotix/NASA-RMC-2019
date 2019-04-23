@@ -16,6 +16,11 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">#emergency_stop_button{
+	background-color: Red;
+}</string>
+  </property>
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
@@ -39,6 +44,12 @@
       </property>
       <property name="autoFillBackground">
        <bool>false</bool>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::WinPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
       </property>
       <property name="text">
        <string>Manual Control Client 
@@ -120,9 +131,9 @@
       <colorrole role="Button">
        <brush brushstyle="SolidPattern">
         <color alpha="255">
-         <red>239</red>
-         <green>41</green>
-         <blue>41</blue>
+         <red>255</red>
+         <green>0</green>
+         <blue>0</blue>
         </color>
        </brush>
       </colorrole>
@@ -132,6 +143,24 @@
          <red>255</red>
          <green>255</green>
          <blue>255</blue>
+        </color>
+       </brush>
+      </colorrole>
+      <colorrole role="Base">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>255</red>
+         <green>0</green>
+         <blue>0</blue>
+        </color>
+       </brush>
+      </colorrole>
+      <colorrole role="Window">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>255</red>
+         <green>0</green>
+         <blue>0</blue>
         </color>
        </brush>
       </colorrole>
@@ -149,9 +178,9 @@
       <colorrole role="Button">
        <brush brushstyle="SolidPattern">
         <color alpha="255">
-         <red>239</red>
-         <green>41</green>
-         <blue>41</blue>
+         <red>255</red>
+         <green>0</green>
+         <blue>0</blue>
         </color>
        </brush>
       </colorrole>
@@ -161,6 +190,24 @@
          <red>255</red>
          <green>255</green>
          <blue>255</blue>
+        </color>
+       </brush>
+      </colorrole>
+      <colorrole role="Base">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>255</red>
+         <green>0</green>
+         <blue>0</blue>
+        </color>
+       </brush>
+      </colorrole>
+      <colorrole role="Window">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>255</red>
+         <green>0</green>
+         <blue>0</blue>
         </color>
        </brush>
       </colorrole>
@@ -178,9 +225,9 @@
       <colorrole role="Button">
        <brush brushstyle="SolidPattern">
         <color alpha="255">
-         <red>239</red>
-         <green>41</green>
-         <blue>41</blue>
+         <red>255</red>
+         <green>0</green>
+         <blue>0</blue>
         </color>
        </brush>
       </colorrole>
@@ -190,6 +237,24 @@
          <red>190</red>
          <green>190</green>
          <blue>190</blue>
+        </color>
+       </brush>
+      </colorrole>
+      <colorrole role="Base">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>255</red>
+         <green>0</green>
+         <blue>0</blue>
+        </color>
+       </brush>
+      </colorrole>
+      <colorrole role="Window">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>255</red>
+         <green>0</green>
+         <blue>0</blue>
         </color>
        </brush>
       </colorrole>
@@ -254,10 +319,10 @@
     <enum>Qt::ClickFocus</enum>
    </property>
    <property name="minimum">
-    <number>-100</number>
+    <number>-130</number>
    </property>
    <property name="maximum">
-    <number>100</number>
+    <number>130</number>
    </property>
   </widget>
   <widget class="QSpinBox" name="motor1_spinbox">
@@ -273,10 +338,10 @@
     <enum>Qt::ClickFocus</enum>
    </property>
    <property name="minimum">
-    <number>-100</number>
+    <number>-130</number>
    </property>
    <property name="maximum">
-    <number>100</number>
+    <number>130</number>
    </property>
   </widget>
   <widget class="QSpinBox" name="motor2_spinbox">
@@ -292,10 +357,10 @@
     <enum>Qt::ClickFocus</enum>
    </property>
    <property name="minimum">
-    <number>-30</number>
+    <number>-100</number>
    </property>
    <property name="maximum">
-    <number>30</number>
+    <number>100</number>
    </property>
   </widget>
   <widget class="QSpinBox" name="motor3_spinbox">
@@ -491,7 +556,7 @@ Starboard</string>
     </font>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="minimum">
     <number>0</number>
@@ -530,7 +595,7 @@ bcTranslation</string>
     <number>-999</number>
    </property>
    <property name="maximum">
-    <number>800</number>
+    <number>1000</number>
    </property>
    <property name="singleStep">
     <number>1</number>
@@ -564,6 +629,9 @@ bcAttitude</string>
    </property>
    <property name="minimum">
     <number>-10</number>
+   </property>
+   <property name="maximum">
+    <number>140</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_14">
@@ -732,8 +800,7 @@ Attitude:o/l</string>
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Zero Locomotion 
-(Reset Focus)</string>
+    <string>Stop Locomotion</string>
    </property>
   </widget>
   <widget class="QPushButton" name="start_shift_button">
@@ -855,7 +922,7 @@ Attitude:o/l</string>
     <enum>Qt::ClickFocus</enum>
    </property>
    <property name="maximum">
-    <number>60</number>
+    <number>100</number>
    </property>
   </widget>
   <widget class="QSpinBox" name="steps_attitude_spinbox">
@@ -1624,6 +1691,9 @@ Attitude:o/l</string>
    <property name="title">
     <string>Motor Controls</string>
    </property>
+   <property name="flat">
+    <bool>false</bool>
+   </property>
   </widget>
   <widget class="QFrame" name="frame">
    <property name="geometry">
@@ -1634,6 +1704,12 @@ Attitude:o/l</string>
      <height>1001</height>
     </rect>
    </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+     <horstretch>2</horstretch>
+     <verstretch>2</verstretch>
+    </sizepolicy>
+   </property>
    <property name="focusPolicy">
     <enum>Qt::StrongFocus</enum>
    </property>
@@ -1642,6 +1718,9 @@ Attitude:o/l</string>
    </property>
    <property name="frameShadow">
     <enum>QFrame::Raised</enum>
+   </property>
+   <property name="lineWidth">
+    <number>2</number>
    </property>
   </widget>
   <zorder>frame</zorder>

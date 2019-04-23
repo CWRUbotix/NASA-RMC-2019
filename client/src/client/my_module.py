@@ -102,7 +102,7 @@ class MyPlugin(Plugin):
         }
 
         # Assigned zeros for values that indicate motor speed
-        # Motors 4 and 5 are set to the most recent position
+        # Motors 4 and 5 are set to the most recent position from SensorValues
 
         self.zero_values = {
             0:0,
