@@ -2,7 +2,7 @@
   <!-- Define Arguments of Launch File -->
   <arg name="debug" default="false"/>
   <arg name="device" default="/dev/video0" />
-  <arg name="name" />
+  <arg name="name" default=""/>
 
   <!-- refer to: http://wiki.ros.org/usb_cam for definition of each parameter-->
   <node pkg="usb_cam" type="usb_cam_node" name="usb_cam_$(arg name)">
