@@ -295,15 +295,36 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     
     /* End of Localization Code */ 
 
-    /* Testing Code */
+    /* Angle of Approach */
     float angle_approach = rawAngle(tag_pose.pose.position.x, tag_pose.pose.position.y, tag_pose.pose.position.z,
      tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w);
-    
+
+    float angle_diff = std::fmod(angle_approach, PI);
+    /* Correcting x,y coordinates */
+    float corrected_x = 0.0f;
+    float corrected_y = 0.0f;
+    if (std::fmod((angle_approach - 0.16f) + (2*PI), (2 * PI)) > 0.0f) {
+      corrected_x = std::abs((tag_pose.pose.position.x * cos(angle_approach)) - (tag_pose.pose.position.z * sin(angle_approach)));
+      corrected_y = std::abs((tag_pose.pose.position.x * sin(angle_approach)) + (tag_pose.pose.position.z * cos(angle_approach)));
+    }
+
+    else {
+      corrected_x = std::abs((tag_pose.pose.position.x * cos(angle_approach)) + (tag_pose.pose.position.z * sin(angle_approach)));
+      corrected_y = std::abs((tag_pose.pose.position.z * cos(angle_approach)) - (tag_pose.pose.position.x * sin(angle_approach)));
+    }
+
+    ROS_INFO("Raw z: %f, raw x: %f, raw y %f, theta: %f", tag_pose.pose.position.z, tag_pose.pose.position.x, tag_pose.pose.position.y, angle_approach);
+    ROS_INFO("Corrected z: %f, corrected x: %f", corrected_y, corrected_x);
+
+    //correcting for center of rotation
+    float theta = std::fmod(((angle_approach - PI - 0.16) + (2 * PI)), (2 * PI));
+    float actual_x = tag_pose.pose.position.z + (0.47*cos(theta) + 0.15*sin(theta));
+    float actual_y = tag_pose.pose.position.x + (0.47*sin(theta) - 0.15*cos(theta));
 
     apriltags_ros::Localization localization_data;
-    localization_data.x = -1 * tag_pose.pose.position.x;
-    localization_data.y = tag_pose.pose.position.z;
-    localization_data.theta = std::fmod(((angle_approach - PI - 0.16) + (2 * PI)), (2 * PI)); //0.16 from offset of camera from frame
+    localization_data.y = actual_x;//tag_pose.pose.position.x;
+    localization_data.x = actual_y;//tag_pose.pose.position.z;
+    localization_data.theta = theta; //0.16 from offset of camera from frame
     localization_data.cameraID = 0;
     localization_pub_.publish(localization_data);
 
@@ -429,11 +450,30 @@ void AprilTagDetector::imageCb_1(const sensor_msgs::ImageConstPtr& msg, const se
 
     float angle_approach = rawAngle(tag_pose.pose.position.x, tag_pose.pose.position.y, tag_pose.pose.position.z,
      tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w);
+
+    float angle_diff = std::fmod(angle_approach, PI);
     
+    float corrected_x = 0.0f;
+    float corrected_y = 0.0f;
+    if (std::fmod((angle_approach), (2 * PI)) < 0.0f) {
+      corrected_x = std::abs((tag_pose.pose.position.x * cos(angle_diff)) - (tag_pose.pose.position.z * sin(angle_diff)));
+      corrected_y = std::abs((tag_pose.pose.position.x * sin(angle_diff)) + (tag_pose.pose.position.z * cos(angle_diff)));
+    }
+
+    else {
+      corrected_x = std::abs((tag_pose.pose.position.x * cos(angle_diff)) + (tag_pose.pose.position.z * sin(angle_diff)));
+      corrected_y = std::abs((tag_pose.pose.position.z * cos(angle_diff)) - (tag_pose.pose.position.x * sin(angle_diff)));
+    }
+
+    ROS_INFO("%f, %f, %f", tag_pose.pose.position.z, tag_pose.pose.position.x, angle_approach);
+
+    float theta = std::fmod(((angle_approach + PI/2 - lookie_angle_right * PI/180) + (2 * PI)), (2 * PI));
+    float actual_x = tag_pose.pose.position.z + (0.20*cos(theta) - 0.30*sin(theta));
+    float actual_y = tag_pose.pose.position.x + (0.20*sin(theta) + 0.30*cos(theta));
 
     apriltags_ros::Localization localization_data_1;
-    localization_data_1.x = -1 * tag_pose.pose.position.x;
-    localization_data_1.y = tag_pose.pose.position.y;
+    localization_data_1.y = actual_x;//corrected_x;//tag_pose.pose.position.x;
+    localization_data_1.x = actual_y;//corrected_y;//tag_pose.pose.position.y;
     localization_data_1.theta = std::fmod(((angle_approach + PI/2 - lookie_angle_right * PI/180) + (2 * PI)), (2 * PI)); 
     localization_data_1.cameraID = 1;
     localization_pub_.publish(localization_data_1);
@@ -573,10 +613,29 @@ void AprilTagDetector::imageCb_2(const sensor_msgs::ImageConstPtr& msg, const se
     float angle_approach = rawAngle(tag_pose.pose.position.x, tag_pose.pose.position.y, tag_pose.pose.position.z,
      tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w);
     
+    float angle_diff = std::fmod(angle_approach, PI);
+
+    float corrected_x = 0.0f;
+    float corrected_y = 0.0f;
+    if (std::fmod((angle_approach), (2 * PI)) < 0.0f) {
+      corrected_x = std::abs((tag_pose.pose.position.x * cos(angle_diff)) - (tag_pose.pose.position.z * sin(angle_diff)));
+      corrected_y = std::abs((tag_pose.pose.position.x * sin(angle_diff)) + (tag_pose.pose.position.z * cos(angle_diff)));
+    }
+
+    else {
+      corrected_x = std::abs((tag_pose.pose.position.x * cos(angle_diff)) + (tag_pose.pose.position.z * sin(angle_diff)));
+      corrected_y = std::abs((tag_pose.pose.position.z * cos(angle_diff)) - (tag_pose.pose.position.x * sin(angle_diff)));
+    }
+
+    ROS_INFO("%f, %f, %f", tag_pose.pose.position.z, tag_pose.pose.position.x, angle_approach);
+
+    float theta = std::fmod(((angle_approach - PI/2 - lookie_angle_left * PI/180) + (2 * PI)), (2 * PI));
+    float actual_x = tag_pose.pose.position.z + (0.20*cos(theta) + 0.30*sin(theta));
+    float actual_y = tag_pose.pose.position.x + (0.20*sin(theta) - 0.30*cos(theta));
 
     apriltags_ros::Localization localization_data_2;
-    localization_data_2.x = -1 * tag_pose.pose.position.x;
-    localization_data_2.y = tag_pose.pose.position.y;
+    localization_data_2.y = corrected_x;//tag_pose.pose.position.x;
+    localization_data_2.x = corrected_y;//tag_pose.pose.position.y;
     localization_data_2.theta = std::fmod(((angle_approach - PI/2 - lookie_angle_left * PI/180) + (2 * PI)), (2 * PI)); 
     localization_data_2.cameraID = 2;
     localization_pub_.publish(localization_data_2);
