@@ -58,10 +58,12 @@ class Grid(object):
         row_size = math.floor(math.fabs((p2.getY() - p1.getY()) / idealUnit))
         true_unit_width = math.fabs((p1.getX() - p2.getX()) / col_size)
         true_unit_height = math.fabs((p1.getY() - p2.getY()) / row_size)
-        self.p1 = p1
-        self.p2 = p2
-        self.width = self.p2.getX() - self.p1.getX()
-        self.height = self.p2.getY() - self.p2.getY()
+        p1 = Position(min(p1.getX(), p2.getX()), min(p1.getY(), p2.getY()))
+        p2 = Position(max(p1.getX(), p2.getX()), max(p1.getY(), p2.getY()))
+        self.p1 = Position(p1.getX() % true_unit_width, p2.getY() % true_unit_height)
+        self.p2 = Position(p2.getX() + (width - p2.getX()) % true_unit_width, height - ((height - p2.getY()) % true_unit_height))
+        self.width = width
+        self.height = width
         self.col_size = int(math.floor(width / true_unit_width))
         self.row_size = int(math.floor(height / true_unit_height))
         self.unit_width = true_unit_width
@@ -77,7 +79,7 @@ class Grid(object):
 
         for i in range(self.row_size):
             for j in range(self.col_size):
-                self.vertices[i].append(Vertex(self.p1.getX() + j * self.unit_width, self.p1.getY() + i * self.unit_height))
+                self.vertices[i].append(Vertex(self.p2.getX() - j * self.unit_width, self.p1.getY() + i * self.unit_height))
 
     def getVertex(self, row_index, col_index):
         return self.vertices[int(row_index)][int(col_index)]
@@ -120,16 +122,14 @@ class Grid(object):
         return self.cells[int(row_index)][int(col_index)]
 
     def addObstacle(self, obs):
-        o1 = [max(0, math.floor((obs.getCenter()[0] - obs.getRadius() - CLEARANCE) / self.unit_width)),
-              max(0, math.floor((obs.getCenter()[1] - obs.getRadius() - CLEARANCE) / self.unit_height))]
-        o2 = [min(self.col_size - 2, math.ceil((obs.getCenter()[0] + obs.getRadius() + CLEARANCE) / self.unit_width)),
-              min(self.row_size - 2, math.ceil((obs.getCenter()[1] + obs.getRadius() + CLEARANCE) / self.unit_height))]
+        o1 = self.getGridCoordinates(obs.getCenter()[0] - obs.getRadius() - CLEARANCE, obs.getCenter()[1] - obs.getRadius() - CLEARANCE)
+        o2 = self.getGridCoordinates(obs.getCenter()[0] + obs.getRadius() + CLEARANCE, obs.getCenter()[1] + obs.getRadius() + CLEARANCE)
         for i in range(int(o1[1]), int(o2[1] + 1)):
             for j in range(int(o1[0]), int(o2[0] + 1)):
                 self.cells[i][j] = True
 
     def getGridCoordinates(self, x_pos, y_pos):
-        col_index = min(self.col_size - 1, max(round((x_pos - self.p1.getX()) / self.unit_width), 0))
+        col_index = min(self.col_size - 1, max(round((self.p2.getX() - x_pos) / self.unit_width), 0))
         row_index = min(self.row_size - 1, max(round((y_pos - self.p1.getY()) / self.unit_height), 0))
         return row_index, col_index
 
