@@ -9,6 +9,7 @@ project(hci)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rospy
   serial
   std_msgs
   message_generation
