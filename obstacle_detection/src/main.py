@@ -82,7 +82,7 @@ if save_test_data:
 print(os.getcwd())
 
 frame_i = 0
-frame_limit = 50
+frame_limit = -1
 
 while True:
 	frames = listener.waitForNewFrame()

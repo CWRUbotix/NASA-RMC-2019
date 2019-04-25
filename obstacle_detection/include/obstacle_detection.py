@@ -197,16 +197,16 @@ def process_obstacle(color, cx, cy, box, x, y, obj_length, obj_height, obj_depth
 	coords = list(depth_to_point_cloud_pos(cx, cy, obj_depth))  # convert obstacle depth to XYZ coordinate
 
 	theta = CameraPosition['azimuth'] * math.pi / 180  # get robot pitch angle in radians
-	coords[0] = CameraPosition['y'] + coords[0] * math.sin(theta)  # convert relative obstacle position to global
-	coords[2] = CameraPosition['x'] - coords[2] * math.cos(theta)
+	coords[0] = CameraPosition['x'] - coords[0] * math.cos(theta)  # convert relative obstacle position to global
+	coords[2] = CameraPosition['y'] + coords[2] * math.sin(theta)
 	mm_diameter = equi_diameter * (1.0 / CameraParams['fx']) * obj_depth  # convert pixel diameter to mm
 
 	if 100 < mm_diameter < 400:
 		new_obstacle = True
 		current_obstacle = None
 		for obstacle in obstacle_list:
-			x_match = abs(obstacle.x - coords[2]) < 0.3
-			y_match = abs(obstacle.y - coords[0]) < 0.3
+			x_match = abs(obstacle.x - coords[0]) < 0.3
+			y_match = abs(obstacle.y - coords[2]) < 0.3
 			z_match = abs(obstacle.z - coords[1]) < 0.5
 			diameter_match = abs(obstacle.diameter - mm_diameter) / 1000. < 0.5
 			if x_match and y_match:

@@ -3,7 +3,7 @@ import rospy
 from obstacle_detection.msg import Obstacle
 
 topic = 'obstacleDetection'
-node_name = 'master'
+node_name = 'obstacle_detection_node'
 
 
 def send_obstacle_data(obs):

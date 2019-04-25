@@ -400,7 +400,7 @@ def simple_turn_test3():
     print 'not implemented'
     exit(0)
 
-def converToCommands(path):
+def convertToCommands(path):
     commands = []
     for position in path.path:
         currentPos = currentState.getCurrentPos()
@@ -416,8 +416,14 @@ def transit_test1():
     dest_x = float(raw_input('enter destination x pos'))
     dest_y = float(raw_input('enter destination y pos'))
     dest = pp.Position(dest_x, dest_y)
+    print str(len(currentState.getObstacles().values()))
     path = create_path(currentState.getCurrentPos(), dest, 4.2672, 6.096, currentState.getObstacles().values())
-    commands = converToCommands(path)
+    for position in path.path:
+	print str(position)
+
+    exit(0)
+	
+    commands = convertToCommands(path)
     for command in commands:
         if command[0] > 0:
             turn_algo_2(command[0], True)
@@ -479,7 +485,8 @@ def updateState(msg):
 def updateObstacle(msg):
     global currentState
     obs = pp.Obstacle(msg.x, msg.y, msg.diameter / 2)
-    if currentState.addObstcle(obs):
+    if currentState.addObstacle(msg.obsID, obs):
+	print 'added obstacle'
         mc.drive_left_motor(motor_pub, 0)
         mc.drive_right_motor(motor_pub, 0)
 
@@ -491,7 +498,7 @@ def updatePos(msg):
 def subscribe():
     rospy.Subscriber('sensorValue', sensorValue, updateState)
     rospy.Subscriber('localization_data', Localization, updatePos)
-    rospy.Subscriber('Obstacle', Obstacle, updateObstacle)
+    rospy.Subscriber('obstacleDetection', Obstacle, updateObstacle)
 
 def testShutdown():
     global logfile, motor_pub
