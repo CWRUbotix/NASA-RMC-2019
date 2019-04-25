@@ -137,6 +137,7 @@ CONTROL_RATE = 0.005
 DECELARATE_RATE = 35 #IN RPM/SEC
 WHEEL_RADIUS = 0.2286 # IN M
 TURN_RADIUS = 0.3 # IN M
+ARENA_WIDTH = 4.2672
 #15 rpm, 0.4m, 30 rpm, 0.6m
 def logDriveData(direction, value):
     log = ''
@@ -404,6 +405,7 @@ def convertToCommands(path):
     commands = []
     for position in path.path:
         currentPos = currentState.getCurrentPos()
+        position.x_pos = ARENA_WIDTH - position.getX();
         angle_to_face = currentPos.angleToFace(position)
         angle_turn = angle_to_face - currentPos.getOrientation()
         distance = currentPos.distanceTo(position)
