@@ -7,6 +7,7 @@ import math
 import PathPlanning.PathPlanning as pp
 import DriveControl.MotorCommand as mc
 
+from PathPlanning.PathPublisher import send_path_data
 from PathPlanning.ThetaStar import create_path
 from apriltags_ros.msg import Localization
 from hci.msg import sensorValue, motorCommand
@@ -221,7 +222,7 @@ def turn_algo_2(goal, counter):
     else:
         mc.drive_left_motor(motor_pub, ROBOT_SPEED_TURN)
         mc.drive_right_motor(motor_pub, -ROBOT_SPEED_TURN)
-	
+
     while not done:
         w = currentState.getGyroZ() - offset
         if not flag:
@@ -420,11 +421,11 @@ def transit_test1():
     dest = pp.Position(dest_x, dest_y)
     print str(len(currentState.getObstacles().values()))
     path = create_path(currentState.getCurrentPos(), dest, 4.2672, 6.096, currentState.getObstacles().values())
+    send_path_data(path)
     for position in path.path:
 	print str(position)
 
     exit(0)
-	
     commands = convertToCommands(path)
     for command in commands:
         if command[0] > 0:
