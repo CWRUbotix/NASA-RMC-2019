@@ -32,7 +32,7 @@ class Position(object):
 
 
     def __eq__(self, p):
-        if self.distanceTo(p) < ERROR_BOUND:
+        if math.fabs(self.getX() - p.getX()) < ERROR_BOUND and math.fabs(self.getY() - p.getY()) < ERROR_BOUND:
             return True
         return False
 
@@ -54,14 +54,22 @@ class Position(object):
 class Grid(object):
 
     def __init__(self, p1, p2, width, height, idealUnit=GRID_SIZE):
-        col_size = math.floor(math.fabs((p2.getX() - p1.getX()) / idealUnit))
-        row_size = math.floor(math.fabs((p2.getY() - p1.getY()) / idealUnit))
-        true_unit_width = math.fabs((p1.getX() - p2.getX()) / col_size)
-        true_unit_height = math.fabs((p1.getY() - p2.getY()) / row_size)
-        p1 = Position(min(p1.getX(), p2.getX()), min(p1.getY(), p2.getY()))
-        p2 = Position(max(p1.getX(), p2.getX()), max(p1.getY(), p2.getY()))
-        self.p1 = Position(p1.getX() % true_unit_width, p2.getY() % true_unit_height)
-        self.p2 = Position(p2.getX() + (width - p2.getX()) % true_unit_width, height - ((height - p2.getY()) % true_unit_height))
+        if math.fabs((p2.getX() - p1.getX())) < idealUnit:
+            true_unit_width = math.fabs((p2.getX() - p1.getX()))
+        else:
+            col_size = math.floor(math.fabs((p2.getX() - p1.getX()) / idealUnit))
+            true_unit_width = math.fabs((p1.getX() - p2.getX()) / col_size)
+
+        if math.fabs((p2.getY() - p1.getY())) < idealUnit:
+            true_unit_height = math.fabs((p2.getY() - p1.getY()))
+        else:
+            row_size = math.floor(math.fabs((p2.getY() - p1.getY()) / idealUnit))
+            true_unit_height = math.fabs((p1.getY() - p2.getY()) / row_size)
+
+        self.p1 = Position(min(p1.getX(), p2.getX()), min(p1.getY(), p2.getY()))
+        self.p2 = Position(max(p1.getX(), p2.getX()), max(p1.getY(), p2.getY()))
+        self.p1 = Position(self.p1.getX() % true_unit_width, self.p2.getY() % true_unit_height)
+        self.p2 = Position(width - (width - self.p2.getX()) % true_unit_width, height - ((height - self.p2.getY()) % true_unit_height))
         self.width = width
         self.height = width
         self.col_size = int(math.floor(width / true_unit_width))
@@ -122,10 +130,12 @@ class Grid(object):
         return self.cells[int(row_index)][int(col_index)]
 
     def addObstacle(self, obs):
-        o1 = self.getGridCoordinates(obs.getCenter()[0] - obs.getRadius() - CLEARANCE, obs.getCenter()[1] - obs.getRadius() - CLEARANCE)
-        o2 = self.getGridCoordinates(obs.getCenter()[0] + obs.getRadius() + CLEARANCE, obs.getCenter()[1] + obs.getRadius() + CLEARANCE)
-        for i in range(int(o1[1]), int(o2[1] + 1)):
-            for j in range(int(o1[0]), int(o2[0] + 1)):
+        o1 = self.getGridCoordinates(obs.getCenter()[0] + obs.getRadius() + CLEARANCE, obs.getCenter()[1] - obs.getRadius() - CLEARANCE)
+        o2 = self.getGridCoordinates(obs.getCenter()[0] - obs.getRadius() - CLEARANCE, obs.getCenter()[1] + obs.getRadius() + CLEARANCE)
+        print str(o1)
+        print str(o2)
+        for i in range(int(o1[0]), int(o2[0])):
+            for j in range(int(o1[1]), int(o2[1])):
                 self.cells[i][j] = True
 
     def getGridCoordinates(self, x_pos, y_pos):
