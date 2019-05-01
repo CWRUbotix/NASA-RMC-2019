@@ -700,15 +700,15 @@ starboardLooky</string>
     <rect>
      <x>40</x>
      <y>640</y>
-     <width>48</width>
+     <width>71</width>
      <height>26</height>
     </rect>
    </property>
    <property name="minimum">
-    <number>-100</number>
+    <number>-150</number>
    </property>
    <property name="maximum">
-    <number>100</number>
+    <number>150</number>
    </property>
   </widget>
   <widget class="QSpinBox" name="motor7_spinbox">
@@ -716,15 +716,15 @@ starboardLooky</string>
     <rect>
      <x>150</x>
      <y>640</y>
-     <width>48</width>
+     <width>81</width>
      <height>26</height>
     </rect>
    </property>
    <property name="minimum">
-    <number>-100</number>
+    <number>-150</number>
    </property>
    <property name="maximum">
-    <number>100</number>
+    <number>150</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_17">
@@ -1036,6 +1036,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1064,6 +1067,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1094,6 +1100,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1122,6 +1131,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1184,6 +1196,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1197,6 +1212,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>5</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1209,6 +1227,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1236,6 +1257,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>5</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1261,6 +1285,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1288,6 +1315,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1313,6 +1343,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1340,6 +1373,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1365,6 +1401,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1392,6 +1431,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1417,6 +1459,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1444,6 +1489,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1469,6 +1517,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1496,6 +1547,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1508,6 +1562,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1534,6 +1591,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1577,6 +1637,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>5</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1603,6 +1666,9 @@ Attitude:o/l</string>
      <width>113</width>
      <height>25</height>
     </rect>
+   </property>
+   <property name="maxLength">
+    <number>8</number>
    </property>
    <property name="readOnly">
     <bool>true</bool>
@@ -1632,6 +1698,9 @@ Attitude:o/l</string>
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="maxLength">
+    <number>8</number>
    </property>
    <property name="readOnly">
     <bool>true</bool>
