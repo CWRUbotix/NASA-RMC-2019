@@ -16,14 +16,11 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-<<<<<<< HEAD
   <property name="styleSheet">
    <string notr="true">#emergency_stop_button{
 	background-color: Red;
 }</string>
   </property>
-=======
->>>>>>> e05ae65e665466d023671314dce08b3aaee42b2a
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
@@ -703,15 +700,15 @@ starboardLooky</string>
     <rect>
      <x>40</x>
      <y>640</y>
-     <width>48</width>
+     <width>71</width>
      <height>26</height>
     </rect>
    </property>
    <property name="minimum">
-    <number>-100</number>
+    <number>-150</number>
    </property>
    <property name="maximum">
-    <number>100</number>
+    <number>150</number>
    </property>
   </widget>
   <widget class="QSpinBox" name="motor7_spinbox">
@@ -719,15 +716,15 @@ starboardLooky</string>
     <rect>
      <x>150</x>
      <y>640</y>
-     <width>48</width>
+     <width>81</width>
      <height>26</height>
     </rect>
    </property>
    <property name="minimum">
-    <number>-100</number>
+    <number>-150</number>
    </property>
    <property name="maximum">
-    <number>100</number>
+    <number>150</number>
    </property>
   </widget>
   <widget class="QLabel" name="label_17">
@@ -803,12 +800,7 @@ Attitude:o/l</string>
     <bool>false</bool>
    </property>
    <property name="text">
-<<<<<<< HEAD
     <string>Stop Locomotion</string>
-=======
-    <string>Zero Locomotion 
-(Reset Focus)</string>
->>>>>>> e05ae65e665466d023671314dce08b3aaee42b2a
    </property>
   </widget>
   <widget class="QPushButton" name="start_shift_button">
@@ -1044,6 +1036,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1072,6 +1067,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1102,6 +1100,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1130,6 +1131,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1192,6 +1196,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1205,6 +1212,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>5</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1217,6 +1227,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1244,6 +1257,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>5</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1269,6 +1285,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1296,6 +1315,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1321,6 +1343,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1348,6 +1373,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1373,6 +1401,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1400,6 +1431,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1425,6 +1459,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1452,6 +1489,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1477,6 +1517,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1504,6 +1547,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>8</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1516,6 +1562,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1542,6 +1591,9 @@ Attitude:o/l</string>
       <width>113</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="maxLength">
+     <number>8</number>
     </property>
     <property name="readOnly">
      <bool>true</bool>
@@ -1585,6 +1637,9 @@ Attitude:o/l</string>
       <height>25</height>
      </rect>
     </property>
+    <property name="maxLength">
+     <number>5</number>
+    </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
@@ -1611,6 +1666,9 @@ Attitude:o/l</string>
      <width>113</width>
      <height>25</height>
     </rect>
+   </property>
+   <property name="maxLength">
+    <number>8</number>
    </property>
    <property name="readOnly">
     <bool>true</bool>
@@ -1640,6 +1698,9 @@ Attitude:o/l</string>
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="maxLength">
+    <number>8</number>
    </property>
    <property name="readOnly">
     <bool>true</bool>
@@ -1699,12 +1760,9 @@ Attitude:o/l</string>
    <property name="title">
     <string>Motor Controls</string>
    </property>
-<<<<<<< HEAD
    <property name="flat">
     <bool>false</bool>
    </property>
-=======
->>>>>>> e05ae65e665466d023671314dce08b3aaee42b2a
   </widget>
   <widget class="QFrame" name="frame">
    <property name="geometry">
@@ -1715,15 +1773,12 @@ Attitude:o/l</string>
      <height>1001</height>
     </rect>
    </property>
-<<<<<<< HEAD
    <property name="sizePolicy">
     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
      <horstretch>2</horstretch>
      <verstretch>2</verstretch>
     </sizepolicy>
    </property>
-=======
->>>>>>> e05ae65e665466d023671314dce08b3aaee42b2a
    <property name="focusPolicy">
     <enum>Qt::StrongFocus</enum>
    </property>
@@ -1733,12 +1788,9 @@ Attitude:o/l</string>
    <property name="frameShadow">
     <enum>QFrame::Raised</enum>
    </property>
-<<<<<<< HEAD
    <property name="lineWidth">
     <number>2</number>
    </property>
-=======
->>>>>>> e05ae65e665466d023671314dce08b3aaee42b2a
   </widget>
   <zorder>frame</zorder>
   <zorder>groupBox_2</zorder>
