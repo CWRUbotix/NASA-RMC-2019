@@ -316,7 +316,8 @@ def converToCommands(path):
     currentPos = currentState.getCurrentPos()
     for position in path.path:
         angle_to_face = currentPos.angleToFace(position)
-        angle_turn = angle_to_face - currentPos.getOrientation()
+        pos = pp.Position(currentPos.getX(), currentPos.getY(), angle_to_face)
+        angle_turn = currentPos.angleTurnTo(pos)
         distance = currentPos.distanceTo(position)
         commands.append((angle_turn, distance))
         currentPos = position
@@ -443,7 +444,7 @@ def transit_test():
             if distance < 0:
                 direction = False
 
-            okay = drive(next_pos, direction, distance, ROBOT_SPEED_DRIVE)
+            okay = rpmdrive(next_pos, direction, distance, ROBOT_SPEED_DRIVE)
             if not okay:
                 break
 
@@ -452,6 +453,10 @@ def transit_test():
         else:
             path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
             commands = converToCommands(path)
+        if rospy.is_shutdown():
+            exit(-1)
+
+    rospy.spin()
 
 def transit_dig_test():
 
@@ -487,8 +492,6 @@ def main():
         testMode()
     else:
         run()
-
-    rospy.spin()
 
 
 if __name__ == "__main__": main()
