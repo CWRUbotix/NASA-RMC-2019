@@ -292,34 +292,156 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     tag_detection_array.detections.push_back(tag_detection);
     tag_pose_array.poses.push_back(tag_pose.pose);
 
-    
-    /* End of Localization Code */ 
-
     /* Angle of Approach */
+    float test_yaw;
+    float test_pitch;
+    float test_roll;
     float angle_approach = rawAngle(tag_pose.pose.position.x, tag_pose.pose.position.y, tag_pose.pose.position.z,
-     tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w);
+     tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w, test_yaw, test_pitch, test_roll);
 
     float angle_diff = std::fmod(angle_approach, PI);
+    //angle_approach = std::fmod((angle_approach - 0.16f) + (2*PI), (2 * PI));
     /* Correcting x,y coordinates */
     float corrected_x = 0.0f;
     float corrected_y = 0.0f;
-    if (std::fmod((angle_approach - 0.16f) + (2*PI), (2 * PI)) > 0.0f) {
-      corrected_x = std::abs((tag_pose.pose.position.x * cos(angle_approach)) - (tag_pose.pose.position.z * sin(angle_approach)));
-      corrected_y = std::abs((tag_pose.pose.position.x * sin(angle_approach)) + (tag_pose.pose.position.z * cos(angle_approach)));
-    }
+    //if (std::fmod((angle_approach - 0.16f) + (2*PI), (2 * PI)) > 0.0f) {
+    corrected_x = (tag_pose.pose.position.z * cos(angle_approach)) - (tag_pose.pose.position.x * sin(angle_approach));
+    corrected_y = (tag_pose.pose.position.z * sin(angle_approach)) + (tag_pose.pose.position.x * cos(angle_approach));
+    //}
 
-    else {
+    /*else {
       corrected_x = std::abs((tag_pose.pose.position.x * cos(angle_approach)) + (tag_pose.pose.position.z * sin(angle_approach)));
       corrected_y = std::abs((tag_pose.pose.position.z * cos(angle_approach)) - (tag_pose.pose.position.x * sin(angle_approach)));
+    }*/
+    Eigen::Matrix3d F;
+    F <<
+    -1, 0, 0,
+    0, -1, 0,
+    0, 0, -1;
+
+    Eigen::Matrix3d fixed_rot = F * rotation;
+    
+    double yaw, pitch, roll;
+    wRo_to_euler(fixed_rot, yaw, pitch, roll);
+
+    double neg_roll = -1*yaw;
+    double neg_pitch = -1*roll;
+    double neg_yaw = -1*pitch;
+    
+    //localizing with apriltags
+    Eigen::MatrixXd raw_mat(1,3);
+    raw_mat <<
+    tag_pose.pose.position.z,
+    tag_pose.pose.position.x,
+    tag_pose.pose.position.y;
+
+    Eigen::Matrix3d yaw_mat;
+    yaw_mat <<
+    cos(neg_yaw), -1*sin(neg_yaw), 0,
+    sin(neg_yaw), cos(neg_yaw), 0,
+    0, 0, 1;
+    Eigen::Matrix3d pitch_mat;
+    pitch_mat <<
+    cos(neg_pitch),0 , sin(neg_pitch),
+    0, 1, 0,
+    -1*sin(neg_pitch), 0, cos(neg_pitch);
+    Eigen::Matrix3d roll_mat;
+    roll_mat <<
+    1, 0 , 0,
+    0, cos(neg_roll), -1*sin(neg_roll),
+    0, sin(neg_roll), cos(neg_roll);
+
+    Eigen::MatrixXd  mat_1(1,3);
+    mat_1 << raw_mat * yaw_mat;
+    Eigen::MatrixXd  mat_2(1,3);
+    mat_2 << mat_1 * pitch_mat;
+    Eigen::MatrixXd  mat_3(1,3);
+    mat_3 << mat_2 * roll_mat;
+
+    /* Other yaw, pitch, roll method */
+    float xsqr = tag_pose.pose.orientation.x * tag_pose.pose.orientation.x;
+    //roll(around the y)
+    float t0 = +2.0f * (tag_pose.pose.orientation.w * tag_pose.pose.orientation.z + tag_pose.pose.orientation.x * tag_pose.pose.orientation.y);
+    float t1 = +1.0f - 2.0f * (tag_pose.pose.orientation.z * tag_pose.pose.orientation.z + xsqr);
+    float Mpose_pose_orientation_y = atan2(t0, t1);
+    float new_roll = -1 * Mpose_pose_orientation_y;
+
+    //pitch(around the x)
+    float t2 = +2.0f * (tag_pose.pose.orientation.w * tag_pose.pose.orientation.x - tag_pose.pose.orientation.y * tag_pose.pose.orientation.z);
+    t2 = t2 > 1.0f ? 1.0f : t2;
+    t2 = t2 < -1.0f ? -1.0f : t2;
+    float Mpose_pose_orientation_x = asin(t2);
+    float new_pitch = -1 * Mpose_pose_orientation_x;
+
+    //yaw (around the z)
+    float t3 = +2.0f * (tag_pose.pose.orientation.w * tag_pose.pose.orientation.y + tag_pose.pose.orientation.z * tag_pose.pose.orientation.x);
+    float t4 = +1.0f - 2.0f * (xsqr + tag_pose.pose.orientation.y * tag_pose.pose.orientation.y);
+    float Mpose_pose_orientation_z = atan2(t3, t4);
+    float new_yaw = -1 * Mpose_pose_orientation_z;
+    if (Mpose_pose_orientation_z < 0)
+    {
+        Mpose_pose_orientation_z += (2 * M_PI);
     }
 
-    ROS_INFO("Raw z: %f, raw x: %f, raw y %f, theta: %f", tag_pose.pose.position.z, tag_pose.pose.position.x, tag_pose.pose.position.y, angle_approach);
-    ROS_INFO("Corrected z: %f, corrected x: %f", corrected_y, corrected_x);
+    float Mpose_pose_orientation_w = 1.00;
+    /*float Mpose_detected = true;
+
+    float Mpose_pose_position_y = sqrt(position_x * position_x + position_z * position_z)
+                            * cos(Mpose_pose_orientation_y - M_PI - atan(position_x / position_z));
+    float Mpose_pose_position_x = sqrt(position_x * position_x + position_z * position_z)
+                            * sin(Mpose_pose_orientation_y - M_PI - atan(position_x / position_z));
+    float Mpose_pose_position_z = position_y;*/
+
+    //localizing with apriltags
+    Eigen::MatrixXd raw_mat_2(1,3);
+    raw_mat_2 <<
+    tag_pose.pose.position.z,
+    tag_pose.pose.position.x,
+    tag_pose.pose.position.y;
+
+    Eigen::Matrix3d yaw_mat_2;
+    yaw_mat_2 <<
+    cos(new_yaw), -1*sin(new_yaw), 0,
+    sin(new_yaw), cos(new_yaw), 0,
+    0, 0, 1;
+    Eigen::Matrix3d pitch_mat_2;
+    pitch_mat_2 <<
+    cos(new_pitch),0 , sin(new_pitch),
+    0, 1, 0,
+    -1*sin(new_pitch), 0, cos(new_pitch);
+    Eigen::Matrix3d roll_mat_2;
+    roll_mat_2 <<
+    1, 0 , 0,
+    0, cos(roll), -1*sin(roll),
+    0, sin(roll), cos(roll);
+
+    Eigen::MatrixXd  mat_1_2(1,3);
+    mat_1_2 << raw_mat_2 * yaw_mat_2;
+    Eigen::MatrixXd  mat_2_2(1,3);
+    mat_2_2 << mat_1_2 * pitch_mat_2;
+    Eigen::MatrixXd  mat_3_2(1,3);
+    mat_3_2 << mat_2_2 * roll_mat_2;
+    /*  */
+     float c_x = (sqrt((tag_pose.pose.position.z * tag_pose.pose.position.z)+(tag_pose.pose.position.x * tag_pose.pose.position.x))) * cos(std::abs(2*tag_pose.pose.orientation.z));
+    float c_y = (sqrt((tag_pose.pose.position.z * tag_pose.pose.position.z)+(tag_pose.pose.position.x * tag_pose.pose.position.x))) * sin(std::abs(2*tag_pose.pose.orientation.z));
+    
+    //ROS_INFO("Tag id: %f", (float)detection.id);
+    //ROS_INFO("Arena x: %f, Arena y: %f", c_x, c_y);
+
+    //ROS_INFO("Raw z: %f, raw x: %f, raw y: %f", tag_pose.pose.position.z, tag_pose.pose.position.x, tag_pose.pose.position.y);
+
+    //ROS_INFO("Raw z: %f, raw x: %f, raw y: %f", tag_pose.pose.position.z, tag_pose.pose.position.x, tag_pose.pose.position.y);
+    //ROS_INFO("Corrected x: %f, corrected y: %f", corrected_x, corrected_y);
+    //ROS_INFO("Raw z: %f, raw x: %f, raw y: %f", tag_pose.pose.orientation.z, tag_pose.pose.orientation.x, tag_pose.pose.orientation.y);
+    //ROS_INFO("Yaw: %f, Pitch: %f, Roll %f", yaw, pitch, roll);
+    //ROS_INFO("Test Yaw: %f, Test Pitch: %f, Test Roll: %f", test_yaw, test_pitch, test_roll);
+    //ROS_INFO("Tf x: %f, Tf y: %f, Tf z: %f", -1 * mat_3_2(0,2), -1 * mat_3_2(0,1), -1 * mat_3_2(0,0));
+    //ROS_INFO("Tf_2x: %f, Tf_2 y: %f, Tf_2 z: %f", -1 * mat_3_2(0,2), -1 * mat_3_2(0,1), -1 * mat_3_2(0,0));
 
     //correcting for center of rotation
     float theta = std::fmod(((angle_approach - PI - 0.16) + (2 * PI)), (2 * PI));
-    float actual_x = corrected_x + (0.47*cos(theta) + 0.15*sin(theta));
-    float actual_y = corrected_y + (0.47*sin(theta) - 0.15*cos(theta));
+    float actual_x = std::abs(corrected_x);// + (0.47*cos(theta) + 0.15*sin(theta));
+    float actual_y = corrected_y;// + (0.47*sin(theta) - 0.15*cos(theta));
 
     apriltags_ros::Localization localization_data;
     localization_data.y = actual_x;//tag_pose.pose.position.x;
@@ -338,12 +460,10 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     tf::poseStampedMsgToTF(tag_pose, tag_transform);
     tf_pub_.sendTransform(tf::StampedTransform(tag_transform, tag_transform.stamp_, tag_transform.frame_id_, description.frame_name()));
   }
-  /*if ((double)tag_pose.pose.position.x == 0.0) {
-    detections_pub_.publish(tag_detection_array);
-    pose_pub_.publish(tag_pose_array);
-    image_pub_.publish(cv_ptr->toImageMsg());
-    //localization_1_pub_.publish(localization_data_1);
-  }*/
+  detections_pub_.publish(tag_detection_array);
+  pose_pub_.publish(tag_pose_array);
+  image_pub_.publish(cv_ptr->toImageMsg());
+  //localization_1_pub_.publish(localization_data_1);
   
 }
 
@@ -448,8 +568,12 @@ void AprilTagDetector::imageCb_1(const sensor_msgs::ImageConstPtr& msg, const se
     tag_pose.pose.orientation.z = rot_quaternion.z(); // * (180/PI);
     tag_pose.pose.orientation.w = rot_quaternion.w(); // * (180/PI);
 
+    /* Angle of Approach */
+    float test_yaw;
+    float test_pitch;
+    float test_roll;
     float angle_approach = rawAngle(tag_pose.pose.position.x, tag_pose.pose.position.y, tag_pose.pose.position.z,
-     tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w);
+     tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w, test_yaw, test_pitch, test_roll);
 
     float angle_diff = std::fmod(angle_approach, PI);
     
@@ -465,12 +589,138 @@ void AprilTagDetector::imageCb_1(const sensor_msgs::ImageConstPtr& msg, const se
       corrected_y = std::abs((tag_pose.pose.position.z * cos(angle_diff)) - (tag_pose.pose.position.x * sin(angle_diff)));
     }
 
-    ROS_INFO("%f, %f, %f", tag_pose.pose.position.z, tag_pose.pose.position.x, angle_approach);
+    Eigen::Matrix3d F;
+    F <<
+    -1, 0, 0,
+    0, -1, 0,
+    0, 0, -1;
+
+    Eigen::Matrix3d fixed_rot = F * rotation;
+    
+    double yaw, pitch, roll;
+    wRo_to_euler(fixed_rot, yaw, pitch, roll);
+
+    double neg_roll = -1*yaw;
+    double neg_pitch = -1*roll;
+    double neg_yaw = -1*pitch;
+    
+    //localizing with apriltags
+    Eigen::MatrixXd raw_mat(1,3);
+    raw_mat <<
+    tag_pose.pose.position.z,
+    tag_pose.pose.position.x,
+    tag_pose.pose.position.y;
+
+    Eigen::Matrix3d yaw_mat;
+    yaw_mat <<
+    cos(neg_yaw), -1*sin(neg_yaw), 0,
+    sin(neg_yaw), cos(neg_yaw), 0,
+    0, 0, 1;
+    Eigen::Matrix3d pitch_mat;
+    pitch_mat <<
+    cos(neg_pitch),0 , sin(neg_pitch),
+    0, 1, 0,
+    -1*sin(neg_pitch), 0, cos(neg_pitch);
+    Eigen::Matrix3d roll_mat;
+    roll_mat <<
+    1, 0 , 0,
+    0, cos(neg_roll), -1*sin(neg_roll),
+    0, sin(neg_roll), cos(neg_roll);
+
+    Eigen::MatrixXd  mat_1(1,3);
+    mat_1 << raw_mat * yaw_mat;
+    Eigen::MatrixXd  mat_2(1,3);
+    mat_2 << mat_1 * pitch_mat;
+    Eigen::MatrixXd  mat_3(1,3);
+    mat_3 << mat_2 * roll_mat;
+
+    /* Other yaw, pitch, roll method */
+    float xsqr = tag_pose.pose.orientation.x * tag_pose.pose.orientation.x;
+    //roll(around the y)
+    float t0 = +2.0f * (tag_pose.pose.orientation.w * tag_pose.pose.orientation.z + tag_pose.pose.orientation.x * tag_pose.pose.orientation.y);
+    float t1 = +1.0f - 2.0f * (tag_pose.pose.orientation.z * tag_pose.pose.orientation.z + xsqr);
+    float Mpose_pose_orientation_y = atan2(t0, t1);
+    float new_roll = -1 * Mpose_pose_orientation_y;
+
+    //pitch(around the x)
+    float t2 = +2.0f * (tag_pose.pose.orientation.w * tag_pose.pose.orientation.x - tag_pose.pose.orientation.y * tag_pose.pose.orientation.z);
+    t2 = t2 > 1.0f ? 1.0f : t2;
+    t2 = t2 < -1.0f ? -1.0f : t2;
+    float Mpose_pose_orientation_x = asin(t2);
+    float new_pitch = -1 * Mpose_pose_orientation_x;
+
+    //yaw (around the z)
+    float t3 = +2.0f * (tag_pose.pose.orientation.w * tag_pose.pose.orientation.y + tag_pose.pose.orientation.z * tag_pose.pose.orientation.x);
+    float t4 = +1.0f - 2.0f * (xsqr + tag_pose.pose.orientation.y * tag_pose.pose.orientation.y);
+    float Mpose_pose_orientation_z = atan2(t3, t4);
+    float new_yaw = -1 * Mpose_pose_orientation_z;
+    if (Mpose_pose_orientation_z < 0)
+    {
+        Mpose_pose_orientation_z += (2 * M_PI);
+    }
+
+    float Mpose_pose_orientation_w = 1.00;
+    /*float Mpose_detected = true;
+
+    float Mpose_pose_position_y = sqrt(position_x * position_x + position_z * position_z)
+                            * cos(Mpose_pose_orientation_y - M_PI - atan(position_x / position_z));
+    float Mpose_pose_position_x = sqrt(position_x * position_x + position_z * position_z)
+                            * sin(Mpose_pose_orientation_y - M_PI - atan(position_x / position_z));
+    float Mpose_pose_position_z = position_y;*/
+
+    //localizing with apriltags
+    Eigen::MatrixXd raw_mat_2(1,3);
+    raw_mat_2 <<
+    tag_pose.pose.position.z,
+    tag_pose.pose.position.x,
+    tag_pose.pose.position.y;
+
+    Eigen::Matrix3d yaw_mat_2;
+    yaw_mat_2 <<
+    cos(new_yaw), -1*sin(new_yaw), 0,
+    sin(new_yaw), cos(new_yaw), 0,
+    0, 0, 1;
+    Eigen::Matrix3d pitch_mat_2;
+    pitch_mat_2 <<
+    cos(new_pitch),0 , sin(new_pitch),
+    0, 1, 0,
+    -1*sin(new_pitch), 0, cos(new_pitch);
+    Eigen::Matrix3d roll_mat_2;
+    roll_mat_2 <<
+    1, 0 , 0,
+    0, cos(roll), -1*sin(roll),
+    0, sin(roll), cos(roll);
+
+    Eigen::MatrixXd  mat_1_2(1,3);
+    mat_1_2 << raw_mat_2 * yaw_mat_2;
+    Eigen::MatrixXd  mat_2_2(1,3);
+    mat_2_2 << mat_1_2 * pitch_mat_2;
+    Eigen::MatrixXd  mat_3_2(1,3);
+    mat_3_2 << mat_2_2 * roll_mat_2;
+    /* Wedensday arena testing */
+    float c_x = (sqrt((tag_pose.pose.position.z * tag_pose.pose.position.z)+(tag_pose.pose.position.x * tag_pose.pose.position.x))) * cos(std::abs(2*tag_pose.pose.orientation.z));
+    float c_y = (sqrt((tag_pose.pose.position.z * tag_pose.pose.position.z)+(tag_pose.pose.position.x * tag_pose.pose.position.x))) * sin(std::abs(2*tag_pose.pose.orientation.z));
+    float c_orientation = PI - atan(c_x/c_y) + std::abs(lookie_angle_right) +(PI/2);
+
+    //ROS_INFO("Arena x: %f, Arena y: %f", c_x, c_y);
+    //ROS_INFO("Arena orientation: %f", c_orientation*(180/PI));
+
+    //ROS_INFO("Raw z: %f, raw x: %f, raw y: %f", tag_pose.pose.position.z, tag_pose.pose.position.x, tag_pose.pose.position.y);
+    //ROS_INFO("Corrected x: %f, corrected y: %f", corrected_x, corrected_y);
+    //ROS_INFO("Orientation z: %f, orientation x: %f, orientation y: %f, orientation w: %f", tag_pose.pose.orientation.z*(180/PI), tag_pose.pose.orientation.x*(180/PI), tag_pose.pose.orientation.y*(180/PI), tag_pose.pose.orientation.w*(180/PI));
+   // ROS_INFO("Yaw: %f, Pitch: %f, Roll %f", yaw, pitch, roll);
+    //ROS_INFO("Test Yaw: %f, Test Pitch: %f, Test Roll: %f", test_yaw, test_pitch, test_roll);
+    //ROS_INFO("Tf x: %f, Tf y: %f, Tf z: %f", -1 * mat_3_2(0,2), -1 * mat_3_2(0,1), -1 * mat_3_2(0,0));
+    //ROS_INFO("Tf_2x: %f, Tf_2 y: %f, Tf_2 z: %f", -1 * mat_3_2(0,2), -1 * mat_3_2(0,1), -1 * mat_3_2(0,0));
+
+    //ROS_INFO("Robot orientation %f:",  angle_approach);
 
     float theta = std::fmod(((angle_approach + PI/2 - lookie_angle_right * PI/180) + (2 * PI)), (2 * PI));
     float actual_x = corrected_x + (0.20*cos(theta) - 0.30*sin(theta));
     float actual_y = corrected_y + (0.20*sin(theta) + 0.30*cos(theta));
 
+    //ROS_INFO("Angle Approach: %f, lookie angle left: %f", angle_approach, lookie_angle_right);
+    //ROS_INFO("Old orientation: %f", theta*(180/PI));
     apriltags_ros::Localization localization_data_1;
     localization_data_1.y = actual_x;//corrected_x;//tag_pose.pose.position.x;
     localization_data_1.x = actual_y;//corrected_y;//tag_pose.pose.position.y;
@@ -610,29 +860,164 @@ void AprilTagDetector::imageCb_2(const sensor_msgs::ImageConstPtr& msg, const se
     tag_pose.pose.orientation.z = rot_quaternion.z(); // * (180/PI);
     tag_pose.pose.orientation.w = rot_quaternion.w(); // * (180/PI);
 
+    /* Angle of Approach */
+    float test_yaw;
+    float test_pitch;
+    float test_roll;
     float angle_approach = rawAngle(tag_pose.pose.position.x, tag_pose.pose.position.y, tag_pose.pose.position.z,
-     tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w);
+     tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.z, tag_pose.pose.orientation.w, test_yaw, test_pitch, test_roll);
     
     float angle_diff = std::fmod(angle_approach, PI);
 
     float corrected_x = 0.0f;
     float corrected_y = 0.0f;
     if (std::fmod((angle_approach), (2 * PI)) < 0.0f) {
-      corrected_x = std::abs((tag_pose.pose.position.x * cos(angle_diff)) - (tag_pose.pose.position.z * sin(angle_diff)));
-      corrected_y = std::abs((tag_pose.pose.position.x * sin(angle_diff)) + (tag_pose.pose.position.z * cos(angle_diff)));
+      corrected_x = std::abs((tag_pose.pose.position.y * cos(angle_diff)) - (tag_pose.pose.position.z * sin(angle_diff)));
+      corrected_y = std::abs((tag_pose.pose.position.y * sin(angle_diff)) + (tag_pose.pose.position.z * cos(angle_diff)));
     }
 
     else {
-      corrected_x = std::abs((tag_pose.pose.position.x * cos(angle_diff)) + (tag_pose.pose.position.z * sin(angle_diff)));
-      corrected_y = std::abs((tag_pose.pose.position.z * cos(angle_diff)) - (tag_pose.pose.position.x * sin(angle_diff)));
+      corrected_x = std::abs((tag_pose.pose.position.y * cos(angle_diff)) + (tag_pose.pose.position.z * sin(angle_diff)));
+      corrected_y = std::abs((tag_pose.pose.position.z * cos(angle_diff)) - (tag_pose.pose.position.y * sin(angle_diff)));
     }
 
-    ROS_INFO("%f, %f, %f", tag_pose.pose.position.z, tag_pose.pose.position.x, angle_approach);
+    /*Eigen::Matrix3d F;
+    F <<
+    -1, 0, 0,
+    0, -1, 0,
+    0, 0, -1;
+
+    Eigen::Matrix3d fixed_rot = F * rotation;
+    
+    double yaw, pitch, roll;
+    wRo_to_euler(fixed_rot, yaw, pitch, roll);
+
+    double neg_roll = -1*yaw;
+    double neg_pitch = -1*roll;
+    double neg_yaw = -1*pitch;
+    
+    //localizing with apriltags
+    Eigen::MatrixXd raw_mat(1,3);
+    raw_mat <<
+    tag_pose.pose.position.z,
+    tag_pose.pose.position.x,
+    tag_pose.pose.position.y;
+
+    Eigen::Matrix3d yaw_mat;
+    yaw_mat <<
+    cos(neg_yaw), -1*sin(neg_yaw), 0,
+    sin(neg_yaw), cos(neg_yaw), 0,
+    0, 0, 1;
+    Eigen::Matrix3d pitch_mat;
+    pitch_mat <<
+    cos(neg_pitch),0 , sin(neg_pitch),
+    0, 1, 0,
+    -1*sin(neg_pitch), 0, cos(neg_pitch);
+    Eigen::Matrix3d roll_mat;
+    roll_mat <<
+    1, 0 , 0,
+    0, cos(neg_roll), -1*sin(neg_roll),
+    0, sin(neg_roll), cos(neg_roll);
+
+    Eigen::MatrixXd  mat_1(1,3);
+    mat_1 << raw_mat * yaw_mat;
+    Eigen::MatrixXd  mat_2(1,3);
+    mat_2 << mat_1 * pitch_mat;
+    Eigen::MatrixXd  mat_3(1,3);
+    mat_3 << mat_2 * roll_mat;*/
+
+    /* Other yaw, pitch, roll method */
+    /*float xsqr = tag_pose.pose.orientation.x * tag_pose.pose.orientation.x;
+    //roll(around the y)
+    float t0 = +2.0f * (tag_pose.pose.orientation.w * tag_pose.pose.orientation.z + tag_pose.pose.orientation.x * tag_pose.pose.orientation.y);
+    float t1 = +1.0f - 2.0f * (tag_pose.pose.orientation.z * tag_pose.pose.orientation.z + xsqr);
+    float Mpose_pose_orientation_y = atan2(t0, t1);
+    float new_roll = -1 * Mpose_pose_orientation_y;
+
+    //pitch(around the x)
+    float t2 = +2.0f * (tag_pose.pose.orientation.w * tag_pose.pose.orientation.x - tag_pose.pose.orientation.y * tag_pose.pose.orientation.z);
+    t2 = t2 > 1.0f ? 1.0f : t2;
+    t2 = t2 < -1.0f ? -1.0f : t2;
+    float Mpose_pose_orientation_x = asin(t2);
+    float new_pitch = -1 * Mpose_pose_orientation_x;
+
+    //yaw (around the z)
+    float t3 = +2.0f * (tag_pose.pose.orientation.w * tag_pose.pose.orientation.y + tag_pose.pose.orientation.z * tag_pose.pose.orientation.x);
+    float t4 = +1.0f - 2.0f * (xsqr + tag_pose.pose.orientation.y * tag_pose.pose.orientation.y);
+    float Mpose_pose_orientation_z = atan2(t3, t4);
+    float new_yaw = -1 * Mpose_pose_orientation_z;
+    if (Mpose_pose_orientation_z < 0)
+    {
+        Mpose_pose_orientation_z += (2 * M_PI);
+    }
+
+    float Mpose_pose_orientation_w = 1.00;*/
+    /*float Mpose_detected = true;
+
+    float Mpose_pose_position_y = sqrt(position_x * position_x + position_z * position_z)
+                            * cos(Mpose_pose_orientation_y - M_PI - atan(position_x / position_z));
+    float Mpose_pose_position_x = sqrt(position_x * position_x + position_z * position_z)
+                            * sin(Mpose_pose_orientation_y - M_PI - atan(position_x / position_z));
+    float Mpose_pose_position_z = position_y;*/
+
+    //localizing with apriltags
+    /*Eigen::MatrixXd raw_mat_2(1,3);
+    raw_mat_2 <<
+    tag_pose.pose.position.z,
+    tag_pose.pose.position.x,
+    tag_pose.pose.position.y;
+
+    Eigen::Matrix3d yaw_mat_2;
+    yaw_mat_2 <<
+    cos(new_yaw), -1*sin(new_yaw), 0,
+    sin(new_yaw), cos(new_yaw), 0,
+    0, 0, 1;
+    Eigen::Matrix3d pitch_mat_2;
+    pitch_mat_2 <<
+    cos(new_pitch),0 , sin(new_pitch),
+    0, 1, 0,
+    -1*sin(new_pitch), 0, cos(new_pitch);
+    Eigen::Matrix3d roll_mat_2;
+    roll_mat_2 <<
+    1, 0 , 0,
+    0, cos(roll), -1*sin(roll),
+    0, sin(roll), cos(roll);
+
+    Eigen::MatrixXd  mat_1_2(1,3);
+    mat_1_2 << raw_mat_2 * yaw_mat_2;
+    Eigen::MatrixXd  mat_2_2(1,3);
+    mat_2_2 << mat_1_2 * pitch_mat_2;
+    Eigen::MatrixXd  mat_3_2(1,3);
+    mat_3_2 << mat_2_2 * roll_mat_2;*/
+    /*  */
+     float c_x = (sqrt((tag_pose.pose.position.z * tag_pose.pose.position.z)+(tag_pose.pose.position.x * tag_pose.pose.position.x))) * cos(std::abs(2*tag_pose.pose.orientation.z));
+    float c_y = (sqrt((tag_pose.pose.position.z * tag_pose.pose.position.z)+(tag_pose.pose.position.x * tag_pose.pose.position.x))) * sin(std::abs(2*tag_pose.pose.orientation.z));
+   
+    float c_orientation = PI - atan(c_x/c_y) + std::abs(lookie_angle_left) + (PI/2) + PI;
+
+    ROS_INFO("Start of Data");
+    ROS_INFO("Tag id: %f", (float)detection.id);
+    ROS_INFO("Arena x: %f, Arena y: %f", c_x, c_y);
+    ROS_INFO("Arena orientation: %f", c_orientation);
+    ROS_INFO("Old orientation: %f", std::fmod(((angle_approach - PI) + (2 * PI)), (2 * PI)));
+    ROS_INFO("Raw z: %f, raw x: %f, raw y: %f", tag_pose.pose.position.z, tag_pose.pose.position.x, tag_pose.pose.position.y);
+    ROS_INFO("orientation z: %f, orientation x: %f, orientation y: %f, orientation w: %f", tag_pose.pose.orientation.z, tag_pose.pose.orientation.x, tag_pose.pose.orientation.y, tag_pose.pose.orientation.w);
+    ROS_INFO("End of Data");
+    //ROS_INFO("Raw z: %f, raw x: %f, raw y: %f", tag_pose.pose.position.z, tag_pose.pose.position.x, tag_pose.pose.position.y);
+    //ROS_INFO("Corrected x: %f, corrected y: %f", corrected_x, corrected_y);
+    //ROS_INFO("Raw z: %f, raw x: %f, raw y: %f", tag_pose.pose.orientation.z, tag_pose.pose.orientation.x, tag_pose.pose.orientation.y);
+    //ROS_INFO("Yaw: %f, Pitch: %f, Roll %f", yaw, pitch, roll);
+    //ROS_INFO("Test Yaw: %f, Test Pitch: %f, Test Roll: %f", test_yaw, test_pitch, test_roll);
+    //ROS_INFO("Tf x: %f, Tf y: %f, Tf z: %f", -1 * mat_3_2(0,2), -1 * mat_3_2(0,1), -1 * mat_3_2(0,0));
+    //ROS_INFO("Tf_2x: %f, Tf_2 y: %f, Tf_2 z: %f", -1 * mat_3_2(0,2), -1 * mat_3_2(0,1), -1 * mat_3_2(0,0));
+
+    //ROS_INFO("Angle Approach: %f, lookie angle left: %f", std::fmod(((angle_approach - PI/2 - lookie_angle_left * PI/180) + (2 * PI)), (2 * PI)), lookie_angle_left);
 
     float theta = std::fmod(((angle_approach - PI/2 - lookie_angle_left * PI/180) + (2 * PI)), (2 * PI));
     float actual_x = corrected_x + (0.20*cos(theta) + 0.30*sin(theta));
     float actual_y = corrected_y + (0.20*sin(theta) - 0.30*cos(theta));
-
+    
+    //ROS_INFO("Old orientation: %f", theta*(180/PI));     
     apriltags_ros::Localization localization_data_2;
     localization_data_2.y = corrected_x;//tag_pose.pose.position.x;
     localization_data_2.x = corrected_y;//tag_pose.pose.position.y;
@@ -703,24 +1088,28 @@ std::map<int, AprilTagDescription> AprilTagDetector::parse_tag_descriptions(XmlR
   return descriptions;
 }
 
-float AprilTagDetector::rawAngle(float position_x, float position_y, float position_z, float orientation_x, float orientation_y, float orientation_z, float orientation_w) {
+float AprilTagDetector::rawAngle(float position_x, float position_y, float position_z, float orientation_x, float orientation_y,
+ float orientation_z, float orientation_w, float yaw, float pitch, float roll) {
   float xsqr = orientation_x * orientation_x;
 
     //roll(around the y)
     float t0 = +2.0f * (orientation_w * orientation_z + orientation_x * orientation_y);
     float t1 = +1.0f - 2.0f * (orientation_z * orientation_z + xsqr);
     float Mpose_pose_orientation_y = atan2(t0, t1);
+    roll = -1 * Mpose_pose_orientation_y;
 
     //pitch(around the x)
     float t2 = +2.0f * (orientation_w * orientation_x - orientation_y * orientation_z);
     t2 = t2 > 1.0f ? 1.0f : t2;
     t2 = t2 < -1.0f ? -1.0f : t2;
     float Mpose_pose_orientation_x = asin(t2);
+    pitch = -1 * Mpose_pose_orientation_x;
 
     //yaw (around the z)
     float t3 = +2.0f * (orientation_w * orientation_y + orientation_z * orientation_x);
     float t4 = +1.0f - 2.0f * (xsqr + orientation_y * orientation_y);
     float Mpose_pose_orientation_z = atan2(t3, t4);
+    yaw = -1 * Mpose_pose_orientation_z;
     if (Mpose_pose_orientation_z < 0)
     {
         Mpose_pose_orientation_z += (2 * M_PI);
@@ -734,6 +1123,37 @@ float AprilTagDetector::rawAngle(float position_x, float position_y, float posit
     float Mpose_pose_position_x = sqrt(position_x * position_x + position_z * position_z)
                             * sin(Mpose_pose_orientation_y - M_PI - atan(position_x / position_z));
     float Mpose_pose_position_z = position_y;
+
+    //localizing with apriltags
+    Eigen::MatrixXd raw_mat(1,3);
+    raw_mat <<
+    position_x,
+    position_y,
+    position_z;
+
+    Eigen::Matrix3d yaw_mat;
+    yaw_mat <<
+    cos(yaw), -1*sin(yaw), 0,
+    sin(yaw), cos(yaw), 0,
+    0, 0, 1;
+    Eigen::Matrix3d pitch_mat;
+    pitch_mat <<
+    cos(pitch),0 , sin(pitch),
+    0, 1, 0,
+    -1*sin(pitch), 0, cos(pitch);
+    Eigen::Matrix3d roll_mat;
+    roll_mat <<
+    1, 0 , 0,
+    0, cos(roll), -1*sin(roll),
+    0, sin(roll), cos(roll);
+
+    Eigen::MatrixXd  mat_1(1,3);
+    mat_1 << raw_mat * yaw_mat;
+    Eigen::MatrixXd  mat_2(1,3);
+    mat_2 << mat_1 * pitch_mat;
+    Eigen::MatrixXd  mat_3(1,3);
+    mat_3 << mat_2 * roll_mat;
+    //ROS_INFO("New x: %f, New y: %f, New z: %f", -1 * mat_3(0,2), -1 * mat_3(0,1), -1 * mat_3(0,0));
 
     return Mpose_pose_orientation_z;
 

@@ -5,7 +5,9 @@ import numpy as np
 import cv2
 import time
 import math
+import rospy
 import pandas as pd
+#from optical_flow import *
 from obstacle_detection import get_obstacles_with_plane, plot_global_map
 from depth_image_processing import *
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
@@ -18,14 +20,10 @@ try:
 
 	pipeline = OpenCLPacketPipeline()
 except:
-	try:
-		from pylibfreenect2 import OpenGLPacketPipeline
 
-		pipeline = OpenGLPacketPipeline()
-	except:
-		from pylibfreenect2 import CpuPacketPipeline
+	from pylibfreenect2 import CpuPacketPipeline
 
-		pipeline = CpuPacketPipeline()
+	pipeline = CpuPacketPipeline()
 print("Packet pipeline:", type(pipeline).__name__)
 
 # Create and set logger
@@ -83,8 +81,10 @@ print(os.getcwd())
 
 frame_i = 0
 frame_limit = -1
+prev_frame = None
+p0 = None
 
-while True:
+while not rospy.is_shutdown():
 	frames = listener.waitForNewFrame()
 	depth_frame = frames["depth"]
 	color = frames["color"]
@@ -98,7 +98,9 @@ while True:
 	if frame_i == frame_limit:
 		break
 
-	output, obstacle_id = get_obstacles_with_plane(depth_frame.asarray(np.float32),
+	img = depth_frame.asarray(np.float32)
+
+	output, obstacle_id = get_obstacles_with_plane(img,
 									  color_frame,
 									  obstacle_list,
 									  thetas,
@@ -108,6 +110,8 @@ while True:
 									  visualize=visualize,
 									  save_frames=True)
 
+	#p0, x_motion, y_motion, prev_frame = compute_optical_flow(prev_frame, img, p0)
+
 	if visualize:
 		plot_global_map(obstacle_list)
 		key = cv2.waitKey(delay=1)
@@ -115,6 +119,7 @@ while True:
 			break
 	listener.release(frames)
 
+listener.release(frames)
 device.stop()
 device.close()
 

@@ -25,8 +25,8 @@ def softwareTest():
     print str(grid.row_size)
     obstacles = [Obstacle(2.0, 2.0, 0.15), Obstacle(1.0, 3.0, 0.15), Obstacle(1.0, 1.5, 0.15)]
 
-    path = create_path(p1, p2, 3.78, 7.38, obstacles)
-    drawPath(path, obstacles, [])
+    path = create_path(p1, p2, 3.78, 7.38, [])
+    drawPath(path, [], [])
 
 def main():
     if sys.argv[1] == '0':

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import math
 import collections
 from collections import deque
@@ -48,7 +46,7 @@ class Position(object):
             return ((p.getOrientation() - self.orientation) % (2 * math.pi)) - 2 * math.pi
 
     def angleToFace(self, p):
-        return (math.atan2(p.getY() - self.getY(), p.getX() - self.getY()) + 2 * math.pi) % (2 * math.pi)
+        return math.atan2(p.getY() - self.getY(), p.getX() - self.getY()) % (2 * math.pi)
 
 
 class Grid(object):
@@ -256,3 +254,4 @@ class Vertex(Position):
             self.heuristic = math.inf
         else:
             self.heuristic = dest
+

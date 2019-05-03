@@ -11,14 +11,13 @@ from depth_image_processing import CameraPosition
 from apriltags_ros.msg import Localization
 
 topic = 'localization_data'
-node_name = 'master'
 
 
 def position_callback(msg):
     CameraPosition['x'] = msg.x
     CameraPosition['y'] = msg.y
     CameraPosition['azimuth'] = msg.theta * 180 / math.pi
-    print('Localization:', msg.x, msg.y, msg.theta)
+    #print('Localization:', msg.x, msg.y, msg.theta)
 
 def update_position():
     #Add here the name of the ROS. In ROS, names are unique named.

@@ -8,7 +8,7 @@ import DriveControl.MotorCommand as mc
 import PathPlanning.PathPlanning as pp
 
 from PathPlanning.ThetaStar import create_path
-from PathPlanning.PathTesting import drawPath
+#from PathPlanning.PathTesting import drawPath
 from RobotState import Robot_state
 from apriltags_ros.msg import Localization
 from hci.msg import sensorValue, motorCommand
@@ -141,6 +141,50 @@ def modifyTimes(timeLeft):
 """
 Control Related functions
 """
+
+def rpmdrive(dest, forward, distance, speed):
+    global motor_pub
+    offset = math.fabs(currentState.getStarRPM() + currentState.getPortRPM()) / 2
+    done = False
+    flag = False
+    cum_distance = 0
+    stop_dist = 0
+    lastTime = None
+    if forward:
+        mc.drive_left_motor(motor_pub, speed)
+        mc.drive_right_motor(motor_pub, speed)
+    else:
+        mc.drive_right_motor(motor_pub, -speed)
+        mc.drive_left_motor(motor_pub, -speed)
+    while not done:
+        rpm = math.fabs(currentState.getPortRPM() + currentState.getStarRPM()) / 2 - offset
+        if not flag:
+            if rpm - speed < 2.5:
+                stop_dist = distance - cum_distance - 0.3
+                flag = True
+            elif cum_distance >= distance:
+                stop_dist = cum_distance
+                flag = True
+        if lastTime is None:
+            lastTime = time.time()
+        else:
+            currentTime = time.time()
+            delta = currentTime - lastTime
+            cum_distance += distance_moved(rpm, 0, delta)
+            lastTime = currentTime
+        if flag and cum_distance >= stop_dist:
+            mc.drive_left_motor(motor_pub, 0)
+            mc.drive_right_motor(motor_pub, 0)
+            done = True
+        if rospy.is_shutdown():
+            exit(-1)
+        if currentState.obstacle_found:
+            return False
+        rospy.sleep(0.005)
+    looky_turn_2(dest, COLLECTION_BIN)
+    rospy.sleep(1)
+    return True
+
 def drive(dest, forward, distance, speed):
     global motor_pub
     done = False
@@ -272,7 +316,8 @@ def converToCommands(path):
     currentPos = currentState.getCurrentPos()
     for position in path.path:
         angle_to_face = currentPos.angleToFace(position)
-        angle_turn = angle_to_face - currentPos.getOrientation()
+        pos = pp.Position(currentPos.getX(), currentPos.getY(), angle_to_face)
+        angle_turn = currentPos.angleTurnTo(pos)
         distance = currentPos.distanceTo(position)
         commands.append((angle_turn, distance))
         currentPos = position
@@ -353,13 +398,14 @@ def run():
     pass
 
 def testMode():
-    tests = [transit_test, transit_dig_test, single_run_test, full_test]
+    tests = [transit_test, transit_dig_test, single_run_test, full_test, rpm_drive_test]
     print "Testing mode"
     print "Enter which test you want (in number):"
     print "0. transit only"
     print "1. transit + digging"
     print "2. One single run"
     print "3. Full Competition run"
+    print "4. RPM drive test"
     option = int(raw_input())
     tests[option]()
     exit(-1)
@@ -398,7 +444,7 @@ def transit_test():
             if distance < 0:
                 direction = False
 
-            okay = drive(next_pos, direction, distance, ROBOT_SPEED_DRIVE)
+            okay = rpmdrive(next_pos, direction, distance, ROBOT_SPEED_DRIVE)
             if not okay:
                 break
 
@@ -418,6 +464,20 @@ def single_run_test():
 def full_test():
     pass
 
+def rpm_drive_test():
+    print "How much distance you want to move?"
+    distance = float(raw_input())
+    direction = True
+    if distance < 0:
+        direction = False
+    dest_x = currentState.getCurrentPos().getX() + math.fabs(distance) * math.cos(currentState.getCurrentPos().getOrientation())
+    dest_y = currentState.getCurrentPos().getY() + math.fabs(distance) * math.sin(currentState.getCurrentPos().getOrientation())
+    dest = pp.Position(dest_x, dest_y)
+    rpmdrive(dest, direction, distance, ROBOT_SPEED_DRIVE)
+    result = float(raw_input("how much did it go?"))
+    rospy.loginfo("goal:" + str(distance) + " actual:" + str(result) + "\n")
+    exit(0)
+
 def main():
     rospy.init_node("automodule")
     rospy.on_shutdown(shutdownRoutine)
@@ -433,3 +493,4 @@ def main():
 
 
 if __name__ == "__main__": main()
+

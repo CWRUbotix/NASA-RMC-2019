@@ -79,6 +79,9 @@ class Robot_state:
     def setBCArmLowerLimit(self, bcarm_lower_limit_switch):
         self.bcarm_lower_limit_switch = bcarm_lower_limit_switch
 
+    def setBCArmUpperLimit(self, bcarm_upper_limit_switch):
+	self.bcarm_upper_limit_switch = bcarm_upper_limit_switch
+
     def getBCForeLimit(self):
        return self.bc_fore_limit_switch
 

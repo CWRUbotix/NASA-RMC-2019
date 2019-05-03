@@ -53,6 +53,65 @@ CameraPosition = {
     "elevation": -30, # sensor's pitch angle in degrees.
 }
 
+# params for ShiTomasi corner detection
+feature_params = dict(maxCorners=100,
+                      qualityLevel=0.01,
+                      minDistance=7,
+                      blockSize=10)
+
+# Parameters for lucas kanade optical flow
+lk_params = dict(winSize=(15, 15),
+                 maxLevel=2,
+                 criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+
+
+def compute_optical_flow(prev, frame, resize_factor=10, cropping=500):
+    new_size = 4500 // resize_factor - cropping // resize_factor
+    hsv = np.zeros((new_size, new_size, 3), dtype=np.uint8)
+    hsv[..., 1] = 255
+    if prev is None:
+        xyz_arr = depth_matrix_to_point_cloud(frame)
+        return 0, 0, project_point_cloud_onto_plane(xyz_arr), hsv
+    else:
+        xyz_arr = depth_matrix_to_point_cloud(frame)
+        proj_frame = project_point_cloud_onto_plane(xyz_arr)
+
+    try:
+        flow = cv2.calcOpticalFlowFarneback(prev, frame, None, 0.5, 3, 20, 3, 5, 1.2, 0)
+    except cv2.error as e:
+        return 0, 0, prev, hsv
+
+    mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+    hsv[..., 0] = ang * 180 / np.pi
+    hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
+    rgb = cv2.cvtColor(np.uint8(hsv), cv2.COLOR_HSV2BGR)
+    mag[mag == np.inf] = 0
+
+    motion_mag = np.median(mag[mag != 0])
+    motion_ang = np.median(ang[ang != 0])
+
+    x_motion = math.cos(motion_ang) * motion_mag * resize_factor
+    y_motion = math.sin(motion_ang) * motion_mag * resize_factor
+
+    print('dX: %.3f, dY: %.3f, Mag: %.3f, Ang: %.3f' % (x_motion, y_motion, motion_mag, motion_ang * 180 / math.pi))
+    return x_motion, y_motion, proj_frame, rgb
+
+
+def project_point_cloud_onto_plane(xyz_arr, resize_factor=10, cropping=500):
+    normal = np.array([[1, 0, 0], [0, 1, 0]])
+    proj = np.matmul(xyz_arr, normal.T)
+    proj_img = np.zeros((4500, 4500))
+    indices = np.int32(proj * 1000)
+    indices[..., 1] += 4500 // 2
+    indices = np.clip(indices, 0, 4499)
+    proj_img[indices[..., 0], indices[..., 1]] = 255
+    proj_img = proj_img[cropping:4500 - cropping, cropping:4500 - cropping]
+    new_size = 4500 // resize_factor - cropping // resize_factor
+    proj_img = cv2.resize(proj_img, (new_size, new_size), interpolation=cv2.INTER_AREA)
+    proj_img = cv2.dilate(proj_img, np.ones((3, 3)), iterations=2)
+    proj_img = cv2.blur(proj_img, (5, 5))
+    return np.uint8(proj_img)
+
 
 def depth_matrix_to_point_cloud(z, scale=1000):
     """
