@@ -1,5 +1,6 @@
 
 import sys
+import math
 #import rospy
 from PathPlanning.PathPlanning import Grid, Obstacle, Position
 from PathPlanning.ThetaStar import create_path
@@ -23,10 +24,30 @@ def softwareTest():
     print str(grid.unit_height)
     print str(grid.col_size)
     print str(grid.row_size)
-    obstacles = [Obstacle(2.0, 2.0, 0.15), Obstacle(1.0, 3.0, 0.15), Obstacle(1.0, 1.5, 0.15)]
+    obstacles = [Obstacle(3.0, 2.0, 0.15), Obstacle(0.5, 5.0, 0.15), Obstacle(2.0, 3.0, 0.15)]
 
     path = create_path(p1, p2, 3.78, 7.38, obstacles)
+    print converToCommands(path, p1)
     drawPath(path, obstacles, [])
+
+
+def toDegree(rad):
+    return rad * 180 / math.pi
+
+def toRadian(deg):
+    return deg * math.pi / 180
+
+def converToCommands(path, currentPos):
+    commands = []
+    for position in path.path:
+        angle_to_face = currentPos.angleToFace(position)
+        pos = Position(currentPos.getX(), currentPos.getY(), angle_to_face)
+        angle_turn = currentPos.angleTurnTo(pos)
+        distance = currentPos.distanceTo(position)
+        commands.append((toDegree(angle_turn), distance))
+        currentPos = Position(pos.getX() + distance * math.cos(angle_to_face), pos.getY() + distance * math.sin(angle_to_face), angle_to_face)
+        currentPos.orientation  = angle_to_face
+    return commands
 
 def main():
     if sys.argv[1] == '0':
