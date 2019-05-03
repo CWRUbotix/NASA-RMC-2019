@@ -37,13 +37,34 @@ class Position(object):
     def distanceTo(self, p):
         x = abs(p.getX() - self.x_pos)
         y = abs(p.getY() - self.y_pos)
+
+        if (x ** 2 + y ** 2) ** .5 < 0.1:
+            return 0
+
         return (x ** 2 + y ** 2) ** .5
 
     def angleTurnTo(self, p):
-        if p.getOrientation() - self.orientation > 0:
-            return (p.getOrientation() - self.orientation) % (2 * math.pi)
+        change = p.getOrientation() - self.orientation
+        if math.fabs(change) < math.pi / 36:
+            return 0
+        elif change >  0 :
+            if change > math.pi:
+                result = -(2 * math.pi - change)
+                if math.fabs(result) < math.pi / 36:
+                    return 0
+                else:
+                    return result
+            else:
+                return change
         else:
-            return ((p.getOrientation() - self.orientation) % (2 * math.pi)) - 2 * math.pi
+            if math.fabs(change) > math.pi:
+                result = 2 * math.pi - math.fabs(change)
+                if math.fabs(result) < math.pi / 36:
+                    return 0
+                else:
+                    return result
+            else:
+                return change
 
     def angleToFace(self, p):
         return math.atan2(p.getY() - self.getY(), p.getX() - self.getY()) % (2 * math.pi)
@@ -169,6 +190,8 @@ class Obstacle:
             self.center_x = (self.center_x + other.center_x) / 2
             self.center_y = (self.center_y + other.center_y) / 2
             self.radius = distance / 2
+            return True
+        return False
 
 #acts as a sequence of instances of the Position class
 class Path(collections.Sequence):

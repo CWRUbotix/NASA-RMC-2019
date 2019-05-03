@@ -187,45 +187,46 @@ def rpmdrive(dest, forward, distance, speed):
 
 def drive(dest, forward, distance, speed):
     global motor_pub
+    offset = math.fabs(currentState.getStarRPM() + currentState.getPortRPM()) / 2
     done = False
-    initPos = currentState.getCurrentPos()
-    if distance <= 1.85:
-        speed = math.sqrt(distance * 0.5 / 0.0010265)
-    stop_distance = distance - 0.001265 * speed ** 2
-    acc = 0
+    flag = False
+    cum_distance = 0
+    stop_dist = 0
+    lastTime = None
+    if forward:
+        mc.drive_left_motor(motor_pub, speed)
+        mc.drive_right_motor(motor_pub, speed)
+    else:
+        mc.drive_right_motor(motor_pub, -speed)
+        mc.drive_left_motor(motor_pub, -speed)
     while not done:
+        rpm = math.fabs(currentState.getPortRPM() + currentState.getStarRPM()) / 2 - offset
+        if not flag:
+            if rpm - speed < 2.5:
+                stop_dist = distance - cum_distance - 0.3
+                flag = True
+            elif cum_distance >= distance:
+                stop_dist = cum_distance
+                flag = True
+        if lastTime is None:
+            lastTime = time.time()
+        else:
+            currentTime = time.time()
+            delta = currentTime - lastTime
+            cum_distance += distance_moved(rpm, 0, delta)
+            lastTime = currentTime
+        if flag and cum_distance >= stop_dist:
+            mc.drive_left_motor(motor_pub, 0)
+            mc.drive_right_motor(motor_pub, 0)
+            done = True
         if rospy.is_shutdown():
             exit(-1)
-        if currentState.getCurrentPos() == dest or\
-            initPos.distanceTo(currentState.getCurrentPos()) > stop_distance:
-            done = True
-        elif math.fabs(initPos.distanceTo(currentState.getCurrentPos())) > distance:
-            done = True
-        else:
-            if forward:
-                mc.drive_left_motor(motor_pub, speed)
-                mc.drive_right_motor(motor_pub, speed)
-            else:
-                mc.drive_left_motor(motor_pub, -speed)
-                mc.drive_right_motor(motor_pub, -speed)
-        if not done:
-            next_distance = distance_moved((currentState.getStarRPM() + currentState.getPortRPM()) / 2, currentState.getAcceX(), 0.005)
-            acc += next_distance
-            if acc > 0.15:
-                looky_turn(currentState.getCurrentPos(), acc)
-                acc = 0
-
         if currentState.obstacle_found:
-            mc.drive_right_motor(motor_pub, 0)
-            mc.drive_left_motor(motor_pub, 0)
             return False
-
         rospy.sleep(0.005)
-        return True
-
-    mc.drive_right_motor(motor_pub, 0)
-    mc.drive_left_motor(motor_pub, 0)
     looky_turn_2(dest, COLLECTION_BIN)
+    rospy.sleep(1)
+    return True
 
 def turn(goal, counter, speed):
     offset = currentState.getGyroZ()
@@ -319,8 +320,8 @@ def converToCommands(path):
         pos = pp.Position(currentPos.getX(), currentPos.getY(), angle_to_face)
         angle_turn = currentPos.angleTurnTo(pos)
         distance = currentPos.distanceTo(position)
-        commands.append((angle_turn, distance))
-        currentPos = position
+        commands.append((toDegree(angle_turn), distance, position))
+        currentPos = pp.Position(pos.getX() + distance * math.cos(angle_to_face), pos.getY() + distance * math.sin(angle_to_face), angle_to_face)
         currentPos.orientation  = angle_to_face
     return commands
 
@@ -424,17 +425,9 @@ def transit_test():
             direction = True
             if command[0] < 0:
                 direction = False
-            okay = turn(math.fabs(command[0]) * 2 / 3, direction, ROBOT_SPEED_TURN)
+            okay = turn(math.fabs(command[0]), direction, ROBOT_SPEED_TURN)
             if not okay:
                 break
-            goal = (dest.getOrientation() - currentState.getCurrentPos().getOrientation()) % (math.pi * 2)
-            if goal < 0:
-                direction = False
-            else:
-                direction = True
-            okay = turn(math.fabs(goal), direction, ROBOT_SPEED_TURN / 2)
-            if not okay:
-                 break
             distance = command[1]
             next_x = currentState.getCurrentPos().getX() + math.fabs(distance) * math.cos(currentState.getCurrentPos().getOrientation())
             next_y = currentState.getCurrentPos().getY() + math.fabs(distance) * math.sin(currentState.getCurrentPos().getOrientation())
@@ -448,11 +441,18 @@ def transit_test():
             if not okay:
                 break
 
+            if currentState.getCurrentPos().distanceTo(command[2]) > 0.2:
+                break
+
         if currentState.getCurrentPos() == dest or currentState.getCurrentPos().getDistanceTo(dest) < 0.1:
             done = True
         else:
             path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
             commands = converToCommands(path)
+        if rospy.is_shutdown():
+            exit(-1)
+
+    rospy.spin()
 
 def transit_dig_test():
 
@@ -488,8 +488,6 @@ def main():
         testMode()
     else:
         run()
-
-    rospy.spin()
 
 
 if __name__ == "__main__": main()

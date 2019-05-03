@@ -97,13 +97,17 @@ class Robot_state:
     def getObstacles(self):
         return self.obstacles
 
-    def addObstacle(self, id, obs):
-        if id not in self.obstacles.keys():
-            self.obstacles[id] = obs
+    def addObstacle(self, key, obs):
+        if key not in self.obstacles.keys():
+            for k in self.obstacles.keys():
+                if self.obstacles[k].mergeIfEqual(obs):
+                    self.obstacles[key] = self.obstacles[k]
+                    return False
+            self.obstacles[key] = obs
             self.setObstacleFound(True)
             return True
-        elif math.fabs(obs.getRadius() - self.obstacles[id].getRadius()) > 0.1:
-            self.obstacles[id] = obs
+        elif math.fabs(obs.getRadius() - self.obstacles[key].getRadius()) > 0.1:
+            self.obstacles[key] = obs
             self.setObstacleFound(True)
             return True
         else:
@@ -111,4 +115,5 @@ class Robot_state:
 
     def setObstacleFound(self, found):
         self.obstacle_found = found
+
 
