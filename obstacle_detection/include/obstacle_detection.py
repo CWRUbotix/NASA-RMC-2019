@@ -8,6 +8,7 @@ from depth_image_processing import *
 from obstacle import Obstacle
 from ros_publish import send_obstacle_data
 from localization_listener import update_position
+from path_listener import get_path
 
 saved_dir = 'src/NASA-RMC-2019/obstacle_detection/data/saved_frames/'
 localization_dir = 'src/NASA-RMC-2019/obstacle_detection/data/localization_data/'
@@ -285,6 +286,10 @@ def plot_global_map(obstacle_list):
 	theta = CameraPosition['azimuth'] * math.pi / 180
 	ax.arrow(x, y, 0.2 * math.cos(theta), 0.2 * math.sin(theta), linewidth=2)
 	ax.text(x + .1, y + .1, s='Robot')
+	path_points = None
+	get_path(path_points)
+	if path_points is not None:
+		print(path_points)
 	ax.set_ylim(0, 6.2)
 	ax.set_xlim(0, 4.5)
 	fig.savefig(global_map_dir + '%d.png' % len(os.listdir(global_map_dir)))
@@ -412,8 +417,8 @@ def get_obstacles_with_plane(depth_frame,
 			rgb = cv2.cvtColor(color, cv2.COLOR_BGR2RGB)
 			plt.imsave(saved_dir + '%d.png' % len(os.listdir(saved_dir)), rgb)
 
-		if visualize:
-			print('next frame...')
+		#if visualize:
+			#print('next frame...')
 			#cv2.imshow('detected_obstacles', color)
 			#cv2.imshow('plane', plane_img)
 			#cv2.imshow('deph frame', depth_frame)

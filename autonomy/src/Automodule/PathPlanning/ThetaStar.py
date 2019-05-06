@@ -27,8 +27,8 @@ def thetaStar(start, end, grid):
     endVertex = grid.getVertex(int(end[0]), int(end[1]))
     updateHeuristic(endVertex, grid)
 
-    print str(startVertex)
-    print str(endVertex)
+#    print str(startVertex)
+#    print str(endVertex)
 
     openList = []
     closedList = []
@@ -75,14 +75,14 @@ def updateHeuristic(end, grid):
 def postProcess(path, grid):
     length = len(path)
     done = False
-    print str(len(path))
+#    print str(len(path))
     while not done:
         path = postProcess_iter(path, grid)
         if len(path) == length:
             done = True
         else:
             length = len(path)
-    print str(len(path))
+#    print str(len(path))
     done = False
     length = len(path)
     while not done:
@@ -91,7 +91,7 @@ def postProcess(path, grid):
             done = True
         else:
             length = len(path)
-    print str(len(path))
+#    print str(len(path))
     done = False
     length = len(path)
     while not done:

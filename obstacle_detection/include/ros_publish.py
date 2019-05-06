@@ -25,7 +25,7 @@ def send_obstacle_data(obs):
         msg.z = obs.z
         msg.diameter = obs.diameter
         rospy.init_node(node_name, anonymous=True)
-        rospy.loginfo(msg)
+        #rospy.loginfo(msg)
         pub.publish(msg)
     except rospy.ROSInterruptException as e:
         print(e.getMessage())

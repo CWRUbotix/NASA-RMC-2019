@@ -10,6 +10,7 @@ project(obstacle_detection)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
+  geometry_msgs
   message_generation
 )
 
@@ -50,6 +51,7 @@ catkin_python_setup()
 add_message_files(
    FILES
    Obstacle.msg
+   Path.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -70,6 +72,7 @@ add_message_files(
 generate_messages(
    DEPENDENCIES
    std_msgs
+   geometry_msgs
 )
 
 ################################################
@@ -116,7 +119,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 

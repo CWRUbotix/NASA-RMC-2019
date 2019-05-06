@@ -26,10 +26,12 @@ def softwareTest():
     print str(grid.row_size)
     obstacles = [Obstacle(3.0, 2.0, 0.15), Obstacle(0.5, 5.0, 0.15), Obstacle(2.0, 3.0, 0.15)]
 
+
     path = create_path(p1, p2, 3.78, 7.38, obstacles)
     print path
     print converToCommands(path, p1)
     drawPath(path, obstacles, [])
+
 
 
 def toDegree(rad):

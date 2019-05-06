@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import math
 import collections
 from collections import deque
@@ -282,3 +280,4 @@ class Vertex(Position):
             self.heuristic = math.inf
         else:
             self.heuristic = dest
+

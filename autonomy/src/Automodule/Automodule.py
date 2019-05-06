@@ -8,7 +8,7 @@ import DriveControl.MotorCommand as mc
 import PathPlanning.PathPlanning as pp
 
 from PathPlanning.ThetaStar import create_path
-from PathPlanning.PathTesting import drawPath
+#from PathPlanning.PathTesting import drawPath
 from RobotState import Robot_state
 from apriltags_ros.msg import Localization
 from hci.msg import sensorValue, motorCommand
@@ -205,6 +205,49 @@ def rpmdrive(dest, forward, distance, speed):
 
     rospy.loginfo("optical displacement: " + str(currentState.getDist()))
     currentState.setDisp(False)
+    looky_turn_2(dest, COLLECTION_BIN)
+    rospy.sleep(1)
+    return True
+
+def drive(dest, forward, distance, speed):
+    global motor_pub
+    offset = math.fabs(currentState.getStarRPM() + currentState.getPortRPM()) / 2
+    done = False
+    flag = False
+    cum_distance = 0
+    stop_dist = 0
+    lastTime = None
+    if forward:
+        mc.drive_left_motor(motor_pub, speed)
+        mc.drive_right_motor(motor_pub, speed)
+    else:
+        mc.drive_right_motor(motor_pub, -speed)
+        mc.drive_left_motor(motor_pub, -speed)
+    while not done:
+        rpm = math.fabs(currentState.getPortRPM() + currentState.getStarRPM()) / 2 - offset
+        if not flag:
+            if rpm - speed < 2.5:
+                stop_dist = distance - cum_distance - 0.3
+                flag = True
+            elif cum_distance >= distance:
+                stop_dist = cum_distance
+                flag = True
+        if lastTime is None:
+            lastTime = time.time()
+        else:
+            currentTime = time.time()
+            delta = currentTime - lastTime
+            cum_distance += distance_moved(rpm, 0, delta)
+            lastTime = currentTime
+        if flag and cum_distance >= stop_dist:
+            mc.drive_left_motor(motor_pub, 0)
+            mc.drive_right_motor(motor_pub, 0)
+            done = True
+        if rospy.is_shutdown():
+            exit(-1)
+        if currentState.obstacle_found:
+            return False
+        rospy.sleep(0.005)
     looky_turn_2(dest, COLLECTION_BIN)
     rospy.sleep(1)
     return True
@@ -513,3 +556,4 @@ def main():
 
 
 if __name__ == "__main__": main()
+

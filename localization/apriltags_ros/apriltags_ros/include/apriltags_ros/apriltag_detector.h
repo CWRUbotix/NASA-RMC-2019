@@ -31,7 +31,7 @@ class AprilTagDetector{
   void imageCb(const sensor_msgs::ImageConstPtr& msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
   void imageCb_1(const sensor_msgs::ImageConstPtr& msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
   void imageCb_2(const sensor_msgs::ImageConstPtr& msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
-  float rawAngle(float position_x, float position_y, float position_z, float orientation_x, float orientation_y, float orientation_z, float orientation_w);
+  float rawAngle(float position_x, float position_y, float position_z, float orientation_x, float orientation_y, float orientation_z, float orientation_w, float yaw, float pitch, float roll);
   std::map<int, AprilTagDescription> parse_tag_descriptions(XmlRpc::XmlRpcValue& april_tag_descriptions);
 
  private:

@@ -292,14 +292,16 @@ def simple_turn_test3():
     print 'not implemented'
     exit(0)
 
-def convertToCommands(path):
+def converToCommands(path):
     commands = []
+    currentPos = currentState.getCurrentPos()
     for position in path.path:
-        currentPos = currentState.getCurrentPos()
         angle_to_face = currentPos.angleToFace(position)
         angle_turn = angle_to_face - currentPos.getOrientation()
         distance = currentPos.distanceTo(position)
         commands.append((angle_turn, distance))
+        currentPos = position
+        currentPos.orientation  = angle_to_face
     return commands
 
 def transit_test1():
