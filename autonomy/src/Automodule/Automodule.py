@@ -366,7 +366,6 @@ def converToCommands(path):
     currentPos = currentState.getCurrentPos()
     for position in path.path:
         if first_pos:
-            currentPos = position
             first_pos = False
         else:
             angle_to_face = currentPos.angleToFace(position)
