@@ -67,7 +67,10 @@ class Position(object):
                 return change
 
     def angleToFace(self, p):
-        return math.atan2(p.getY() - self.getY(), p.getX() - self.getY()) % (2 * math.pi)
+        print self
+        print p
+        print math.atan2(p.getY() - self.getY(), p.getX() - self.getX())
+        return math.atan2(p.getY() - self.getY(), p.getX() - self.getX()) % (2 * math.pi)
 
 
 class Grid(object):
