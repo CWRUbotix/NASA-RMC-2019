@@ -1,0 +1,82 @@
+<launch>
+  <!-- Define Arguments of Launch File -->
+  <arg name="debug" default="false"/>
+  <arg name="device_0" default="/dev/video2" />
+  <arg name="device_1" default="/dev/video1" />
+  <arg name="device_2" default="/dev/video0" />
+  
+  <!-- Activate Image Processing Node -->
+  <!-- refer to: http://wiki.ros.org/image_proc  -->
+  <node ns="usb_cam_0" pkg="image_proc" type="image_proc" name="image_proc_0"/>  
+  <node ns="usb_cam_1" pkg="image_proc" type="image_proc" name="image_proc_1"/> 
+  <node ns="usb_cam_2" pkg="image_proc" type="image_proc" name="image_proc_2"/> 
+
+  <!-- Activate Camera Driver Node -->
+  <include file="$(find usb_cam)/launch/camera.launch">
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="device" value="$(arg device_0)" />
+    <arg name="name" value="0"/>
+  </include>
+  <include file="$(find usb_cam)/launch/camera.launch">
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="device" value="$(arg device_1)" />
+    <arg name="name" value="1" />
+  </include>
+  <include file="$(find usb_cam)/launch/camera.launch">
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="device" value="$(arg device_2)" />
+    <arg name="name" value="2" />
+  </include>
+
+  <!-- show image for debug -->
+  <group  if="$(arg debug)">
+    <node pkg="image_view" type="image_view" name="image_rect_0" if="$(arg debug)">
+		<remap from="image" to="/usb_cam_0/image_rect_color" />
+		<param name="autosize" type="bool" value="true" />
+	</node>
+    <node pkg="image_view" type="image_view" name="image_rect_1" if="$(arg debug)">
+    <remap from="image" to="/usb_cam_1/image_rect_color" />
+    <param name="autosize" type="bool" value="true" />
+  </node>
+    <node pkg="image_view" type="image_view" name="image_rect_2" if="$(arg debug)">
+    <remap from="image" to="/usb_cam_2/image_rect_color" />
+    <param name="autosize" type="bool" value="true" />
+  </node>
+  </group>
+
+
+
+  <node pkg="apriltags_ros" type="apriltag_detector_node" name="apriltag_detector_0" output="screen">
+    <!-- Remap topic required by the node to custom topics -->
+    <remap from="image_rect" to="/usb_cam_0/image_rect" />
+    <remap from="image_rect_1" to="/usb_cam_1/image_rect" />
+    <remap from="image_rect_2" to="/usb_cam_2/image_rect" />
+    <remap from="camera_info" to="/usb_cam/camera_info" />
+    <remap from="tag_detections" to="/tag_detections_0" />
+
+    <!-- Optional: Subscribe to the compressed stream-->
+    <param name="image_transport" type="str" value="compressed" />
+
+    <!-- Select the tag family: 16h5, 25h7, 25h9, 36h9, or 36h11(default) -->
+    <param name="tag_family" type="str" value="36h11" />
+
+    <!-- Enable projected optical measurements for more accurate tag transformations -->
+    <!-- This exists for backwards compatability and should be left true for new setups -->
+    <param name="projected_optics" type="bool" value="true" />
+
+    <!-- Describe the tags -->
+    <rosparam param="tag_descriptions">[
+      {id: 0, size: 0.166}, 
+      {id: 1, size: 0.166},
+      {id: 2, size: 0.166},
+      {id: 3, size: 0.166},
+      {id: 4, size: 0.166},
+      {id: 5, size: 0.166},
+      {id: 6, size: 0.166},
+      {id: 7, size: 0.166},
+      {id: 8, size: 0.166},
+      {id: 9, size: 0.166},
+      {id: 10, size: 0.166}]
+    </rosparam>
+  </node>
+</launch>

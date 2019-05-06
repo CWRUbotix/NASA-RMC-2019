@@ -1,12 +1,13 @@
 import os
 import math
+import time
 import numpy as np
 import cv2
 import json
 import matplotlib.pyplot as plt
 from depth_image_processing import *
 from obstacle import Obstacle
-from ros_publish import send_obstacle_data
+from ros_publish import send_obstacle_data, send_optical_flow_data
 from localization_listener import update_position
 from path_listener import get_path
 
@@ -93,7 +94,7 @@ def orient_point_cloud_to_ground_plane(xyz_arr, roi_point_cloud, thetas, phis, n
 	phis = np.append(phis, phi)
 	# print(center, plane, np.median(theta), np.median(phis))
 	CameraPosition['elevation'] = np.median(thetas)
-	#CameraPosition['azimuth'] = np.median(phis)
+	CameraPosition['azimuth'] = np.median(phis)
 	if thetas.size > memory:
 		thetas = thetas[1:]
 	if phis.size > memory:
@@ -104,7 +105,6 @@ def orient_point_cloud_to_ground_plane(xyz_arr, roi_point_cloud, thetas, phis, n
 	center = apply_camera_orientation(center, CameraPosition)
 	plane = apply_camera_orientation(plane, CameraPosition)
 	xyz_arr = apply_camera_matrix_orientation(xyz_arr, CameraPosition)
-	update_position()
 	return xyz_arr, roi_point_cloud, center
 
 
@@ -197,9 +197,9 @@ def process_obstacle(color, cx, cy, box, x, y, obj_length, obj_height, obj_depth
 	"""
 	coords = list(depth_to_point_cloud_pos(cx, cy, obj_depth))  # convert obstacle depth to XYZ coordinate
 
-	theta = CameraPosition['azimuth'] * math.pi / 180  # get robot pitch angle in radians
-	coords[0] = CameraPosition['x'] - coords[0] * math.cos(theta)  # convert relative obstacle position to global
-	coords[2] = CameraPosition['y'] + coords[2] * math.sin(theta)
+	#theta = CameraPosition['azimuth'] * math.pi / 180  # get robot pitch angle in radians
+	#coords[0] = CameraPosition['x'] - coords[0] * math.cos(theta)  # convert relative obstacle position to global
+	#coords[2] = CameraPosition['y'] + coords[2] * math.sin(theta)
 	mm_diameter = equi_diameter * (1.0 / CameraParams['fx']) * obj_depth  # convert pixel diameter to mm
 
 	if 100 < mm_diameter < 400:
@@ -297,11 +297,13 @@ def plot_global_map(obstacle_list):
 
 
 def get_obstacles_with_plane(depth_frame,
+							 prev_frame,
 							 color_frame,
 							 obstacle_list,
 							 thetas,
 							 phis,
 							 obstacle_id,
+							 prev_time=None,
 							 num_planes=1,
 							 dist_thresh=0.2,
 							 memory=200,
@@ -348,6 +350,10 @@ def get_obstacles_with_plane(depth_frame,
 	ground_plane_roi = get_ground_plane_roi(depth_frame, depth_cutoff, y_cutoff, roi_x, roi_y)
 
 	xyz_arr = depth_matrix_to_point_cloud(depth_frame)  # convert depth data to point cloud
+
+	#z_projection = project_point_cloud_onto_plane(xyz_arr)
+	#y_motion, _, prev_frame, flow_field, prev_time = compute_optical_flow(prev_frame, z_projection, prev_time=prev_time)
+	#send_optical_flow_data(y_motion)
 	roi_point_cloud = depth_matrix_to_point_cloud(ground_plane_roi)  # convert ROI to point cloud
 	num_points = np.count_nonzero(roi_point_cloud[..., 0]) // 100  # use 1% of ROI points for each plane fit
 	try:

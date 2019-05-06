@@ -8,9 +8,11 @@ Functions for controlling motors
 """
 
 def drive_left_motor(pub, value):
+    print 'hi'
     pub.publish(motorID = 0, value = value)
 
 def drive_right_motor(pub, value):
+    print 'hi'
     pub.publish(motorID = 1, value = value)
 
 def deposition_motor(pub, value):

@@ -8,11 +8,12 @@ import DriveControl.MotorCommand as mc
 import PathPlanning.PathPlanning as pp
 
 from PathPlanning.ThetaStar import create_path
-#from PathPlanning.PathTesting import drawPath
+# from PathPlanning.PathTesting import drawPath
 from RobotState import Robot_state
 from apriltags_ros.msg import Localization
 from hci.msg import sensorValue, motorCommand
 from obstacle_detection.msg import Obstacle
+from std_msgs.msg import Float32
 
 """ 
 Main Module for Autonomy operation
@@ -21,8 +22,8 @@ Main Module for Autonomy operation
 """
 Constants
 """
-ARENA_WIDTH = 3.78
-ARENA_HEIGHT = 7.38
+ARENA_WIDTH = 3.0
+ARENA_HEIGHT = 7.0
 COLLECTION_BIN = pp.Position(0,0)
 ROBOT_SPEED_DRIVE = 20.0
 ROBOT_SPEED_DRIVE_LOAD = 30.0
@@ -143,13 +144,14 @@ Control Related functions
 """
 
 def rpmdrive(dest, forward, distance, speed):
-    global motor_pub
+    global motor_pub, currentState
     offset = math.fabs(currentState.getStarRPM() + currentState.getPortRPM()) / 2
     done = False
     flag = False
     cum_distance = 0
     stop_dist = 0
     lastTime = None
+    currentState.setDisp(True)
     if forward:
         mc.drive_left_motor(motor_pub, speed)
         mc.drive_right_motor(motor_pub, speed)
@@ -181,49 +183,8 @@ def rpmdrive(dest, forward, distance, speed):
         if currentState.obstacle_found:
             return False
         rospy.sleep(0.005)
-    looky_turn_2(dest, COLLECTION_BIN)
-    rospy.sleep(1)
-    return True
-
-def drive(dest, forward, distance, speed):
-    global motor_pub
-    offset = math.fabs(currentState.getStarRPM() + currentState.getPortRPM()) / 2
-    done = False
-    flag = False
-    cum_distance = 0
-    stop_dist = 0
-    lastTime = None
-    if forward:
-        mc.drive_left_motor(motor_pub, speed)
-        mc.drive_right_motor(motor_pub, speed)
-    else:
-        mc.drive_right_motor(motor_pub, -speed)
-        mc.drive_left_motor(motor_pub, -speed)
-    while not done:
-        rpm = math.fabs(currentState.getPortRPM() + currentState.getStarRPM()) / 2 - offset
-        if not flag:
-            if rpm - speed < 2.5:
-                stop_dist = distance - cum_distance - 0.3
-                flag = True
-            elif cum_distance >= distance:
-                stop_dist = cum_distance
-                flag = True
-        if lastTime is None:
-            lastTime = time.time()
-        else:
-            currentTime = time.time()
-            delta = currentTime - lastTime
-            cum_distance += distance_moved(rpm, 0, delta)
-            lastTime = currentTime
-        if flag and cum_distance >= stop_dist:
-            mc.drive_left_motor(motor_pub, 0)
-            mc.drive_right_motor(motor_pub, 0)
-            done = True
-        if rospy.is_shutdown():
-            exit(-1)
-        if currentState.obstacle_found:
-            return False
-        rospy.sleep(0.005)
+    rospy.loginfo("optical displacement: " + str(currentState.getDist()))
+    currentState.setDisp(False)
     looky_turn_2(dest, COLLECTION_BIN)
     rospy.sleep(1)
     return True
@@ -236,11 +197,19 @@ def turn(goal, counter, speed):
     done = False
     lastTime = None
     if counter:
+	print 'turn'
         mc.drive_left_motor(motor_pub, -speed)
+	mc.drive_left_motor(motor_pub, -speed)
+	print 'turn2'
         mc.drive_right_motor(motor_pub, speed)
+	mc.drive_right_motor(motor_pub, speed)
     else:
+	print 'turn'
         mc.drive_left_motor(motor_pub, speed)
         mc.drive_right_motor(motor_pub, -speed)
+	print 'turn2'
+	mc.drive_left_motor(motor_pub, speed)
+	mc.drive_right_motor(motor_pub, -speed)
 
     while not done:
         w = currentState.getGyroZ() - offset
@@ -284,8 +253,8 @@ def looky_turn(currentPos, next_distance):
     looky_turn_2(nextPos, COLLECTION_BIN)
 
 def looky_turn_2(currentPos, next_pos):
-    looky_angle = (currentPos.angleToFace(next_pos)) % (2 * math.pi)
-    if looky_angle >= (toRadian(-150) % (2 * math.pi)) or looky_angle <= toRadian(150):
+    looky_angle = (currentPos.angleToFace(next_pos) - currentPos.getOrientation() + 2 * math.pi) % (2 * math.pi)
+    if looky_angle >= toRadian(360-150) or looky_angle <= toRadian(150):
         if looky_angle <= toRadian(150):
             mc.star_looky(motor_pub, toDegree(looky_angle))
         else:
@@ -331,19 +300,17 @@ Robot state related functions
 def waitForLocalization():
     global motor_pub
     pos = -150
+    mc.port_looky(motor_pub, pos)
+    mc.port_looky(motor_pub, pos)
+    rospy.sleep(1)
+    while currentState.getCurrentPos() is None and pos < 150:
+        print 'move tag'
+	pos += 15
+        mc.port_looky(motor_pub, pos)
+        mc.star_looky(motor_pub, pos)
+        rospy.sleep(1) # sleep for 10 milliseconds
+
     if currentState.getCurrentPos() is None:
-        mc.port_looky(motor_pub, pos)
-        mc.star_looky(motor_pub, pos)
-
-    while currentState.getCurrentPos() is None or pos < 150:
-        pos += 15
-        mc.port_looky(motor_pub, pos)
-        mc.star_looky(motor_pub, pos)
-        rospy.sleep(0.01) # sleep for 10 milliseconds
-
-    if currentState.getCurrentPos() is not None:
-        looky_turn_2(currentState.getCurrentPos(), COLLECTION_BIN)
-    else:
         print "Cannot locate the tag"
         exit(-1)
 
@@ -377,6 +344,7 @@ def updateObstacle(msg):
     global currentState
     obs = pp.Obstacle(msg.x, msg.y, msg.diameter / 2)
     if currentState.addObstcle(obs):
+	print 'saw obstacle'
         mc.drive_left_motor(motor_pub, 0)
         mc.drive_right_motor(motor_pub, 0)
 
@@ -389,11 +357,17 @@ def subscribe():
     rospy.Subscriber('sensorValue', sensorValue, updateState)
     rospy.Subscriber('localization_data', Localization, updatePos)
     rospy.Subscriber('Obstacle', Obstacle, updateObstacle)
+    rospy.Subscriber('opticalFlow', Float32, optical_disp)
 
 def shutdownRoutine():
     global motor_pub
     mc.drive_left_motor(motor_pub, 0)
     mc.drive_right_motor(motor_pub, 0)
+
+def optical_disp(msg):
+    global currentState
+    if currentState.disp_on:
+        currentState.disp += msg.data
 
 def run():
     pass
@@ -412,6 +386,8 @@ def testMode():
     exit(-1)
 
 def transit_test():
+    mc.drive_left_motor(motor_pub, 0)
+    mc.drive_right_motor(motor_pub, 0)
     x_pos = float(raw_input("Enter x_pos of destination"))
     y_pos = float(raw_input("Enter y_pos of destination"))
 
@@ -419,10 +395,12 @@ def transit_test():
     path = create_path(currentState.currentPos, dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
 
     commands = converToCommands(path)
+    print str(commands)
     done = False
     while not done:
         for command in commands:
-            direction = True
+            print str(command[2])
+	    direction = True
             if command[0] < 0:
                 direction = False
             okay = turn(math.fabs(command[0]), direction, ROBOT_SPEED_TURN)
@@ -441,22 +419,37 @@ def transit_test():
             if not okay:
                 break
 
+            rospy.sleep(0.01)
+
             if currentState.getCurrentPos().distanceTo(command[2]) > 0.2:
                 break
 
-        if currentState.getCurrentPos() == dest or currentState.getCurrentPos().getDistanceTo(dest) < 0.1:
+        if currentState.getCurrentPos() == dest or currentState.getCurrentPos().distanceTo(dest) < 0.1:
             done = True
         else:
+	    print "modifying path"
             path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
             commands = converToCommands(path)
+	    print str(commands)
         if rospy.is_shutdown():
             exit(-1)
 
-    rospy.spin()
 
 def transit_dig_test():
+    transit_test()
+    t = float(raw_input('How long do you want to dig?'))
+    mc.bucket_angle_actuator(motor_pub, 60)
+    rospy.sleep(5)
+    mc.bucket_drive_motor(motor_pub, 150)
+    rospy.sleep(1)
+    mc.bucket_translation_motor(motor_pub, 780)
 
-    pass
+    rospy.sleep(t)
+    mc.bucket_drive_motor(motor_pub, 0)
+    mc.bucket_translation_motor(motor_pub, 100)
+    rospy.sleep(2)
+    mc.bucket_angle_actuator(motor_pub, 15)
+    rospy.sleep(5)
 
 def single_run_test():
     pass
@@ -486,8 +479,10 @@ def main():
 
     if len(sys.argv) > 0:
         testMode()
+        rospy.spin()
     else:
         run()
+        rospy.spin()
 
 
 if __name__ == "__main__": main()

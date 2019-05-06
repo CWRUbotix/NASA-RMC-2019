@@ -10,6 +10,8 @@ import pandas as pd
 #from optical_flow import *
 from obstacle_detection import get_obstacles_with_plane, plot_global_map
 from depth_image_processing import *
+from ros_publish import setup_obstacle_node
+from localization_listener import update_position
 from pylibfreenect2 import Freenect2, SyncMultiFrameListener
 from pylibfreenect2 import FrameType, Registration, Frame
 from pylibfreenect2 import createConsoleLogger, setGlobalLogger
@@ -65,8 +67,8 @@ phis = np.array([])
 obstacle_list = []
 obstacle_id = 0
 
-visualize = True
-save_test_data = True
+visualize = False
+save_test_data = False
 
 frames_dir = 'src/NASA-RMC-2019/obstacle_detection/data/test_frames/'
 if save_test_data:
@@ -79,10 +81,14 @@ if save_test_data:
 
 print(os.getcwd())
 
-frame_i = 0
-frame_limit = -1
-prev_frame = None
-p0 = None
+frame_i = 0  # current frame used for saving data
+frame_limit = -1  # number of frames to process, -1 will run indefinitely
+prev_frame = None  # previous frame used for optical flow
+
+setup_obstacle_node()
+
+# uncomment to send global obstacle positions based on loclalization data
+#update_position()
 
 while not rospy.is_shutdown():
 	frames = listener.waitForNewFrame()
@@ -101,6 +107,7 @@ while not rospy.is_shutdown():
 	img = depth_frame.asarray(np.float32)
 
 	output, obstacle_id = get_obstacles_with_plane(img,
+									  prev_frame,
 									  color_frame,
 									  obstacle_list,
 									  thetas,
@@ -109,8 +116,6 @@ while not rospy.is_shutdown():
 									  send_data=True,
 									  visualize=visualize,
 									  save_frames=True)
-
-	#p0, x_motion, y_motion, prev_frame = compute_optical_flow(prev_frame, img, p0)
 
 	if visualize:
 		plot_global_map(obstacle_list)

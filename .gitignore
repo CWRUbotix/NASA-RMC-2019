@@ -1,7 +1,5 @@
 .idea
 venv/
-test_frames/
-saved_frames/
 __pycache__
 *.pyc
 .vscode/*
@@ -10,4 +8,4 @@ __pycache__
 !.vscode/launch.json
 !.vscode/extensions.json
 .idea
-*.swp
+obstacle_detection/data/*

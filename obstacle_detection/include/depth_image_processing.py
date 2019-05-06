@@ -65,13 +65,13 @@ lk_params = dict(winSize=(15, 15),
                  criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
 
-def compute_optical_flow(prev, frame, resize_factor=10, cropping=500):
+def compute_optical_flow(prev, frame, resize_factor=10, cropping=500, prev_time=None):
     new_size = 4500 // resize_factor - cropping // resize_factor
     hsv = np.zeros((new_size, new_size, 3), dtype=np.uint8)
     hsv[..., 1] = 255
     if prev is None:
         xyz_arr = depth_matrix_to_point_cloud(frame)
-        return 0, 0, project_point_cloud_onto_plane(xyz_arr), hsv
+        return 0, 0, project_point_cloud_onto_plane(xyz_arr), hsv, prev_time
     else:
         xyz_arr = depth_matrix_to_point_cloud(frame)
         proj_frame = project_point_cloud_onto_plane(xyz_arr)
@@ -79,7 +79,7 @@ def compute_optical_flow(prev, frame, resize_factor=10, cropping=500):
     try:
         flow = cv2.calcOpticalFlowFarneback(prev, frame, None, 0.5, 3, 20, 3, 5, 1.2, 0)
     except cv2.error as e:
-        return 0, 0, prev, hsv
+        return 0, 0, prev, hsv, prev_time
 
     mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
     hsv[..., 0] = ang * 180 / np.pi
@@ -90,11 +90,15 @@ def compute_optical_flow(prev, frame, resize_factor=10, cropping=500):
     motion_mag = np.median(mag[mag != 0])
     motion_ang = np.median(ang[ang != 0])
 
-    x_motion = math.cos(motion_ang) * motion_mag * resize_factor
-    y_motion = math.sin(motion_ang) * motion_mag * resize_factor
+    displacement = motion_mag * resize_factor
 
-    print('dX: %.3f, dY: %.3f, Mag: %.3f, Ang: %.3f' % (x_motion, y_motion, motion_mag, motion_ang * 180 / math.pi))
-    return x_motion, y_motion, proj_frame, rgb
+    if prev_time is not None:
+        velocity = displacement / (time.time() - prev_time)
+    else:
+        velocity = 0
+
+    print('dY: %.3f' % (velocity))
+    return displacement, velocity, proj_frame, rgb, time.time()
 
 
 def project_point_cloud_onto_plane(xyz_arr, resize_factor=10, cropping=500):
