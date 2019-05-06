@@ -17,8 +17,8 @@ def rosTest():
 
 def softwareTest():
     print 'checking pathplanning stuff'
-    p1 = Position(0.75, 0.5)
-    p2 = Position(1.0, 7.0)
+    p1 = Position(2.5, 0.5)
+    p2 = Position(0.5, 7.0)
     grid = Grid(p1, p2, 3.78, 7.38)
     print str(grid.unit_width)
     print str(grid.unit_height)
@@ -27,6 +27,7 @@ def softwareTest():
     obstacles = [Obstacle(3.0, 2.0, 0.15), Obstacle(0.5, 5.0, 0.15), Obstacle(2.0, 3.0, 0.15)]
 
     path = create_path(p1, p2, 3.78, 7.38, obstacles)
+    print path
     print converToCommands(path, p1)
     drawPath(path, obstacles, [])
 
@@ -41,6 +42,7 @@ def converToCommands(path, currentPos):
     commands = []
     for position in path.path:
         angle_to_face = currentPos.angleToFace(position)
+        print toDegree(angle_to_face)
         pos = Position(currentPos.getX(), currentPos.getY(), angle_to_face)
         angle_turn = currentPos.angleTurnTo(pos)
         distance = currentPos.distanceTo(position)

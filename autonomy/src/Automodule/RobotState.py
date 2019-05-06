@@ -18,6 +18,9 @@ class Robot_state:
         self.bc_alt_limit_switch = False
         self.obstacles = {}
         self.obstacle_found = False
+        self.disp_on = False
+        self.disp = 0
+        self.oriented = False
 
     def getCurrentPos(self):
         return self.currentPos
@@ -113,4 +116,13 @@ class Robot_state:
     def setObstacleFound(self, found):
         self.obstacle_found = found
 
+    def setDisp(self, flag):
+        self.disp_on = flag
+        if not flag:
+            self.disp = 0
 
+    def getDist(self):
+        return self.disp
+
+    def foundTag(self):
+        self.oriented = True
