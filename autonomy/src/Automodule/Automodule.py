@@ -15,7 +15,6 @@ from hci.msg import sensorValue, motorCommand
 from obstacle_detection.msg import Obstacle
 from std_msgs.msg import Float32
 
-
 """ 
 Main Module for Autonomy operation
 """
@@ -25,14 +24,14 @@ Constants
 """
 ARENA_WIDTH = 3.0
 ARENA_HEIGHT = 7.0
-COLLECTION_BIN = pp.Position(0,0)
+COLLECTION_BIN = pp.Position(0, 0)
 ROBOT_SPEED_DRIVE = 20.0
 ROBOT_SPEED_DRIVE_LOAD = 30.0
 ROBOT_SPEED_TURN = 15.0
 ROBOT_SPPED_TURN_LOAD = 25.0
 CONTROL_RATE = 0.005
-WHEEL_RADIUS = 0.2286 # IN M
-TURN_RADIUS = 0.3 # IN M
+WHEEL_RADIUS = 0.2286  # IN M
+TURN_RADIUS = 0.3  # IN M
 # Map from ID to time allocated.
 tasks = {
     0: -1,
@@ -59,6 +58,7 @@ Global variables
 """
 currentState = Robot_state()
 motor_pub = rospy.Publisher('motorCommand', motorCommand, queue_size=100)
+logfile = None
 
 """Routine Builder Stuff"""
 
@@ -66,8 +66,10 @@ motor_pub = rospy.Publisher('motorCommand', motorCommand, queue_size=100)
 Takes in task ID and create list of function calls that
 """
 
+
 def runRoutine(ID):
     pass
+
 
 """
 Functions that belong to specific tasks
@@ -75,8 +77,10 @@ naming: task_<ID>
 Should not be taking in inputs. if you need something, make it global
 """
 
+
 def task_1():
     pass
+
 
 # Cycle 1 digging goal : 100
 def task_4():
@@ -98,6 +102,7 @@ def task_4():
     rospy.sleep(15)
     mc.bucket_angle_actuator(0)
 
+
 # Dumping (Cycle1): 15
 def task_8():
     # Need to check the actual angle depending on the incline of the bucket
@@ -106,6 +111,7 @@ def task_8():
     rospy.sleep(7)
     mc.bucket_angle_actuator(-angleStrength)
     rospy.sleep(7)
+
 
 # Cycle 2 digging goal : 100
 def task_11():
@@ -140,9 +146,11 @@ def task_15():
 def modifyTimes(timeLeft):
     pass
 
+
 """
 Control Related functions
 """
+
 
 def updateRelativePos(d_distance, d_angle):
     pos = currentState.getCurrentPos()
@@ -153,6 +161,7 @@ def updateRelativePos(d_distance, d_angle):
     elif d_angle > 0:
         next_pos = pp.Position(pos.getX(), pos.getY(), (pos.getOrientation() + toRadian(d_angle)) % (2 * math.pi))
         currentState.setCurrentPos(next_pos)
+
 
 def rpmdrive(dest, forward, distance, speed):
     global motor_pub, currentState
@@ -194,7 +203,14 @@ def rpmdrive(dest, forward, distance, speed):
             exit(-1)
         if currentState.obstacle_found:
             return False
+        data = 0
+        if forward:
+            data = math.fabs(distance)
+        else:
+            data = -math.fabs(distance)
+        logData('d', rpm, currentState.getAcceX(), currentState.getGyroZ(), data, 0, currentState.getCurrentPos())
         rospy.sleep(0.005)
+
     rpm = (currentState.getPortRPM() + currentState.getStarRPM()) / 2
 
     while math.fabs(rpm) > 1:
@@ -202,6 +218,12 @@ def rpmdrive(dest, forward, distance, speed):
         delta = currentTime - lastTime
         updateRelativePos(distance_moved(rpm, 0, delta), 0)
         lastTime = currentTime
+        data = 0
+        if forward:
+            data = math.fabs(distance)
+        else:
+            data = -math.fabs(distance)
+        logData('d', rpm, currentState.getAcceX(), currentState.getGyroZ(), data, 0, currentState.getCurrentPos())
         rpm = (currentState.getPortRPM() + currentState.getStarRPM()) / 2
 
     rospy.loginfo("optical displacement: " + str(currentState.getDist()))
@@ -209,6 +231,7 @@ def rpmdrive(dest, forward, distance, speed):
     looky_turn_2(dest, COLLECTION_BIN)
     rospy.sleep(1)
     return True
+
 
 def drive(dest, forward, distance, speed):
     global motor_pub
@@ -256,6 +279,7 @@ def drive(dest, forward, distance, speed):
     rospy.sleep(1)
     return True
 
+
 def turn(goal, counter, speed):
     offset = currentState.getGyroZ()
     cum_angle = 0
@@ -264,19 +288,12 @@ def turn(goal, counter, speed):
     done = False
     lastTime = None
     if counter:
-	print 'turn'
         mc.drive_left_motor(motor_pub, -speed)
-	mc.drive_left_motor(motor_pub, -speed)
-	print 'turn2'
         mc.drive_right_motor(motor_pub, speed)
-	mc.drive_right_motor(motor_pub, speed)
     else:
-	print 'turn'
         mc.drive_left_motor(motor_pub, speed)
         mc.drive_right_motor(motor_pub, -speed)
-	print 'turn2'
-	mc.drive_left_motor(motor_pub, speed)
-	mc.drive_right_motor(motor_pub, -speed)
+
 
     while not done:
         w = currentState.getGyroZ() - offset
@@ -309,20 +326,36 @@ def turn(goal, counter, speed):
         if currentState.obstacle_found:
             return False
 
+        data = 0
+        rpm = (math.fabs(currentState.getPortRPM()) + math.fabs(currentState.getStarRPM())) / 2
+        if counter:
+            data = math.fabs(goal)
+        else:
+            data = -math.fabs(goal)
+        logData('t', rpm, currentState.getAcceX(), currentState.getGyroZ(), 0, data, currentState.getCurrentPos())
+
         rospy.sleep(0.005)
 
-    rpm = (currentState.getPortRPM() + currentState.getStarRPM()) / 2
+    rpm = (math.fabs(currentState.getPortRPM()) + math.fabs(currentState.getStarRPM())) / 2
     while math.fabs(rpm) > 1:
         w = currentState.getGyroZ() - offset
         currentTime = time.time()
-        deltaT =  currentTime - lastTime
+        deltaT = currentTime - lastTime
         updateRelativePos(0, toRadian(w * deltaT))
         lastTime = currentTime
-        rpm = (currentState.getPortRPM() + currentState.getStarRPM()) / 2
+        data = 0
+        if counter:
+            data = math.fabs(goal)
+        else:
+            data = -math.fabs(goal)
+        logData('t', rpm, currentState.getAcceX(), currentState.getGyroZ(), 0, data, currentState.getCurrentPos())
+
+        rpm = (math.fabs(currentState.getPortRPM()) + math.fabs(currentState.getStarRPM())) / 2
 
     looky_turn_2(currentState.getCurrentPos(), COLLECTION_BIN)
     rospy.sleep(1)
     return True
+
 
 def looky_turn(currentPos, next_distance):
     nextX = currentPos.getX() + next_distance * math.cos(currentPos.getOrientation())
@@ -330,10 +363,11 @@ def looky_turn(currentPos, next_distance):
     nextPos = pp.Position(nextX, nextY, currentPos.getOrientation())
     looky_turn_2(nextPos, COLLECTION_BIN)
 
+
 def looky_turn_2(currentPos, next_pos):
     looky_angle = (currentPos.angleToFace(next_pos) - currentPos.getOrientation() + 2 * math.pi) % (2 * math.pi)
 
-    if looky_angle >= toRadian(360-150) or looky_angle <= toRadian(150):
+    if looky_angle >= toRadian(360 - 150) or looky_angle <= toRadian(150):
         if looky_angle <= toRadian(150):
             mc.star_looky(motor_pub, toDegree(looky_angle))
         else:
@@ -345,8 +379,10 @@ def looky_turn_2(currentPos, next_pos):
         mc.star_looky(motor_pub, 150)
         mc.port_looky(motor_pub, -150)
 
+
 def angle_moved(angular_velocity, t):
     return math.fabs(toRadian(angular_velocity) * t / 0.3)
+
 
 def distance_moved(rpm, acce, t):
     rps = rpm / 60
@@ -354,11 +390,14 @@ def distance_moved(rpm, acce, t):
     distance = speed * t + 0.5 * acce * t ** 2
     return math.fabs(distance)
 
+
 def toDegree(rad):
     return rad * 180 / math.pi
 
+
 def toRadian(deg):
     return deg * math.pi / 180
+
 
 def converToCommands(path):
     commands = []
@@ -373,13 +412,17 @@ def converToCommands(path):
             angle_turn = currentPos.angleTurnTo(pos)
             distance = currentPos.distanceTo(position)
             commands.append((toDegree(angle_turn), distance, position))
-            currentPos = pp.Position(pos.getX() + distance * math.cos(angle_to_face), pos.getY() + distance * math.sin(angle_to_face), angle_to_face)
-            currentPos.orientation  = angle_to_face
+            currentPos = pp.Position(pos.getX() + distance * math.cos(angle_to_face),
+                                     pos.getY() + distance * math.sin(angle_to_face), angle_to_face)
+            currentPos.orientation = angle_to_face
     return commands
+
 
 """
 Robot state related functions
 """
+
+
 def waitForLocalization():
     global motor_pub
     pos = -150
@@ -391,11 +434,12 @@ def waitForLocalization():
         pos += 15
         mc.port_looky(motor_pub, pos)
         mc.star_looky(motor_pub, pos)
-        rospy.sleep(1) # sleep for 10 milliseconds
+        rospy.sleep(1)  # sleep for 10 milliseconds
 
     if currentState.getCurrentPos() is None:
         print "Cannot locate the tag"
         exit(-1)
+
 
 def updateState(msg):
     global currentState
@@ -423,16 +467,19 @@ def updateState(msg):
     elif msg.sensorID == 28:
         currentState.setBCArmUpperLimit(bool(msg.value))
 
+
 def updateObstacle(msg):
     global currentState
     robot_orient = currentState.getCurrentPos().getOrientation()
     true_dx = msg.y * math.cos(robot_orient) + msg.x * math.cos(robot_orient - math.pi / 2)
     true_dy = msg.y * math.sin(robot_orient) + msg.x * math.sin(robot_orient - math.pi / 2)
-    obs = pp.Obstacle(currentState.getCurrentPos().getX() + true_dx, currentState.getCurrentPos().getY() + true_dy, msg.diameter / 2)
+    obs = pp.Obstacle(currentState.getCurrentPos().getX() + true_dx, currentState.getCurrentPos().getY() + true_dy,
+                      msg.diameter / 2)
     if currentState.addObstcle(obs):
         print 'saw obstacle'
         mc.drive_left_motor(motor_pub, 0)
         mc.drive_right_motor(motor_pub, 0)
+
 
 def updatePos(msg):
     global currentState
@@ -440,6 +487,19 @@ def updatePos(msg):
     if not currentState.oriented:
         currentState.setCurrentPos(pos)
     currentState.foundTag()
+
+
+def logData(command_type, rpm, acceX, gyro, dist, angle, currentPos):
+    global logfile
+    log = ''
+    if command_type == 'd':
+        log = 'command:drive '
+    else:
+        log = 'command:turn'
+    log += ' rpm:' + str(rpm) + ' acceX:' + str(acceX) + ' gyro:' + str(gyro) + ' goal_dist:' + str(dist) + \
+           ' goal_angle:' + str(angle) + ' x_pos:' + str(currentPos.getX()) + ' y_pos:' + str(currentPos.getY())
+    logfile.write(log + '\n')
+
 
 def subscribe():
     rospy.Subscriber('sensorValue', sensorValue, updateState)
@@ -453,10 +513,12 @@ def shutdownRoutine():
     mc.drive_left_motor(motor_pub, 0)
     mc.drive_right_motor(motor_pub, 0)
 
+
 def optical_disp(msg):
     global currentState
     if currentState.disp_on:
         currentState.disp += msg.data
+
 
 def run():
     dest = pp.Position(2.0, 6.0)
@@ -474,8 +536,10 @@ def run():
             if not okay:
                 break
             distance = command[1]
-            next_x = currentState.getCurrentPos().getX() + math.fabs(distance) * math.cos(currentState.getCurrentPos().getOrientation())
-            next_y = currentState.getCurrentPos().getY() + math.fabs(distance) * math.sin(currentState.getCurrentPos().getOrientation())
+            next_x = currentState.getCurrentPos().getX() + math.fabs(distance) * math.cos(
+                currentState.getCurrentPos().getOrientation())
+            next_y = currentState.getCurrentPos().getY() + math.fabs(distance) * math.sin(
+                currentState.getCurrentPos().getOrientation())
             next_pos = pp.Position(next_x, next_y)
             direction = True
 
@@ -491,12 +555,12 @@ def run():
             if currentState.getCurrentPos().distanceTo(command[2]) > 0.2:
                 break
 
-
         if currentState.getCurrentPos() == dest or currentState.getCurrentPos().getDistanceTo(dest) < 0.2:
             done = True
         else:
             print "modifying path"
-            path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
+            path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT,
+                               currentState.getObstacles().values())
             commands = converToCommands(path)
             print str(commands)
         if rospy.is_shutdown():
@@ -515,6 +579,7 @@ def testMode():
     option = int(raw_input())
     tests[option]()
     exit(-1)
+
 
 def transit_test():
     mc.drive_left_motor(motor_pub, 0)
@@ -541,8 +606,10 @@ def transit_test():
             if not okay:
                 break
             distance = command[1]
-            next_x = currentState.getCurrentPos().getX() + math.fabs(distance) * math.cos(currentState.getCurrentPos().getOrientation())
-            next_y = currentState.getCurrentPos().getY() + math.fabs(distance) * math.sin(currentState.getCurrentPos().getOrientation())
+            next_x = currentState.getCurrentPos().getX() + math.fabs(distance) * math.cos(
+                currentState.getCurrentPos().getOrientation())
+            next_y = currentState.getCurrentPos().getY() + math.fabs(distance) * math.sin(
+                currentState.getCurrentPos().getOrientation())
             next_pos = pp.Position(next_x, next_y)
             direction = True
 
@@ -558,12 +625,12 @@ def transit_test():
             if currentState.getCurrentPos().distanceTo(command[2]) > 0.2:
                 break
 
-
         if currentState.getCurrentPos() == dest or currentState.getCurrentPos().getDistanceTo(dest) < 0.2:
             done = True
         else:
             print "modifying path"
-            path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
+            path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT,
+                               currentState.getObstacles().values())
             commands = converToCommands(path)
             print str(commands)
         if rospy.is_shutdown():
@@ -586,12 +653,14 @@ def transit_dig_test():
     mc.bucket_angle_actuator(motor_pub, 15)
     rospy.sleep(5)
 
+
 def single_run_test():
     pass
 
-def full_test():
 
+def full_test():
     pass
+
 
 def rpm_drive_test():
     print "How much distance you want to move?"
@@ -599,22 +668,26 @@ def rpm_drive_test():
     direction = True
     if distance < 0:
         direction = False
-    dest_x = currentState.getCurrentPos().getX() + math.fabs(distance) * math.cos(currentState.getCurrentPos().getOrientation())
-    dest_y = currentState.getCurrentPos().getY() + math.fabs(distance) * math.sin(currentState.getCurrentPos().getOrientation())
+    dest_x = currentState.getCurrentPos().getX() + math.fabs(distance) * math.cos(
+        currentState.getCurrentPos().getOrientation())
+    dest_y = currentState.getCurrentPos().getY() + math.fabs(distance) * math.sin(
+        currentState.getCurrentPos().getOrientation())
     dest = pp.Position(dest_x, dest_y)
     rpmdrive(dest, direction, distance, ROBOT_SPEED_DRIVE)
     result = float(raw_input("how much did it go?"))
     rospy.loginfo("goal:" + str(distance) + " actual:" + str(result) + "\n")
     exit(0)
 
+
 def main():
     rospy.init_node("automodule")
     rospy.on_shutdown(shutdownRoutine)
     subscribe()
     waitForLocalization()
+    global logfile
+    logfile = open(str(sys.path[1]) + '/logs/2019_competition' + time.strftime("%b-%a-%d-%H-%M-%S.txt"), "w")
     run()
     rospy.spin()
 
 
 if __name__ == "__main__": main()
-

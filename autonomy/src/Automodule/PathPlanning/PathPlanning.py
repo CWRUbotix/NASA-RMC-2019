@@ -26,7 +26,7 @@ class Position(object):
         self.orientation = o
 
     def __str__(self):
-        return "x: " + str(self.x_pos) + " y: " + str(self.y_pos) + " angle: " + str(self.orientation) + " radians."
+        return " x:" + str(self.x_pos) + " y:" + str(self.y_pos) + " angle:" + str(self.orientation)
 
 
     def __eq__(self, p):
