@@ -306,7 +306,7 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     float corrected_y = 0.0f;
     //if (std::fmod((angle_approach - 0.16f) + (2*PI), (2 * PI)) > 0.0f) {
     corrected_x = (tag_pose.pose.position.z * cos(angle_approach)) - (tag_pose.pose.position.x * sin(angle_approach));
-    corrected_y = (tag_pose.pose.position.z * sin(angle_approach)) + (tag_pose.pose.position.x * cos(angle_approach));
+    corrected_y = -1*(tag_pose.pose.position.z * sin(angle_approach)) + (tag_pose.pose.position.x * cos(angle_approach));
     //}
 
     /*else {
@@ -442,10 +442,12 @@ void AprilTagDetector::imageCb(const sensor_msgs::ImageConstPtr& msg, const sens
     float theta = std::fmod(((angle_approach - PI - 0.16) + (2 * PI)), (2 * PI));
     float actual_x = std::abs(corrected_x);// + (0.47*cos(theta) + 0.15*sin(theta));
     float actual_y = corrected_y;// + (0.47*sin(theta) - 0.15*cos(theta));
+    ROS_INFO("Raw x: %f, Raw y: %f, Raw h: %f", tag_pose.pose.position.x, tag_pose.pose.position.y, sqrt((tag_pose.pose.position.x*tag_pose.pose.position.x)+(tag_pose.pose.position.z*tag_pose.pose.position.z)));
+    ROS_INFO("Corrected x: %f, Corrected y: %f, Corrected h: %f", corrected_x, corrected_y, sqrt((corrected_x*corrected_x)+(corrected_y*corrected_y)));
 
     apriltags_ros::Localization localization_data;
-    localization_data.y = actual_x;//tag_pose.pose.position.x;
-    localization_data.x = actual_y;//tag_pose.pose.position.z;
+    localization_data.y = actual_y;//tag_pose.pose.position.x;
+    localization_data.x = actual_x;//tag_pose.pose.position.z;
     localization_data.theta = theta; //0.16 from offset of camera from frame
     localization_data.cameraID = 0;
     localization_pub_.publish(localization_data);
@@ -722,8 +724,8 @@ void AprilTagDetector::imageCb_1(const sensor_msgs::ImageConstPtr& msg, const se
     //ROS_INFO("Angle Approach: %f, lookie angle left: %f", angle_approach, lookie_angle_right);
     //ROS_INFO("Old orientation: %f", theta*(180/PI));
     apriltags_ros::Localization localization_data_1;
-    localization_data_1.y = actual_x;//corrected_x;//tag_pose.pose.position.x;
-    localization_data_1.x = actual_y;//corrected_y;//tag_pose.pose.position.y;
+    localization_data_1.y = corrected_x;//tag_pose.pose.position.x;
+    localization_data_1.x = corrected_y;//tag_pose.pose.position.y;
     localization_data_1.theta = std::fmod(((angle_approach + PI/2 - lookie_angle_right * PI/180) + (2 * PI)), (2 * PI)); 
     localization_data_1.cameraID = 1;
     localization_pub_.publish(localization_data_1);
@@ -1016,7 +1018,8 @@ void AprilTagDetector::imageCb_2(const sensor_msgs::ImageConstPtr& msg, const se
     float theta = std::fmod(((angle_approach - PI/2 - lookie_angle_left * PI/180) + (2 * PI)), (2 * PI));
     float actual_x = corrected_x + (0.20*cos(theta) + 0.30*sin(theta));
     float actual_y = corrected_y + (0.20*sin(theta) - 0.30*cos(theta));
-    
+
+
     //ROS_INFO("Old orientation: %f", theta*(180/PI));     
     apriltags_ros::Localization localization_data_2;
     localization_data_2.y = corrected_x;//tag_pose.pose.position.x;
