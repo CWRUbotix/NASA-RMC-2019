@@ -68,7 +68,7 @@ def conservative_drive(dest, forward, distance):
         rospy.loginfo('distance to destination ' + str(currentState.getCurrentPos().distanceTo(dest)))
         if currentState.getCurrentPos() == dest or\
             initPos.distanceTo(currentState.getCurrentPos()) > stop_distance:
-            print 'stopping'
+            print('stopping')
             done = True
         elif math.fabs(initPos.distanceTo(currentState.getCurrentPos())) > distance:
             rospy.loginfo('Did not arrive at destination, but moved far enough')
@@ -117,9 +117,9 @@ def turn_algo_2(goal, counter):
         w = currentState.getGyroZ() - offset
         if not flag:
             if math.fabs(( math.fabs(currentState.getStarRPM())+ math.fabs(currentState.getPortRPM())) / 2 - ROBOT_SPEED_TURN) < 1:
-                print 'hi'
+                print('hi')
                 stop_angle = goal - cum_angle
-                print str(stop_angle)
+                print(str(stop_angle))
                 flag = True
             elif cum_angle >= goal / 2:
                 stop_angle = cum_angle
@@ -147,7 +147,7 @@ def turn_algo_2(goal, counter):
         cum_angle += math.fabs(w  *  (currentTime - lastTime))
         lastTime = currentTime
         rospy.sleep(0.005)
-    measure = raw_input('How much did it turn? (in deg): ')
+    measure = input('How much did it turn? (in deg): ')
     logTurnData(counter, ROBOT_SPEED_TURN, goal, cum_angle, float(measure), lastTime - initTime)
 
 def convert_axis(pos, dx, dy):
@@ -181,7 +181,7 @@ def looky_turn(currentPos, next_distance):
 
 def looky_turn_2(currentPos, next_pos):
     looky_angle = (currentPos.angleToFace(pp.Position(0,0,0))) % (2 * math.pi)
-    print str(looky_angle)
+    print(str(looky_angle))
     if looky_angle >= (toRadian(-150) % (2 * math.pi)) or looky_angle <= toRadian(150):
         if looky_angle <= toRadian(150):
             mc.star_looky(motor_pub, toDegree(looky_angle))
@@ -195,7 +195,7 @@ def looky_turn_2(currentPos, next_pos):
         mc.port_looky(motor_pub, -150)
 
 def angle_moved(angular_velocity, t):
-    print 'time ' +  str(t)
+    print('time ' +  str(t))
     return math.fabs(toRadian(angular_velocity) * t / 0.3)
 
 def distance_moved(rpm, acce, t):
@@ -209,12 +209,12 @@ def toRadian(deg):
 
 def simple_drive_test1():
     rospy.loginfo('This test routine attempts to drive straight from is current position')
-    distance = float(raw_input('Enter distance you want to travel'))
+    distance = float(input('Enter distance you want to travel'))
     while True:
         if rospy.is_shutdown():
             exit(-1)
-        print 'current position: ' + str(currentState.getCurrentPos())
-        answer = raw_input('Make sure that robot is in a place okay to drive forward. Start testing?  y/n ')
+        print('current position: ' + str(currentState.getCurrentPos()))
+        answer = input('Make sure that robot is in a place okay to drive forward. Start testing?  y/n ')
         if answer == 'y':
             break
 
@@ -230,28 +230,28 @@ def simple_drive_test1():
         direction = False;
 
     conservative_drive(destination, direction, math.fabs(distance))
-    measure = float(raw_input('How much did it move? (in m): '))
+    measure = float(input('How much did it move? (in m): '))
     rospy.loginfo('distance_travelled:' + str(measure) + ' distance_entered:' + str(distance))
-    print 'testing successful'
+    print('testing successful')
     exit(0)
 
 def simple_drive_test2():
-    print 'testing tracking lookys while driving'
+    print('testing tracking lookys while driving')
 
     exit(0)
 
 def simple_drive_test3():
-    print 'testing not implemented'
+    print('testing not implemented')
     exit(0)
 
 def simple_turn_test1():
     rospy.loginfo('This test routine attempts to turn in place given degrees')
     while True:
-        print 'current position: ' + str(currentState.getCurrentPos())
-        answer = raw_input('Start testing?  y/n ')
+        print('current position: ' + str(currentState.getCurrentPos()))
+        answer = input('Start testing?  y/n ')
         if answer == 'y':
             break
-    goal = float(raw_input('Enter how much to turn in degrees. input should be less than 360'))
+    goal = float(input('Enter how much to turn in degrees. input should be less than 360'))
     goal_in_rad = toRadian(goal)
     currentPos = currentState.getCurrentPos()
     destination = pp.Position(currentPos.getX(), currentPos.getY(),
@@ -263,7 +263,7 @@ def simple_turn_test1():
         direction = False
 
     turn_algo_2(math.fabs(goal), direction)
-    print 'testing succesful'
+    print('testing succesful')
     rospy.loginfo('localization data:')
     rospy.loginfo('start_angle:' + str(toDegree(currentPos.getOrientation())) + ' end_angle' + str(toDegree(currentState.getCurrentPos().getOrientation()))+ ' actual_goal:' + str(toDegree(destination.getOrientation())))
     exit(0)
@@ -274,22 +274,22 @@ def toDegree(rad):
 def simple_turn_test2():
     rospy.loginfo('This test routine attempts to turn in place given degrees')
     while True:
-        print 'current position: ' + str(currentState.getCurrentPos())
-        answer = raw_input('Start testing?  y/n ')
+        print('current position: ' + str(currentState.getCurrentPos()))
+        answer = input('Start testing?  y/n ')
         if answer == 'y':
             break
-    goal = float(raw_input('Enter how much to turn in degrees. input should be less than 360'))
+    goal = float(input('Enter how much to turn in degrees. input should be less than 360'))
     direction = True
     if goal > 0:
         direction = True
     else:
         direction = False
     turn_algo_2(math.fabs(goal), direction)
-    print 'testing successful'
+    print('testing successful')
     exit(0)
 
 def simple_turn_test3():
-    print 'not implemented'
+    print('not implemented')
     exit(0)
 
 def converToCommands(path):
@@ -305,16 +305,16 @@ def converToCommands(path):
     return commands
 
 def transit_test1():
-    print 'simple path following stuff'
-    print 'currentPos: ' + str(currentState.getCurrentPos())
-    dest_x = float(raw_input('enter destination x pos'))
-    dest_y = float(raw_input('enter destination y pos'))
+    print('simple path following stuff')
+    print('currentPos: ' + str(currentState.getCurrentPos()))
+    dest_x = float(input('enter destination x pos'))
+    dest_y = float(input('enter destination y pos'))
     dest = pp.Position(dest_x, dest_y)
-    print str(len(currentState.getObstacles().values()))
+    print(str(len(currentState.getObstacles().values())))
     path = create_path(currentState.getCurrentPos(), dest, 4.2672, 6.096, currentState.getObstacles().values())
     send_path_data(path)
     for position in path.path:
-	print str(position)
+	print(str(position))
 
     exit(0)
     commands = convertToCommands(path)
@@ -330,23 +330,23 @@ def transit_test1():
             conservative_drive(dest, True, command[1])
         else:
             conservative_drive(dest, False, math.fabs(command[1]))
-    print 'testing done'
+    print('testing done')
     exit(0)
 
 def transit_test2():
-    print 'trasit_Test2 not ready yet'
+    print('trasit_Test2 not ready yet')
     exit(0)
 
 def transit_test3():
-    print 'trasit_Test3 not ready yet'
+    print('trasit_Test3 not ready yet')
     exit(0)
 
 def deposition_align_test():
-    print 'align_test not ready yet'
+    print('align_test not ready yet')
     exit(0)
 
 def waitForLocalization():
-    print 'waiting localization data'
+    print('waiting localization data')
     while currentState.getCurrentPos() is None:
         rospy.sleep(0.01)
 
@@ -380,7 +380,7 @@ def updateObstacle(msg):
     global currentState
     obs = pp.Obstacle(msg.x, msg.y, msg.diameter / 2)
     if currentState.addObstacle(msg.obsID, obs):
-	print 'added obstacle'
+	print('added obstacle')
         mc.drive_left_motor(motor_pub, 0)
         mc.drive_right_motor(motor_pub, 0)
 
@@ -401,7 +401,7 @@ def testShutdown():
     logfile.close()
 
 def main():
-    print "setting up logging"
+    print("setting up logging")
     global logfile, gyrolog
     logfile = open(str(sys.path[1]) + '/logs/' +time.strftime("%b-%a-%d-%H-%M-%S.txt"), "w")
     gyrolog = open(str(sys.path[1]) + '/logs/gyro_' + time.strftime("%b-%a-%d-%H-%M-%S.txt"), 'w')
@@ -413,12 +413,12 @@ def main():
     rospy.init_node('Autonomy_Test')
     subscribe()
     rospy.on_shutdown(testShutdown)
-    print 'waiting on localization data'
+    print('waiting on localization data')
     waitForLocalization()
-    print "Testing ready"
-    print "Routine " + str(sys.argv[1])
+    print("Testing ready")
+    print("Routine " + str(sys.argv[1]))
     while True:
-        answer = raw_input("Start testing? y/n ")
+        answer = input("Start testing? y/n ")
         if answer == 'y':
             break
     routines[routine]()

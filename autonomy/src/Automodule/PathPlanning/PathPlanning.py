@@ -67,9 +67,9 @@ class Position(object):
                 return change
 
     def angleToFace(self, p):
-        print self
-        print p
-        print math.atan2(p.getY() - self.getY(), p.getX() - self.getX())
+        print(self)
+        print(p)
+        print(math.atan2(p.getY() - self.getY(), p.getX() - self.getX()))
         return math.atan2(p.getY() - self.getY(), p.getX() - self.getX()) % (2 * math.pi)
 
 
@@ -154,8 +154,8 @@ class Grid(object):
     def addObstacle(self, obs):
         o1 = self.getGridCoordinates(obs.getCenter()[0] + obs.getRadius() + CLEARANCE, obs.getCenter()[1] - obs.getRadius() - CLEARANCE)
         o2 = self.getGridCoordinates(obs.getCenter()[0] - obs.getRadius() - CLEARANCE, obs.getCenter()[1] + obs.getRadius() + CLEARANCE)
-        print str(o1)
-        print str(o2)
+        print(str(o1))
+        print(str(o2))
         for i in range(int(o1[0]), int(o2[0])):
             for j in range(int(o1[1]), int(o2[1])):
                 self.cells[i][j] = True
@@ -218,9 +218,9 @@ class Path(collections.Sequence):
 
     def printPath(self):
         for position in self.path:
-            print ("X: %s" %(position.getX_pos()))
-            print ("Y: %s" %(position.getY_pos()))
-            print ("Orientation: %s\n" %(position.getOrientation()))
+            print(("X: %s" %(position.getX_pos())))
+            print(("Y: %s" %(position.getY_pos())))
+            print(("Orientation: %s\n" %(position.getOrientation())))
 
 class Vertex(Position):
     def __init__(self, x_pos, y_pos):

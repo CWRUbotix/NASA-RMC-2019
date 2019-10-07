@@ -16,20 +16,20 @@ def rosTest():
     pass
 
 def softwareTest():
-    print 'checking pathplanning stuff'
+    print('checking pathplanning stuff')
     p1 = Position(2.5, 0.5)
     p2 = Position(0.5, 7.0)
     grid = Grid(p1, p2, 3.78, 7.38)
-    print str(grid.unit_width)
-    print str(grid.unit_height)
-    print str(grid.col_size)
-    print str(grid.row_size)
+    print(str(grid.unit_width))
+    print(str(grid.unit_height))
+    print(str(grid.col_size))
+    print(str(grid.row_size))
     obstacles = [Obstacle(3.0, 2.0, 0.15), Obstacle(0.5, 5.0, 0.15), Obstacle(2.0, 3.0, 0.15)]
 
 
     path = create_path(p1, p2, 3.78, 7.38, obstacles)
-    print path
-    print converToCommands(path, p1)
+    print(path)
+    print(converToCommands(path, p1))
     drawPath(path, obstacles, [])
 
 
@@ -44,7 +44,7 @@ def converToCommands(path, currentPos):
     commands = []
     for position in path.path:
         angle_to_face = currentPos.angleToFace(position)
-        print toDegree(angle_to_face)
+        print(toDegree(angle_to_face))
         pos = Position(currentPos.getX(), currentPos.getY(), angle_to_face)
         angle_turn = currentPos.angleTurnTo(pos)
         distance = currentPos.distanceTo(position)
@@ -59,7 +59,7 @@ def main():
     elif sys.argv[1] == '1':
         softwareTest()
     else:
-        print 'unsupported'
+        print('unsupported')
         exit(0)
 
 if __name__ == '__main__':

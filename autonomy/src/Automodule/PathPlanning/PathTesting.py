@@ -16,7 +16,7 @@ def drawPath(path, obstacles, positions):
         points.append(c)
     for i in range(len(path)):
         p = path.getPosition()
-        print str(p)
+        print(str(p))
         if lastX != 0 or lastY != 0:
             l = Line(Point(lastX, lastY), Point(p.getX()*150, p.getY()*150))
             lines.append(l)

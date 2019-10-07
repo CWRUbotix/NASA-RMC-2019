@@ -27,8 +27,8 @@ def thetaStar(start, end, grid):
     endVertex = grid.getVertex(int(end[0]), int(end[1]))
     updateHeuristic(endVertex, grid)
 
-#    print str(startVertex)
-#    print str(endVertex)
+#    print(str(startVertex))
+#    print(str(endVertex))
 
     openList = []
     closedList = []
@@ -54,7 +54,7 @@ def thetaStar(start, end, grid):
                         h.heappush(openList, neighbor)
                 if neighbor not in openList:
                     h.heappush(openList, neighbor)
-    print 'could not find the path'
+    print('could not find the path')
     return None
 
 def reconstructPath(v, acc=None):
@@ -75,14 +75,14 @@ def updateHeuristic(end, grid):
 def postProcess(path, grid):
     length = len(path)
     done = False
-#    print str(len(path))
+#    print(str(len(path)))
     while not done:
         path = postProcess_iter(path, grid)
         if len(path) == length:
             done = True
         else:
             length = len(path)
-#    print str(len(path))
+#    print(str(len(path)))
     done = False
     length = len(path)
     while not done:
@@ -91,7 +91,7 @@ def postProcess(path, grid):
             done = True
         else:
             length = len(path)
-#    print str(len(path))
+#    print(str(len(path)))
     done = False
     length = len(path)
     while not done:
