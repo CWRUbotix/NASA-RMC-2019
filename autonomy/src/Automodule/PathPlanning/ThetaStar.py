@@ -1,146 +1,137 @@
 #!/usr/bin/env python
 
-import heapq as h
+import heapq as heap
 import math
-from PathPlanning import Grid, Path
+from PathPlanning.PathPlanning import Grid, Path
+
 
 def create_path(start, end, areana_width, arena_height, obstacles):
-    grid = Grid(start, end, areana_width, arena_height)
+    grid = Grid(start, end, areana_width, arena_height)  # Create a grid and add the obstacles to it
     for obs in obstacles:
         grid.addObstacle(obs)
 
-    for i in range(grid.row_size):
-        for j in range(grid.col_size):
-            v = grid.getVertex(i, j)
-            neighbors = grid.getNeighbors(i, j)
-            for neighbor in neighbors:
-                v.addNeighbor(neighbor)
+    path = a_star(start, end, grid)  # a star algorithm to find path
 
-    grid_start_coord = grid.getGridCoordinates(start.getX(), start.getY())
-    grid_end_coord = grid.getGridCoordinates(end.getX(), end.getY())
+    # return path, grid
+    return post_process(path, grid), grid  # Do theta star algorithm
 
-    return thetaStar(grid_start_coord, grid_end_coord, grid)
 
-def thetaStar(start, end, grid):
-    startVertex = grid.getVertex(int(start[0]), int(start[1]))
+def a_star(start, end, grid):
+    # get start and end indices
+    start_coord = grid.getGridIndices(start.getX(), start.getY())
+    end_coord = grid.getGridIndices(end.getX(), end.getY())
+    # print("Start", start_coord, end_coord)
+
+    startVertex = grid.getVertex(start_coord[0], start_coord[1])
+    endVertex = grid.getVertex(end_coord[0], end_coord[1])
+
+    endVertex.x_pos = end.getX()
+    endVertex.y_pos = end.getY()
+
     startVertex.setDistance(0)
-    endVertex = grid.getVertex(int(end[0]), int(end[1]))
     updateHeuristic(endVertex, grid)
 
 #    print(str(startVertex))
 #    print(str(endVertex))
+    if grid.blocked(*startVertex.get_indices()) or grid.blocked(*endVertex.get_indices()):
+        print("Start or end is blocked")
+        return
 
     openList = []
     closedList = []
 
-    h.heappush(openList, startVertex)
+    heap.heappush(openList, startVertex)  # Add start vertex to start list
     while len(openList) != 0:
-        currentVertex = h.heappop(openList)
+        currentVertex = heap.heappop(openList)  # Get the node with the smallest f cost (heap does this for us)
+
         if currentVertex == endVertex:
-            return postProcess(reconstructPath(currentVertex), grid)
+            return reconstructPath(currentVertex)  # If we made it return the path we took
 
-        closedList.append(currentVertex)
-        currentCoordinate = grid.getGridCoordinates(currentVertex.getX(), currentVertex.getY())
+        closedList.append(currentVertex)  # Add the looked at vertex to the closed list
+        currentCoordinate = grid.getGridIndices(currentVertex.getX(), currentVertex.getY())  # Get the indices
 
-        for neighbor in grid.getNeighbors(currentCoordinate[0], currentCoordinate[1]):
-            if neighbor not in closedList:
-                temp = currentVertex.getDistance() + currentVertex.distanceTo(neighbor)
-                if temp < neighbor.getDistance():
-                    neighbor.setDistance(temp)
-                    neighbor.setParent(currentVertex)
-                    if neighbor in openList:
-                        h.heapify(openList)
+        for neighbor in grid.getNeighbors(currentCoordinate[0], currentCoordinate[1]):  # Check all neighbors
+            if neighbor not in closedList:  # Unless they were already checked
+                dist = currentVertex.getDistance() + currentVertex.distanceTo(neighbor)
+                heuristic = currentVertex.getHeuristic()  # Get current node's heuristic
+
+                # if the neighbor has not been evaluated yet or has just received a better evaluation (dist + heuristic)
+                if neighbor not in openList or dist + heuristic < neighbor.getDistance() + neighbor.getHeuristic():
+                    neighbor.setDistance(dist)  # Set neighbors cumulative distance from origin
+                    neighbor.setParent(currentVertex)  # Tell the neighbor that we came from the current node
+                    if neighbor in openList:  # if it's already in the list
+                        heap.heapify(openList)  # sort the list
                     else:
-                        h.heappush(openList, neighbor)
-                if neighbor not in openList:
-                    h.heappush(openList, neighbor)
-    print('could not find the path')
+                        heap.heappush(openList, neighbor)  # Otherwise add it to the list
+    print('could not find a path')
     return None
 
-def reconstructPath(v, acc=None):
-    if acc is None:
-        acc = []
-    acc.insert(0, v)
-    if v.getParent() is None:
-        return Path(acc)
-    else:
-        return reconstructPath(v.getParent(), acc)
+
+def reconstructPath(v):
+    path = [v]
+    while v.getParent():  # Loop through parents backwards to reconstruct path
+        path.append(v.getParent())
+        v = v.getParent()
+    path.reverse()
+    return Path(path)
+
 
 def updateHeuristic(end, grid):
-    for i in range(grid.row_size):
-        for j in range(grid.col_size):
+    for i in range(grid.num_rows):
+        for j in range(grid.num_cols):
             v = grid.getVertex(i, j)
             v.setHeuristic(v.distanceTo(end))
 
-def postProcess(path, grid):
-    length = len(path)
-    done = False
-#    print(str(len(path)))
-    while not done:
-        path = postProcess_iter(path, grid)
-        if len(path) == length:
-            done = True
-        else:
-            length = len(path)
-#    print(str(len(path)))
-    done = False
-    length = len(path)
-    while not done:
-        path = remove_adjacents(path, math.sqrt(grid.unit_width ** 2 + grid.unit_height ** 2))
-        if len(path) == length:
-            done = True
-        else:
-            length = len(path)
-#    print(str(len(path)))
-    done = False
-    length = len(path)
-    while not done:
-        path = postProcess_iter(path, grid)
-        if len(path) == length:
-            done = True
-        else:
-            length = len(path)
+
+def post_process(path, grid):
+    path = theta_star(path, grid)  # Do theta star
+
+    # remove any nodes that are right next to each other
+    path = remove_adjacents(path, 1.01*(grid.unit_height**2 + grid.unit_width**2)**.5)
+    path.get_angles()  # TODO use to get optimal path with smallest angle change
     return path
+
+
+def theta_star(path, grid):
+    index = 0
+    while True:
+        if index < len(path.path) - 2:  # If not at end of path - the nodes that will be joined
+            if not checkBlocked(path.path[index], path.path[index + 2], grid):  # if there is a line of sigh
+                path.path[index + 2].setParent(path.path[index])  # Join the two end nodes
+                path.delete(path.path[index + 1])  # and cut out the middle node
+            else:
+                index += 1  # check the next node
+        else:
+            break  # Stop when end of path reached
+
+    return path
+
 
 def remove_adjacents(path, unit_dist):
-    current = 0
-    done = False
-    while not done:
-        pos = path.path[current]
-        if current + 1 < len(path):
-            if pos.distanceTo(path.path[current + 1]) <= unit_dist:
-                if current + 2 < len(path):
-                    path.path[current + 2].setParent(pos)
-                    path.delete(path.path[current + 1])
-                else:
-                    path.path[current - 1].setParent(path.path[current + 1])
+    index = 0
+    while True:
+        pos = path.path[index]  # Get current node
+        if index < len(path) - 1:  # If not last node in path
+            if pos.distanceTo(path.path[index + 1]) <= unit_dist:  # If next node is right next to current
+                if index < len(path) - 2:  # If this is not the second to last node in the path
+                    path.path[index + 2].setParent(pos)  # Skip over that adjacent node
+                    path.delete(path.path[index + 1])  # Delete it
+                else:  # Can't delete next node because it is last in path
+                    path.path[index - 1].setParent(path.path[index + 1])  # So ignore the current one instead
                     path.delete(pos)
-                    done = True
+                    break  # End of path reached
             else:
-                current += 1
+                index += 1  # Check next node
         else:
-            done = True
-    return path
-
-def postProcess_iter(path, grid):
-    current = 0
-    done = False
-    while not done:
-        if len(path.path) >= current + 3:
-            if not checkBlocked(path.path[current], path.path[current + 2], grid):
-                path.path[current + 2].setParent(path.path[current])
-                path.delete(path.path[current + 1])
-            else:
-                current += 1
-        else:
-            done = True
+            break  # end of path reached
 
     return path
+
 
 def checkBlocked(p1, p2, grid):
-    v1 = grid.getGridCoordinates(p1.getX(), p1.getY())
-    v2 = grid.getGridCoordinates(p2.getX(), p2.getY())
-    for i in range(int(min(v1[0], v2[0])), int(max(v1[0], v2[0])) + 1):
+    v1 = grid.getGridIndices(p1.getX(), p1.getY())  # Get indices of the two points
+    v2 = grid.getGridIndices(p2.getX(), p2.getY())
+    for i in range(int(min(v1[0], v2[0])), int(max(v1[0], v2[0])) + 1):  # In the whole block (not line?) see if blocked
         for j in range(int(min(v1[1], v2[1])), int(max(v1[1], v2[1])) + 1):
             if grid.blocked(i, j):
                 return True

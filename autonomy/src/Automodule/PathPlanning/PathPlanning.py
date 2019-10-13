@@ -1,11 +1,18 @@
 import math
 import collections
 from collections import deque
+import sys
 
-#Global Variables
+# Global Variables
 ERROR_BOUND = 0.05
-CLEARANCE = 0
-GRID_SIZE = 0.1
+CLEARANCE = 0.0
+GRID_SIZE = 0.15
+
+
+# angle constrained to [-pi, pi]
+def constrain_angle(angle):
+    return (angle + math.pi) % (2 * math.pi) - math.pi
+
 
 class Position(object):
     def __init__(self, x_pos, y_pos, orientation=0.0):
@@ -28,7 +35,6 @@ class Position(object):
     def __str__(self):
         return "x: " + str(self.x_pos) + " y: " + str(self.y_pos) + " angle: " + str(self.orientation) + " radians."
 
-
     def __eq__(self, p):
         if math.fabs(self.getX() - p.getX()) < ERROR_BOUND and math.fabs(self.getY() - p.getY()) < ERROR_BOUND:
             return True
@@ -38,132 +44,85 @@ class Position(object):
         x = abs(p.getX() - self.x_pos)
         y = abs(p.getY() - self.y_pos)
 
-        if (x ** 2 + y ** 2) ** .5 < 0.1:
+        dist = (x ** 2 + y ** 2) ** .5
+        if dist < GRID_SIZE:  # TODO: Changing this value drastically affects performance because doesn't penalize distance
             return 0
-
-        return (x ** 2 + y ** 2) ** .5
+        else:
+            return dist
 
     def angleTurnTo(self, p):
         change = p.getOrientation() - self.orientation
-        if math.fabs(change) < math.pi / 36:
+        change = constrain_angle(change)  # Constrain to [-180, 180]
+
+        if math.fabs(change) < math.pi / 36:  # TODO If less than 5 degrees return 0 for some reason
             return 0
-        elif change >  0 :
-            if change > math.pi:
-                result = -(2 * math.pi - change)
-                if math.fabs(result) < math.pi / 36:
-                    return 0
-                else:
-                    return result
-            else:
-                return change
         else:
-            if math.fabs(change) > math.pi:
-                result = 2 * math.pi - math.fabs(change)
-                if math.fabs(result) < math.pi / 36:
-                    return 0
-                else:
-                    return result
-            else:
-                return change
+            return change
 
     def angleToFace(self, p):
-        print(self)
-        print(p)
-        print(math.atan2(p.getY() - self.getY(), p.getX() - self.getX()))
-        return math.atan2(p.getY() - self.getY(), p.getX() - self.getX()) % (2 * math.pi)
+        # print(self)
+        # print(p)
+        angle = math.atan2(p.getY() - self.getY(), p.getX() - self.getX())
+
+        angle = constrain_angle(angle) # Constrain to [-180, 180]
+        return angle
 
 
 class Grid(object):
-
-    def __init__(self, p1, p2, width, height, idealUnit=GRID_SIZE):
-        if math.fabs((p2.getX() - p1.getX())) < idealUnit:
-            true_unit_width = math.fabs((p2.getX() - p1.getX()))
-        else:
-            col_size = math.floor(math.fabs((p2.getX() - p1.getX()) / idealUnit))
-            true_unit_width = math.fabs((p1.getX() - p2.getX()) / col_size)
-
-        if math.fabs((p2.getY() - p1.getY())) < idealUnit:
-            true_unit_height = math.fabs((p2.getY() - p1.getY()))
-        else:
-            row_size = math.floor(math.fabs((p2.getY() - p1.getY()) / idealUnit))
-            true_unit_height = math.fabs((p1.getY() - p2.getY()) / row_size)
-
-        self.p1 = Position(min(p1.getX(), p2.getX()), min(p1.getY(), p2.getY()))
-        self.p2 = Position(max(p1.getX(), p2.getX()), max(p1.getY(), p2.getY()))
-        self.p1 = Position(self.p1.getX() % true_unit_width, self.p2.getY() % true_unit_height)
-        self.p2 = Position(width - (width - self.p2.getX()) % true_unit_width, height - ((height - self.p2.getY()) % true_unit_height))
+    def __init__(self, p1, p2, width, height, grid_width=GRID_SIZE):
+        self.p1 = p1
+        self.p2 = p2
         self.width = width
-        self.height = width
-        self.col_size = int(math.floor(width / true_unit_width))
-        self.row_size = int(math.floor(height / true_unit_height))
-        self.unit_width = true_unit_width
-        self.unit_height = true_unit_height
-        self.vertices = [[]]
-        self.cells = []
+        self.height = height
+        self.num_cols = int(math.floor(width / grid_width))
+        self.num_rows = int(math.floor(height / grid_width))
+        self.unit_width = grid_width
+        self.unit_height = grid_width
+        self.vertices = []
 
-        for i in range(self.row_size - 1):
-            self.vertices.append([])
-            self.cells.append([])
-            for j in range(self.col_size - 1):
-                self.cells[i].append(False)
-
-        for i in range(self.row_size):
-            for j in range(self.col_size):
-                self.vertices[i].append(Vertex(self.p2.getX() - j * self.unit_width, self.p1.getY() + i * self.unit_height))
+        for i in range(self.num_rows):
+            row = []
+            for j in range(self.num_cols):
+                row.append(Vertex(j * grid_width + grid_width/2, i * grid_width + grid_width/2,
+                                  i, j))
+            self.vertices.append(row)
 
     def getVertex(self, row_index, col_index):
-        return self.vertices[int(row_index)][int(col_index)]
+        return self.vertices[row_index][col_index]
 
     def getNeighbors(self, row_index, col_index):
         neighbors = []
         x_coords = [col_index - 1, col_index, col_index + 1]
         y_coords = [row_index - 1, row_index, row_index + 1]
 
-        left_top = x_coords[0] >= 0 and y_coords[0] >= 0 and not self.blocked(y_coords[0], x_coords[0])
-        left_bot = x_coords[0] >= 0 and y_coords[1] < self.row_size - 1 and not self.blocked(y_coords[1], x_coords[0])
-        right_top = x_coords[1] < self.col_size - 1 and y_coords[0] >= 0 and not self.blocked(y_coords[0], x_coords[1])
-        right_bot = x_coords[1] < self.col_size - 1 and y_coords[1] < self.row_size - 1 and not self.blocked(y_coords[1], x_coords[1])
-
-        if left_top:
-            neighbors.append(self.getVertex(y_coords[0], x_coords[0]))
-        if left_top and left_bot:
-            neighbors.append(self.getVertex(y_coords[1], x_coords[0]))
-        if left_bot:
-            neighbors.append(self.getVertex(y_coords[2], x_coords[0]))
-        if left_bot and right_bot:
-            neighbors.append(self.getVertex(y_coords[2], x_coords[1]))
-        if right_bot:
-            neighbors.append(self.getVertex(y_coords[2], x_coords[2]))
-        if right_bot and right_top:
-            neighbors.append(self.getVertex(y_coords[1], x_coords[2]))
-        if right_top:
-            neighbors.append(self.getVertex(y_coords[0], x_coords[2]))
-        if left_top and right_top:
-            neighbors.append(self.getVertex(y_coords[0], x_coords[1]))
-
+        for r in y_coords:
+            for c in x_coords:
+                if not self.blocked(r, c) and not (r == row_index and c == col_index):
+                    neighbors.append(self.getVertex(r, c))
         return neighbors
 
     def blocked(self, row_index, col_index):
-        if row_index < 0 or row_index >= self.row_size - 1:
+        if row_index < 0 or row_index > self.num_rows-1:
             return True
-        if col_index < 0 or col_index >= self.col_size - 1:
+        if col_index < 0 or col_index > self.num_cols-1:
             return True
 
-        return self.cells[int(row_index)][int(col_index)]
+        return self.vertices[int(row_index)][int(col_index)].get_blocked()
 
     def addObstacle(self, obs):
-        o1 = self.getGridCoordinates(obs.getCenter()[0] + obs.getRadius() + CLEARANCE, obs.getCenter()[1] - obs.getRadius() - CLEARANCE)
-        o2 = self.getGridCoordinates(obs.getCenter()[0] - obs.getRadius() - CLEARANCE, obs.getCenter()[1] + obs.getRadius() + CLEARANCE)
-        print(str(o1))
-        print(str(o2))
-        for i in range(int(o1[0]), int(o2[0])):
-            for j in range(int(o1[1]), int(o2[1])):
-                self.cells[i][j] = True
+        o1 = self.getGridIndices(obs.getCenter()[0] - obs.getRadius() - CLEARANCE, obs.getCenter()[1] - obs.getRadius() - CLEARANCE)
+        o2 = self.getGridIndices(obs.getCenter()[0] + obs.getRadius() + CLEARANCE, obs.getCenter()[1] + obs.getRadius() + CLEARANCE)
+        # print(str(o1), str(o2))
+        for i in range(int(o1[0]), int(o2[0])+1):
+            for j in range(int(o1[1]), int(o2[1])+1):
+                self.vertices[i][j].set_blocked(True)
 
-    def getGridCoordinates(self, x_pos, y_pos):
-        col_index = min(self.col_size - 1, max(round((self.p2.getX() - x_pos) / self.unit_width), 0))
-        row_index = min(self.row_size - 1, max(round((y_pos - self.p1.getY()) / self.unit_height), 0))
-        return row_index, col_index
+    def getGridIndices(self, x_pos, y_pos):
+        col_index = min(self.num_cols - 1, max(int(x_pos / self.unit_width), 0))
+        row_index = min(self.num_rows - 1, max(int(y_pos / self.unit_height), 0))
+
+        return int(row_index), int(col_index)
+
 
 class Obstacle:
     def __init__(self, center_x, center_y, radius):
@@ -196,7 +155,8 @@ class Obstacle:
             return True
         return False
 
-#acts as a sequence of instances of the Position class
+
+# acts as a sequence of instances of the Position class
 class Path(collections.Sequence):
     def __init__(self, positions):
         self.path = deque(positions)
@@ -220,15 +180,30 @@ class Path(collections.Sequence):
         for position in self.path:
             print(("X: %s" %(position.getX_pos())))
             print(("Y: %s" %(position.getY_pos())))
-            print(("Orientation: %s\n" %(position.getOrientation())))
+            print(("Orientation: %s\n" % (position.getOrientation())))
+
+    def get_angles(self):
+        angles = []
+
+        last_direction = self.path[0].angleToFace(self.path[1])
+        for i in range(1, len(self)-1):
+            direction = self.path[i].angleToFace(self.path[i+1])
+            angle = constrain_angle(direction - last_direction)
+            angles.append(angle)
+            last_direction = direction
+
+        return angles
+
 
 class Vertex(Position):
-    def __init__(self, x_pos, y_pos):
+    def __init__(self, x_pos, y_pos, row, col):
         super(Vertex, self).__init__(x_pos, y_pos, 0)
         self.parent = None
         self.dist = float('inf')
         self.heuristic = float('inf')
-        self.visibleNeighbors = []
+        self.row = row
+        self.col = col
+        self.blocked = False
 
     def __lt__(self, other):
         return self.dist + self.heuristic < other.getDistance() + other.getHeuristic()
@@ -254,15 +229,6 @@ class Vertex(Position):
     def setParent(self, parent):
         self.parent = parent
 
-    def getVisibleNeighbors(self):
-        return self.visibleNeighbors
-
-    def removeNeighbor(self, vertex):
-        self.visibleNeighbors.remove(vertex)
-
-    def addNeighbor(self, vertex):
-        self.visibleNeighbors.append(vertex)
-
     def getDistance(self):
         return self.dist
 
@@ -280,4 +246,14 @@ class Vertex(Position):
             self.heuristic = math.inf
         else:
             self.heuristic = dest
+
+    def get_indices(self):
+        return self.row, self.col
+
+    def get_blocked(self):
+        return self.blocked
+
+    def set_blocked(self, blocked):
+        self.blocked = blocked
+
 
