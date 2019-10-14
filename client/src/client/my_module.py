@@ -6,8 +6,7 @@ import rospkg
 import sys
 import rosservice
 
-import robotInterface
-
+from subprocess import check_output
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, QTimer, Slot
@@ -153,6 +152,9 @@ class MyPlugin(Plugin):
         """
         TODO: Omitted
         """
+
+        if self.check_if_published("")
+
         ###
 
         if context.serial_number() > 1:
@@ -170,13 +172,6 @@ class MyPlugin(Plugin):
         self._update_translate_timer = QTimer(self)
         self._update_attitude_timer = QTimer(self)
         self._update_sensors_timer = QTimer(self)
-        """
-        self._update_parameter_timer = QTimer(self)
-        self._update_parameter_timer.timeout.connect(
-            self._on_parameter_changed)
-        self._update_parameter_timer.start(100)
-        self.zero_cmd_sent = False
-        """
         
     def debugging_checkbox_checked(self):
         debugging_status = self._widget.debug_checkbox.isChecked()
@@ -309,6 +304,14 @@ class MyPlugin(Plugin):
         except TypeError:
             self._publisher = rospy.Publisher(topic, Twist)
     """
+
+    def check_if_published(topic_name):
+        topic_list = rospy.get_published_topics()
+        if topic_name in topic_list:
+            return True
+        else:
+            return False
+
 
     """
     Unregister ROS publisher

@@ -202,7 +202,7 @@ def rpmdrive(dest, forward, distance, speed):
         if rospy.is_shutdown():
             exit(-1)
         if currentState.obstacle_found:
-            print 'found'
+            print('found')
             return False
         data = 0
         if forward:
@@ -449,14 +449,14 @@ def waitForLocalization():
     mc.port_looky(motor_pub, pos)
     rospy.sleep(1)
     while currentState.getCurrentPos() is None and pos < 150:
-        print 'move tag'
+        print('move tag')
         pos += 15
         mc.port_looky(motor_pub, pos)
         mc.star_looky(motor_pub, pos)
         rospy.sleep(1)  # sleep for 10 milliseconds
 
     if currentState.getCurrentPos() is None:
-        print "Cannot locate the tag"
+        print("Cannot locate the tag")
         exit(-1)
 
 
@@ -500,7 +500,7 @@ def updateObstacle(msg):
     if obs.getCenter()[0] < 0.25 or obs.getCenter()[0] > ARENA_WIDTH - 0.25 or obs.getCenter()[1] < 2.74+0.25 or obs.getCenter()[1] > 1.9+2.74 - 0.25:
         return
     if currentState.addObstacle(msg.obsID, obs):
-        print 'saw obstacle'
+        print('saw obstacle')
         mc.drive_left_motor(motor_pub, 0)
         mc.drive_right_motor(motor_pub, 0)
 
@@ -552,16 +552,16 @@ def run():
         currentState.obstacles = {}
         path = create_path(currentState.currentPos, dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
     commands = converToCommands(path)
-    print str(commands)
+    print(str(commands))
     done = False
     while not done:
         for command in commands:
-            print str(command[2])
+            print(str(command[2]))
             direction = True
             if command[0] < 0:
                 direction = False
             okay = turn(math.fabs(command[0]), direction, ROBOT_SPEED_TURN)
-            print 'finished turn'
+            print('finished turn')
             if not okay:
                 break
             distance = command[1]
@@ -588,7 +588,7 @@ def run():
             done = True
         else:
             currentState.obstacle_found = False
-            print "modifying path"
+            print("modifying path")
             path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT,
                                currentState.getObstacles().values())
 
@@ -597,21 +597,21 @@ def run():
                 currentState.obstacles = {}
                 path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
             commands = converToCommands(path)
-            print str(commands)
+            print(str(commands))
         if rospy.is_shutdown():
             exit(-1)
 
 
 def testMode():
     tests = [transit_test, transit_dig_test, single_run_test, full_test, rpm_drive_test]
-    print "Testing mode"
-    print "Enter which test you want (in number):"
-    print "0. transit only"
-    print "1. transit + digging"
-    print "2. One single run"
-    print "3. Full Competition run"
-    print "4. RPM drive test"
-    option = int(raw_input())
+    print("Testing mode")
+    print("Enter which test you want (in number):")
+    print("0. transit only")
+    print("1. transit + digging")
+    print("2. One single run")
+    print("3. Full Competition run")
+    print("4. RPM drive test")
+    option = int(input())
     tests[option]()
     exit(-1)
 
@@ -619,21 +619,21 @@ def testMode():
 def transit_test():
     mc.drive_left_motor(motor_pub, 0)
     mc.drive_right_motor(motor_pub, 0)
-    x_pos = float(raw_input("Enter x_pos of destination"))
-    y_pos = float(raw_input("Enter y_pos of destination"))
+    x_pos = float(input("Enter x_pos of destination"))
+    y_pos = float(input("Enter y_pos of destination"))
 
-    print currentState.getCurrentPos()
-    raw_input('start?')
+    print(currentState.getCurrentPos())
+    input('start?')
 
     dest = pp.Position(x_pos, y_pos)
     path = create_path(currentState.currentPos, dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
 
     commands = converToCommands(path)
-    print str(commands)
+    print(str(commands))
     done = False
     while not done:
         for command in commands:
-            print str(command[2])
+            print(str(command[2]))
             direction = True
             if command[0] < 0:
                 direction = False
@@ -663,18 +663,18 @@ def transit_test():
         if currentState.getCurrentPos() == dest or currentState.getCurrentPos().getDistanceTo(dest) < 0.2:
             done = True
         else:
-            print "modifying path"
+            print("modifying path")
             path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT,
                                currentState.getObstacles().values())
             commands = converToCommands(path)
-            print str(commands)
+            print(str(commands))
         if rospy.is_shutdown():
             exit(-1)
 
 
 def transit_dig_test():
     transit_test()
-    t = float(raw_input('How long do you want to dig?'))
+    t = float(input('How long do you want to dig?'))
     mc.bucket_angle_actuator(motor_pub, 60)
     rospy.sleep(5)
     mc.bucket_drive_motor(motor_pub, 150)
@@ -698,8 +698,8 @@ def full_test():
 
 
 def rpm_drive_test():
-    print "How much distance you want to move?"
-    distance = float(raw_input())
+    print("How much distance you want to move?")
+    distance = float(input())
     direction = True
     if distance < 0:
         direction = False
@@ -709,7 +709,7 @@ def rpm_drive_test():
         currentState.getCurrentPos().getOrientation())
     dest = pp.Position(dest_x, dest_y)
     rpmdrive(dest, direction, distance, ROBOT_SPEED_DRIVE)
-    result = float(raw_input("how much did it go?"))
+    result = float(input("how much did it go?"))
     rospy.loginfo("goal:" + str(distance) + " actual:" + str(result) + "\n")
     exit(0)
 
