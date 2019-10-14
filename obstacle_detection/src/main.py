@@ -105,7 +105,7 @@ while not rospy.is_shutdown():
 		break
 
 	img = depth_frame.asarray(np.float32)
-
+        img = cv2.flip(img, 1)
 	output, obstacle_id = get_obstacles_with_plane(img,
 									  prev_frame,
 									  color_frame,

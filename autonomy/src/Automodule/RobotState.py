@@ -21,6 +21,7 @@ class Robot_state:
         self.disp_on = False
         self.disp = 0
         self.oriented = False
+        self.ignore_obs = False
 
     def getCurrentPos(self):
         return self.currentPos
@@ -103,7 +104,7 @@ class Robot_state:
     def addObstacle(self, key, obs):
         if key not in self.obstacles.keys():
             for k in self.obstacles.keys():
-                if self.obstacles[k].mergeIfEqual(obs):
+                if self.obstacles[k].mergeIfEqual(obs, 0.1):
                     self.obstacles[key] = self.obstacles[k]
                     return False
             self.obstacles[key] = obs

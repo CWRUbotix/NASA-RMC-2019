@@ -202,6 +202,7 @@ def rpmdrive(dest, forward, distance, speed):
         if rospy.is_shutdown():
             exit(-1)
         if currentState.obstacle_found:
+            print 'found'
             return False
         data = 0
         if forward:
@@ -241,6 +242,7 @@ def drive(dest, forward, distance, speed):
     cum_distance = 0
     stop_dist = 0
     lastTime = None
+    result = True
     currentState.setDisp(True)
     if forward:
         mc.drive_left_motor(motor_pub, speed)
@@ -271,13 +273,17 @@ def drive(dest, forward, distance, speed):
         if rospy.is_shutdown():
             exit(-1)
         if currentState.obstacle_found:
-            return False
+            mc.drive_left_motor(motor_pub, 0)
+            mc.drive_right_motor(motor_pub, 0)
+            done = True
+            result = False
         rospy.sleep(0.005)
     rospy.loginfo("optical displacement: " + str(currentState.getDist()))
     currentState.setDisp(False)
     looky_turn_2(dest, COLLECTION_BIN)
     rospy.sleep(1)
-    return True
+    return result
+
 
 
 def turn(goal, counter, speed):
@@ -294,6 +300,7 @@ def turn(goal, counter, speed):
         mc.drive_left_motor(motor_pub, speed)
         mc.drive_right_motor(motor_pub, -speed)
 
+    result = True
 
     while not done:
         w = currentState.getGyroZ() - offset
@@ -324,7 +331,18 @@ def turn(goal, counter, speed):
             exit(-1)
 
         if currentState.obstacle_found:
-            return False
+            mc.drive_right_motor(motor_pub, 0)
+            mc.drive_left_motor(motor_pub, 0)
+            done = True
+            result = False
+
+        data = 0
+        rpm = (math.fabs(currentState.getPortRPM()) + math.fabs(currentState.getStarRPM())) / 2
+        if counter:
+            data = math.fabs(goal)
+        else:
+            data = -math.fabs(goal)
+        logData('t', rpm, currentState.getAcceX(), currentState.getGyroZ(), 0, data, currentState.getCurrentPos())
 
         data = 0
         rpm = (math.fabs(currentState.getPortRPM()) + math.fabs(currentState.getStarRPM())) / 2
@@ -354,7 +372,8 @@ def turn(goal, counter, speed):
 
     looky_turn_2(currentState.getCurrentPos(), COLLECTION_BIN)
     rospy.sleep(1)
-    return True
+    return result
+
 
 
 def looky_turn(currentPos, next_distance):
@@ -470,12 +489,17 @@ def updateState(msg):
 
 def updateObstacle(msg):
     global currentState
+    if currentState.currentPos is None or currentState.ignore_obs:
+        return
     robot_orient = currentState.getCurrentPos().getOrientation()
     true_dx = msg.y * math.cos(robot_orient) + msg.x * math.cos(robot_orient - math.pi / 2)
     true_dy = msg.y * math.sin(robot_orient) + msg.x * math.sin(robot_orient - math.pi / 2)
+    rad_clear = min(msg.diameter / 2 + 0.75, math.sqrt(true_dx ** 2 + true_dy ** 2) - 0.25)
     obs = pp.Obstacle(currentState.getCurrentPos().getX() + true_dx, currentState.getCurrentPos().getY() + true_dy,
-                      msg.diameter / 2)
-    if currentState.addObstcle(obs):
+                      rad_clear)
+    if obs.getCenter()[0] < 0.25 or obs.getCenter()[0] > ARENA_WIDTH - 0.25 or obs.getCenter()[1] < 2.74+0.25 or obs.getCenter()[1] > 1.9+2.74 - 0.25:
+        return
+    if currentState.addObstacle(msg.obsID, obs):
         print 'saw obstacle'
         mc.drive_left_motor(motor_pub, 0)
         mc.drive_right_motor(motor_pub, 0)
@@ -504,7 +528,7 @@ def logData(command_type, rpm, acceX, gyro, dist, angle, currentPos):
 def subscribe():
     rospy.Subscriber('sensorValue', sensorValue, updateState)
     rospy.Subscriber('localization_data', Localization, updatePos)
-    rospy.Subscriber('Obstacle', Obstacle, updateObstacle)
+    rospy.Subscriber('obstacleDetection', Obstacle, updateObstacle)
     rospy.Subscriber('opticalFlow', Float32, optical_disp)
 
 
@@ -521,8 +545,12 @@ def optical_disp(msg):
 
 
 def run():
-    dest = pp.Position(2.0, 6.0)
+    dest = pp.Position(1.5, 4.0)
     path = create_path(currentState.currentPos, dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
+    if path is None:
+        currentState.ignore_obs = True
+        currentState.obstacles = {}
+        path = create_path(currentState.currentPos, dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
     commands = converToCommands(path)
     print str(commands)
     done = False
@@ -533,6 +561,7 @@ def run():
             if command[0] < 0:
                 direction = False
             okay = turn(math.fabs(command[0]), direction, ROBOT_SPEED_TURN)
+            print 'finished turn'
             if not okay:
                 break
             distance = command[1]
@@ -555,12 +584,18 @@ def run():
             if currentState.getCurrentPos().distanceTo(command[2]) > 0.2:
                 break
 
-        if currentState.getCurrentPos() == dest or currentState.getCurrentPos().getDistanceTo(dest) < 0.2:
+        if currentState.getCurrentPos() == dest or currentState.getCurrentPos().distanceTo(dest) < 0.2:
             done = True
         else:
+            currentState.obstacle_found = False
             print "modifying path"
             path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT,
                                currentState.getObstacles().values())
+
+            if path is None:
+                currentState.ignore_obs = True
+                currentState.obstacles = {}
+                path = create_path(currentState.getCurrentPos(), dest, ARENA_WIDTH, ARENA_HEIGHT, currentState.getObstacles().values())
             commands = converToCommands(path)
             print str(commands)
         if rospy.is_shutdown():

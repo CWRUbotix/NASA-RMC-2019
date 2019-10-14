@@ -4,7 +4,7 @@ from collections import deque
 
 #Global Variables
 ERROR_BOUND = 0.05
-CLEARANCE = 0.75
+CLEARANCE = 0
 GRID_SIZE = 0.1
 
 class Position(object):

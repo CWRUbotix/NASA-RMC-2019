@@ -110,6 +110,8 @@ vector<uint8_t> generateMotorCommandMessage(void){
         checksum += (uint16_t)(0x00ff & value[1]);
         checksum += (uint16_t)(0x00ff & value[2]);
         checksum += (uint16_t)(0x00ff & value[3]);
+
+        ROS_INFO("MotorCommand: motor %u to %f", it->first, f);
     }   
 
     vector<uint8_t>::iterator it = commandMessage.begin();
@@ -236,11 +238,12 @@ int main(int argc, char** argv) {
             }
             ROS_INFO("Serial port opened");
         }
-        vector<uint8_t> motorCommandMessage = generateMotorCommandMessage();
         ROS_INFO("NEW MOTOR MESSAGE");
-        for (std::vector<uint8_t>::const_iterator i = motorCommandMessage.begin(); i != motorCommandMessage.end(); ++i){
-            ROS_INFO("%u", *i);
-        }
+        vector<uint8_t> motorCommandMessage = generateMotorCommandMessage();
+        
+        //for (std::vector<uint8_t>::const_iterator i = motorCommandMessage.begin(); i != motorCommandMessage.end(); ++i){
+        //    ROS_INFO("%u", *i);
+        //}
 
         //ROS_INFO("LENGTH OF MOTOR COMMAND: %u", (motorCommandMessage[1] << 8) + motorCommandMessage[2]);
 
